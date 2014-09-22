@@ -192,7 +192,7 @@ class MatlabSequence(object):
         return array
 
     def matlab_sequence_string(self):
-        """Returns the original matla sequence string.
+        """Returns the original matlab sequence string.
 
         Examples
         --------
@@ -207,12 +207,12 @@ class MatlabSequence(object):
         return 'MatlabSequence(\'%s\')' % self.matlab_sequence_string()
 
 
-def matlab_val_to_python_val(val_string):
+def matlab_val_to_python_val(matlabval):
     """Given a string representing a matlab value, create an equivalent python value.
 
     Parameters
     ----------
-    val_string: string
+    matlabval: string
         A string representing a matlab value (e.g. "[1, 2, 3]", "1.1" or "1:3")
 
     Returns
@@ -227,11 +227,47 @@ def matlab_val_to_python_val(val_string):
     [1, 2, 3]
     >>> matlab_val_to_python_val('[1:2:3]')
     MatlabSequence('1:2:3')
+    >>> matlab_val_to_python_val('\\'max\\'')
+    'max'
     """
     try:
-        return MatlabSequence(val_string)
+        return MatlabSequence(matlabval)
     except:
-        return eval(val_string)  # FIXME whoooooo... code injections...
+        return eval(matlabval)  # FIXME whoooooo... code injections...
+
+
+def matlab_triple_quotes_to_python(matlabval):
+    """Replaces all occurrences of matlab-triple-quotes by the python equivalent double-quotes-escape-single-quotes.
+
+    From http://www.ee.columbia.edu/~marios/matlab/matlab_tricks.html
+      "Info about the dreaded triple quotes ''' in eval(). A really nasty way to disable
+      quote's special functionality. In other languages one would expect to escape
+      the quote by \' but not in Matlab. What you really need to know is that:
+      >> eval('disp(''''''This is a string'''''')')
+      'This is a string'"
+
+    Parameters
+    ----------
+
+    matlabval: string
+        A string representing a matlab value (also things like comma separated values are handled properly)
+
+    Examples
+    --------
+    >>> print matlab_triple_quotes_to_python("'ar','''R'',2,''M'',1,''P'',2,''Q'',1'")
+    'ar',"'R',2,'M',1,'P',2,'Q',1"
+
+    >>> print matlab_triple_quotes_to_python("'''R'',2,''M'',1,''P'',2,''Q'',1'")
+    "'R',2,'M',1,'P',2,'Q',1"
+    """
+    while "'''" in matlabval:
+        pre, _, post = matlabval.partition("'''")
+        post = '"\'' + post.\
+            replace("''", '33matlabscapedquotesnastiness4$'). \
+            replace("'", '"'). \
+            replace('33matlabscapedquotesnastiness4$', "'")  # Usefully nasty
+        matlabval = pre + post
+    return matlabval
 
 
 def parse_matlab_params(params_string):
@@ -265,13 +301,7 @@ def parse_matlab_params(params_string):
     #
     params = params_string
     # Manage damn matlab triple quotes special case
-    while "'''" in params:
-        pre, _, post = params.partition("'''")
-        post = '"\'' + post.\
-            replace("''", '33matlabscapedquotesnastiness4$'). \
-            replace("'", '"'). \
-            replace('33matlabscapedquotesnastiness4$', "'")  # Usefully nasty
-        params = pre + post
+    params = matlab_triple_quotes_to_python(params)
     # Group together {}, []; does not support nesting
     groups = re.split(r'(\{.*\}|\[.*\]|".*")', params)
     # Postprocess the groups
@@ -311,6 +341,18 @@ class MatlabVar(object):
     def get(self):
         return self.engine.get(self.varname)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        try:
+            self.engine.run_text('clear %s' % self.varname)
+        except:
+            pass
+
+    def __del__(self):
+        self.__exit__(None, None, None)
+
 
 def py2matlabstr(pyvar):
     """Returns a string representation of the python variable pyvar suitable for a call in matlab.
@@ -320,7 +362,13 @@ def py2matlabstr(pyvar):
         return pyvar.varname
     if isinstance(pyvar, MatlabSequence):
         return pyvar.matlab_sequence_string()
+    if isinstance(pyvar, bool):
+        return '1' if pyvar else '0'
     return pyvar.__repr__()
+
+
+def python_val_to_matlab_val(pythonval):
+    return py2matlabstr(pythonval)
 
 
 class MatlabEngine(object):
@@ -335,6 +383,8 @@ class MatlabEngine(object):
         super(MatlabEngine, self).__init__()
         self.session(engine_location)
         self.warmup()
+        self._num_partials = 0
+        self._num_results = 0
 
     def warmup(self):
         self.run_text('ones(1);')
@@ -343,11 +393,17 @@ class MatlabEngine(object):
         return self._run(command)
 
     def run_function(self, funcname, *args):
-        # TODO: magically get the return arity, as oct2py does looking at the bytecode
-        #       but we probably do not want that magic
-        command = 'pyengout74383744=%s(%s);' % (funcname, ','.join(map(py2matlabstr, args)))
+        """Runs a function and returns the first output value."""
+        #
+        # TODO: magically get the return arity, as oct2py does by looking at the bytecode (originally from OMPC)
+        #       but we probably do not want that magic, it is hugely slow
+        #       and at the moment, all funcs explored have arity 1 (from HCTSA)
+        #
+        result_var = 'pyopy_result_%d', self._num_results
+        command = '%s=%s(%s);' % (result_var, funcname, ','.join(map(py2matlabstr, args)))
         self._run(command)
-        return self.get('pyengout74383744')
+        self._num_results += 1
+        return self.get(result_var)
 
     def _run(self, command, *args):
         raise NotImplementedError()
@@ -365,8 +421,8 @@ class MatlabEngine(object):
     def add_path(self, path, recursive=True, begin=False, force=False):
         """Adds a path to a matlab engine."""
         path = op.abspath(path)
-        self.run_text('matlab_path=path()')  # Needed for engines that do not return the result (e.g. pymatlab)
-                                             # Reimplement the simple way...
+        self.run_text('matlab_path=path();')  # Needed for engines that do not return the result (e.g. pymatlab)
+                                              # Reimplement the simple way...
         matlab_path = self.get('matlab_path')
         if path not in matlab_path or force:
             if recursive:
@@ -385,14 +441,14 @@ class Oct2PyEngine(MatlabEngine):
         return getattr(self.session(), funcname)(*args)
 
     def _run(self, command, *args):
-        return self.session().run(command)
+        return self.session().eval(command)
 
     def put(self, varname, value):
-        self.session().put(varname, value)
+        self.session().push(varname, value)
         return MatlabVar(self, varname)
 
     def get(self, varname):
-        return self.session().get(varname)
+        return self.session().pull(varname)
 
     def session(self, engine_location=None):
         if self._session is None:
@@ -403,10 +459,15 @@ class Oct2PyEngine(MatlabEngine):
 
 class PyMatlabEngine(MatlabEngine):
 
+    #
     # Until this is properly implemented some quick and dirty conclusions:
+    #
+    # TODO: how much running things on pycharm affect performance?
     #
     # Octave: I only tried oct2py. It has quite an overhead on calls.
     #   - oct2py is based on expect, I think there comes a lot of the performance penalty.
+    #     how does this change if we use the pexpect backend?
+    #   - also it has a lot of reflection and disassembling magic, which surely makes each call costly
     #   - also it is based on files; in my tests I used a ramdisk (tmpfs).
     #     but still: open, write, close, open, write, close files per call can be too heavy with short calls.
     #
@@ -454,6 +515,17 @@ class PyMatlabEngine(MatlabEngine):
 def engines_benchmark():
     """Benchmarks the engines available in this machine."""
     raise NotImplementedError()
+
+
+#
+# matlab -nojvm -nodisplay -r "commands;quit"
+# http://www.mathworks.de/de/help/matlab/ref/cellfun.html
+# Probably it is better to apply many functions to same series first (enhance cache locality)
+# try...catch works in both octave and matlab
+# memmaps are only supported in matlab
+# This seems to have a bit more functionality than scipy savemat / loadmat:
+#    https://pypi.python.org/pypi/hdf5storage/0.1.1
+#
 
 
 ###################################

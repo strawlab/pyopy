@@ -4,32 +4,29 @@ import os.path as op
 
 import numpy as np
 import time
+from pyopy.hctsa.hctsa_utils import prepare_engine_for_hctsa
 
 
 # Write OK and Failed tuples
-from pyopy.matlab_utils import PyMatlabEngine
-
 
 def check_bindings(engine=None,
                    operations=None,
                    forbidden=(('HCTSA_MF_ARMA_orders', 'Enters Oct2Py interact mode'),
                               ('HCTSA_SY_DriftingMean', 'Has a bug (l is not defined) and enters Oct2Py interact mode'),
                               ('HCTSA_TSTL_predict', 'Takes too long?',)),
-                   sizes=(100, 1000, 10000),
+                   sizes=(1000,),
                    ts_factory=lambda size: np.random.RandomState(0).randn(size),
                    dest_file=op.join(op.dirname(__file__), 'hctsa_octave_checks.py'),
                    error_extractor=lambda e: str(e).rpartition("Octave returned:")[2].strip()):
 
     if engine is None or engine == 'octave':
-        from pyopy.hctsa.hctsa_utils import add_hctsa_path_to_engine
         from pyopy.matlab_utils import Oct2PyEngine
         engine = Oct2PyEngine()
-        add_hctsa_path_to_engine(engine)
+        prepare_engine_for_hctsa(engine)
     elif engine == 'matlab':
-        from pyopy.hctsa.hctsa_utils import add_hctsa_path_to_engine
         from pyopy.matlab_utils import PyMatlabEngine
         engine = PyMatlabEngine()
-        add_hctsa_path_to_engine(engine)
+    prepare_engine_for_hctsa(engine)
 
     # Some operations that make the entire experiment fail
     forbidden = dict(forbidden)

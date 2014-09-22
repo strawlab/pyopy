@@ -13,7 +13,7 @@ from pyopy.matlab_utils import MatlabSequence, MatlabVar
 #########################
 # Allow data already in octave-land to be reused
 #########################
-# This is some copy&paste from oct2py 1.3.0
+# This is some copy&paste from oct2py 2.3.0
 #########################
 
 class MatWriteNotAll(MatWrite):
@@ -45,10 +45,10 @@ class MatWriteNotAll(MatWrite):
         ascii_code = 65
         data = {}
         for var in inputs:
-            if isinstance(var, MatlabVar):  # SANTI: one change
+            if isinstance(var, MatlabVar):  # PYOPY: one change
                 argin_list.append(var.varname)
                 continue
-            if isinstance(var, MatlabSequence):  # SANTI: another change
+            if isinstance(var, MatlabSequence):  # PYOPY: another change
                 argin_list.append(var.matlab_sequence_string())
                 continue
             if names:
@@ -65,14 +65,14 @@ class MatWriteNotAll(MatWrite):
                 raise
             ascii_code += 1
         if not os.path.exists(self.in_file):
-            self.in_file = create_file()
+            self.in_file = create_file(self.temp_dir)
         try:
-            savemat(self.in_file, data, appendmat=False, oned_as='row')
+            savemat(self.in_file, data, appendmat=False,
+                    oned_as=self.oned_as, long_field_names=True)
         except KeyError:  # pragma: no cover
             raise Exception('could not save mat file')
-        load_line = 'load {} "{}"'.format(self.in_file,
-                                          '" "'.join(argin_list))
-
+        load_line = 'load {0} "{1}"'.format(self.in_file,
+                                            '" "'.join(argin_list))
         return argin_list, load_line
 
 

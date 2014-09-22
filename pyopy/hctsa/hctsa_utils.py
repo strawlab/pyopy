@@ -11,7 +11,12 @@ A "Category" represents a call to an "Operator" with certain parameters, produci
 Installation in linux 64 and Matlab/Octave compatibility state:
 
   Third party:
-    - yaourt -S --noconfirm octave octave-signal octave-parallel octave-optim octave-econometrics octave-statistics
+    - yaourt -S --noconfirm --needed octave-mkl octave-signal octave-parallel
+                                     octave-optim octave-econometrics octave-statistics
+      or in octave (nasty)
+      pkg install -forge signal parallel optim econometrics statistics
+      See also notes on optional package loading:
+        https://wiki.archlinux.org/index.php/Octave#Using_Octave.27s_installer
     - tisean (from AUR):
       yaourt -S --noconfirm gcc-libs-multilib gcc-multilib tisean
 
@@ -24,12 +29,13 @@ Installation in linux 64 and Matlab/Octave compatibility state:
 """
 import os.path as op
 from glob import glob
+from oscail.common.config import Configurable
 
 from pyopy.config import PYOPY_TOOLBOXES_DIR, PYOPY_DIR
 from pyopy.matlab_utils import rename_matlab_func, parse_matlab_funcdef, \
     parse_matlab_params, matlab_funcname_from_filename, Oct2PyEngine, PyMatlabEngine
 from pyopy.misc import ensure_python_package
-
+import inspect
 
 ###################################
 # Some paths
@@ -54,19 +60,19 @@ class HCTSAFunction(object):
 
     Parameters
     ----------
-    mfile: string
+    mfile : string
         The path to the mfile that contains the function
 
-    outstring: string
+    outstring : string
         The output on the function definition (for example "out" or "[a,b]")
 
-    params: string list
+    params : string list
         The list of parameter names for the function
 
-    doc: string
+    doc : string
         The documentation of the mfile (everything before the function definition)
 
-    code: string
+    code : string
         The body of the function (everything after the function definition,
         possibly including other auxiliary functions).
     """
@@ -93,17 +99,17 @@ class HCTSAFeature(object):
 
     Parameters
     ----------
-    featname: string
+    featname : string
         The feature name in the HCTSA database (e.g. "CO_HistogramAMI_1_std1_2.min")
 
-    category: HCTSAFeatureCategory
+    category : HCTSAFeatureCategory
         The category of this parameter (holds function and parameter values information)
 
-    outname: string
+    outname : string
         The name of the field in the matlab struct that is outputted by the matlab function
         or None if the function returns already a single scalar (e.g. "min")
 
-    tags: string list
+    tags : string list
         The tags given to the feature in HCTSA, useful for categorization
     """
     def __init__(self,
@@ -129,16 +135,16 @@ class HCTSAFeatureCategory(object):
 
     Parameters
     ----------
-    catname: string
+    catname : string
         The category name (e.g. "CO_CompareMinAMI_even_2_80")
 
-    funcname: string
+    funcname : string
         The function name associated to this category (e.g. "CO_CompareMinAMI")
 
-    param_values: list
+    param_values : list
         A list with the values for the function that define this category (as objects in python land)
 
-    is_commented: bool
+    is_commented : bool
         Whether the category is commented in the HCTSA code
     """
     def __init__(self,
@@ -158,7 +164,7 @@ class HCTSAFeatureCategory(object):
 
         Parameters
         ----------
-        hctsa_feature: HCTSAFeature
+        hctsa_feature : HCTSAFeature
             A feature to add to this category (note that at the moment we allow duplicates)
         """
         self.features.append(hctsa_feature)
@@ -166,29 +172,28 @@ class HCTSAFeatureCategory(object):
 
 class HCTSACatalog(object):
     """
-    Puts together (in the constructor) the information of functions,
-    parameter values and outputs from the HCTSA library.
+    Puts together the information of functions, parameter values and outputs from the HCTSA library.
 
     Parameters
     ----------
-    mfiles_dir: path
+    mfiles_dir : path
         The directory where the matlab m files for the HCTSA operations reside.
 
-    mops_file: path
+    mops_file : path
         The path to the file where we find the map {category -> (function, param_values)}
 
-    ops_file: path
+    ops_file : path
         The path to the file where we find the map {feature_name -> (category, output_name)}
 
     Useful Members
     --------------
-    functions_dict: dictionary
+    functions_dict : dictionary
         A map {function_namer -> HCTSAFunction}
 
-    categories_dict: dictionary
+    categories_dict : dictionary
         A map {category_name -> HCTSAFeatureCategory}
 
-    features_dict: dictionary
+    features_dict : dictionary
         A map {feature_name -> HCTSAFeature}
     """
     def __init__(self,
@@ -356,13 +361,17 @@ class HCTSACatalog(object):
         return '\n'.join(report)
 
     def default_parameters(self, funcname):
-        """Returns default parameters for a function as one (random)
+        """Returns default parameter values for a function as one (random)
         of the calls to generate features using such function.
         """
         for cat in self.categories_dict.values():
             if cat.funcname == funcname:
                 return cat.param_values
         return []
+
+    def function_parameter_values(self, funcname):
+        """Returns all the values that a function takes to span a HTCSA category."""
+        return [cat.param_values for cat in self.categories_dict.values() if cat.funcname == funcname]
 
     def function_outnames(self, funcname):
         """Returns all the outnames used in HCTSA to extract scalars
@@ -388,6 +397,91 @@ def hctsa_summary():
 ###################################
 # Python bindings generation
 ###################################
+
+
+class HCTSAFeatureExtractor(Configurable):
+
+    def __init__(self):
+        super(HCTSAFeatureExtractor, self).__init__(add_descriptors=False)
+
+    def evaluate(self, engine, x):
+        """Evaluates this feature for the time series x on the specified matlab engine."""
+        pass
+
+    def text_call(self, varname):
+        """Represents a call to this function as a matlab expression."""
+        pass
+
+    def partial(self, engine):
+        """Returns a MatlabVariable representing a partial application for this function and parameters."""
+        pass
+
+    def text_partial(self):
+        """Represents a partial application of this function."""
+        pass
+
+
+def class_code_from_function(hctsa_function, outnames=None, function_prefix='HCTSA_'):
+
+    # Our indentation levels
+    indent1 = ' ' * 4
+    indent2 = ' ' * 8
+
+    # Introspection...
+    func_name = hctsa_function.__name__
+    mlab_name = func_name[len(function_prefix):]
+    docstring = hctsa_function.__doc__
+    args, _, _, defaults = inspect.getargspec(hctsa_function)
+
+    # Arguments string
+    if defaults is not None:
+        args_string = ', '.join('%s=%r' % (name, value) for name, value in zip(args[2:], defaults))
+    else:
+        args_string = ''
+
+    # Output values for the operator
+    if outnames is None:
+        outnames = HCTSACatalog().function_outnames(mlab_name)
+    outnames_declaration = ''
+    if len(outnames) > 1:
+        outnames_declaration = '\n' + indent1 + 'outnames = (\'%s\',\n' % outnames[0]
+        visual_indent = indent1 + ' ' * len('outnames = (')
+        outnames_declaration += visual_indent + visual_indent.join('\'%s\',\n' % outname for outname in outnames[1:])
+        outnames_declaration = outnames_declaration[:-2] + ')\n'
+
+    # Constructor body
+    constructor_string = indent2 + 'super(%s, self).__init__(add_descriptors=False)\n' % mlab_name
+    if len(args) > 2:
+        constructor_string += indent2 + indent2.join('self.%s = %s\n' % (param, param) for param in args[2:])
+
+    # eval method
+    if len(args) == 2:
+        eval_method = indent1 + '@staticmethod\n'
+        eval_method += indent1 + 'def eval(engine, x):\n'
+        eval_method += indent2 + 'return %s(engine, x)' % func_name
+    else:
+        eval_method = indent1 + 'def eval(self, engine, x):\n'
+        eval_method += indent2 + 'return %s(engine,\n' % func_name
+        visual_indent = indent2 + ' ' * len('return %s(' % func_name)
+        eval_method += visual_indent + 'x,\n'
+        if len(args) > 3:
+            eval_method += visual_indent + visual_indent.join('%s=self.%s,\n' % (param, param)
+                                                              for param in args[2:-1])
+        eval_method += visual_indent + '%s=self.%s)' % (args[-1], args[-1])
+
+    code = [
+        'class %s(Configurable):' % mlab_name,
+        '%s"""%s"""' % (indent1, docstring),
+        outnames_declaration,
+        indent1 + 'def __init__(self, %s):' % args_string,
+        constructor_string,
+        eval_method,
+        # '\n' + indent1 + 'def text_call(self, varname):',
+        # indent2 + 'pass'
+        # indent2 + 'return \'%s(\%s, %s)\' \% varname' % (mlab_name, 'FIXTHISWITHPY2MATLAB')
+    ]
+    return mlab_name, '\n'.join(code)
+
 
 def gen_python_bindings(hctsa_catalog=None):
     """Generates the python bindings to the library operators."""
@@ -462,22 +556,37 @@ def gen_python_bindings(hctsa_catalog=None):
     # Ensure that the destination python package exists
     ensure_python_package(HCTSA_BINDINGS_DIR)
     with open(BINDINGS_FILE, 'w') as writer:
+        # Bindings imports
+        binding_imports = (
+            'from pyopy.matlab_utils import MatlabSequence',
+            'from oscail.common.config import Configurable')
+        exec '\n'.join(binding_imports) in globals()  # We are using nasty execs around tha need these imports
         # Write the header
         writer.write('# coding=utf-8\n')
-        writer.write('from pyopy.matlab_utils import MatlabSequence\n\n\n')
-        # Write the functions
+        writer.write('\n'.join(binding_imports) + '\n\n\n')
+        # Write the functions and classes
         funcnames = []
+        classnames = []
         for func in sorted(hctsa_catalog.functions_dict.values(), key=lambda f: f.funcname):
             funcname, funcdef = genfunction(func.funcname,
                                             func.params,
                                             func.doc,
                                             hctsa_catalog.function_outnames(func.funcname),
                                             hctsa_catalog.default_parameters(func.funcname))
+            exec funcdef in globals()  # Nasty, but avoids second passes and acts as a sanity check
+            classname, classdef = class_code_from_function(eval(funcname),
+                                                           hctsa_catalog.function_outnames(func.funcname))
+
             writer.write(funcdef)
             writer.write('\n\n\n')
+            writer.write(classdef)
+            writer.write('\n\n\n')
             funcnames.append(funcname)
-        # Write "all operations" tuple
-        writer.write('ALL_OPS = (\n    %s)' % '    '.join('%s,\n' % f for f in funcnames))
+            classnames.append(classname)
+        # Write "all operations" tuples
+        writer.write('ALL_HCTSA_FUNCS = (\n    %s)' % '    '.join('%s,\n' % f for f in funcnames))
+        writer.write('\n\n')
+        writer.write('ALL_HCTSA_CLASSES = (\n    %s)' % '    '.join('%s,\n' % f for f in classnames))
 
 
 ###################################
@@ -527,9 +636,19 @@ def mex_hctsa(engine=None):
     engine.run_text('compile_mex')
 
 
-def add_hctsa_path_to_engine(engine):
-    """Adds HCTSA to the engine path, so it can be used."""
+def prepare_engine_for_hctsa(engine):
+    """Loads HCTSA and octave dependencies in the engine."""
+    # Adds HCTSA to the engine path, so it can be used
     engine.add_path(HCTSA_DIR)
+    # Load dependencies from octave-forge
+    # See also notes on optional package loading:
+    # https://wiki.archlinux.org/index.php/Octave#Using_Octave.27s_installer
+    if isinstance(engine, Oct2PyEngine):
+        engine.run_text('pkg load signal')
+        engine.run_text('pkg load statistics')
+        engine.run_text('pkg load parallel')
+        engine.run_text('pkg load optim')
+        engine.run_text('pkg load econometrics')
 
 
 def install_hctsa(engine='octave'):
@@ -548,10 +667,8 @@ def install_hctsa(engine='octave'):
         engine = PyMatlabEngine()
     # Fix some problems with the codebase
     fix_hctsa()
-    # Fix matrix.h imports
-    fix_hctsa()
     # Add HCTSA to the engine path
-    add_hctsa_path_to_engine(engine)
+    prepare_engine_for_hctsa(engine)
     # Build the mex files
     mex_hctsa(engine)
 
@@ -571,7 +688,18 @@ if __name__ == '__main__':
 #       allow to generate many call lines to group the operations,
 #       run them in data already in matlab-land, so we get rid of the excessive call overhead
 #       probably use one of (rowfun, colfun, cellfun) in matlab land, put in matlab_utils
+#       Interesting :
+#          https://github.com/adambard/functools-for-matlab
+#          (lambdas are slow in matlab)
+#       cellfun is slow in matlab, usually much slower than pathetically slow loops
+#          http://www.mathworks.com/matlabcentral/newsreader/view_thread/253815
+#          http://stackoverflow.com/questions/18284027/cellfun-versus-simple-matlab-loop-performance
+#
 # TODO: Configurable
+#
 # TODO: estimate speed / complexity (hard because it can also depend on outputs)
+#
 # TODO: create tests with outputs from matlab
+#
+# TODO: FeatureCategory to MetaFeature (or MetaOps, as Ben seems to call them)
 #
