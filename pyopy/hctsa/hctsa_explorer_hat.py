@@ -6,7 +6,7 @@ from oscail.common.config import Configurable
 
 from pyopy.hctsa.bindings.hctsa_bindings import HCTSA_SY_SpreadRandomLocal, HCTSA_CO_AddNoise
 from pyopy.hctsa.hctsa_utils import prepare_engine_for_hctsa
-from pyopy.matlab_utils import Oct2PyEngine, py2matlabstr
+from pyopy.matlab_utils import Oct2PyEngine, py2matstr, PyMatBridgeEngine
 import inspect
 
 
@@ -80,7 +80,7 @@ class CO_AddNoise(Configurable):
             if 0 == len(parameters):
                 command = '(@(x)%s(x))' % func_name
             else:
-                command = '(@(x)%s(x, %s))' % (func_name, ', '.join(map(py2matlabstr, parameters)))
+                command = '(@(x)%s(x, %s))' % (func_name, ', '.join(map(py2matstr, parameters)))
 
             if engine is None:
                 return command
@@ -88,54 +88,42 @@ class CO_AddNoise(Configurable):
             raise NotImplementedError('Still need to implement getting a partial in octave-land')
             # engine.run_text()
 
-# print CO_AddNoise().as_partial_call()
-# print CO_AddNoise(meth=None).as_partial_call()
-# print CO_AddNoise(tau=1.2, meth=None).as_partial_call()
-#
-# exit(33)
+partials = (
+    CO_AddNoise().as_partial_call(),
+    CO_AddNoise(meth=None).as_partial_call(),
+    CO_AddNoise(tau=1.2, meth=None).as_partial_call()
+)
 
 
-
-
-def partial_application(self, funcname, *args):
-    # anonymous functions in matlab: f = @(x) ones(x, 200)
-
-    command = 'pyopy_partial_%d = @(x)%s(%s);' % \
-              (self._num_partials,
-               funcname, ','.join(map(py2matlabstr, args)))
-    self._num_partials += 1
-
-
-def arrays2cells():
+def arrays2cells_and_partial():
 
     engine = Oct2PyEngine()
 
-    # Prepare a bit for HCTSA
+    # Prepare for HCTSA
     prepare_engine_for_hctsa(engine)
 
     # Generate data
     arrays = [np.random.randn(size) for size in (100, 500, 100, 35, 200, 130, 230)]
     # To octave land
-    _ = engine.put('x', arrays)
+    _ = engine.put('x', [arrays])  # N.B. needs to be list to make a cell
 
     # cellfun passing lambda (can be useful for partial application and to aggregate operators)
-    # x = engine.run_text('f1=@(x) sum(x + 1)')
     start = time.time()
-    engine.run_text('f1=@(x) SY_SpreadRandomLocal(x, l=\'ac5\')')
-    print engine.run_text('cellfun(f1, x, \'UniformOutput\', 0)')
+    engine.run_command('f1=@(x) SY_SpreadRandomLocal(x, l=\'ac5\')')
+    print engine.run_command('cellfun(f1, x, \'UniformOutput\', 0)', outs2py=True)
     print 'cellfun with partial took %.2f seconds' % (time.time() - start)
     # cellfun with partial took 5.42 seconds
 
     # cellfun without lambda
     start = time.time()
-    print engine.run_text('cellfun(\'SY_SpreadRandomLocal\', x, \'UniformOutput\', 0)')
+    print engine.run_command('cellfun(\'SY_SpreadRandomLocal\', x, \'UniformOutput\', 0)', outs2py=True)
     print 'cellfun took %.2f seconds' % (time.time() - start)
     # cellfun took 43.95 seconds
 
     # python-land loop
     taken = 0
     for array in arrays:
-        array = engine.put('array', array)
+        array = engine.put('blah', array)
         start = time.time()
         HCTSA_SY_SpreadRandomLocal(engine, array)  # even without memory copy hurdles
                                                    # add 0.1s per call because of python introsprection
@@ -147,25 +135,4 @@ def arrays2cells():
 
 if __name__ == '__main__':
 
-    arrays2cells()
-
-    #
-    # engine = Oct2PyEngine()
-    #
-    # x = np.random.randn(100)
-    # print x.shape
-    # xmat = engine.put('x', x)
-    # print xmat.get().shape
-    # engine.run_text('x=x(1,:)')
-    # print xmat.get().shape
-    # engine.run_text('size x')
-    #
-    # import logging
-    # from oct2py import Oct2Py, get_log
-    # oc = Oct2Py(logger=get_log())
-    # oc.logger = get_log('new_log')
-    # oc.logger.setLevel(logging.INFO)
-    # oc.push('x', np.random.randn(100))
-    # print oc.eval_('size x')
-    # print oc.pull('x').shape
-    #
+    arrays2cells_and_partial()

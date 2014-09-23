@@ -33,7 +33,7 @@ from oscail.common.config import Configurable
 
 from pyopy.config import PYOPY_TOOLBOXES_DIR, PYOPY_DIR
 from pyopy.matlab_utils import rename_matlab_func, parse_matlab_funcdef, \
-    parse_matlab_params, matlab_funcname_from_filename, Oct2PyEngine, PyMatlabEngine
+    parse_matlab_params, matlab_funcname_from_filename, Oct2PyEngine, PyMatBridgeEngine
 from pyopy.misc import ensure_python_package
 import inspect
 
@@ -538,12 +538,12 @@ def gen_python_bindings(hctsa_catalog=None):
         body = []
         for i, parameter in enumerate(parameters):
             body.append('    %s %s is None:' % ('if' if i == 0 else 'elif', parameter))
-            body.append('        out = eng.run_function(\'%s\', x, %s)' % (funcname, ', '.join(parameters[0:i])))
+            body.append('        out = eng.run_function(1, \'%s\', x, %s)' % (funcname, ', '.join(parameters[0:i])))
         if not parameters:
-            body.append('    out = eng.run_function(\'%s\', x, %s)' % (funcname, ', '.join(parameters)))
+            body.append('    out = eng.run_function(1, \'%s\', x, %s)' % (funcname, ', '.join(parameters)))
         else:
             body.append('    else:')
-            body.append('        out = eng.run_function(\'%s\', x, %s)' % (funcname, ', '.join(parameters)))
+            body.append('        out = eng.run_function(1, \'%s\', x, %s)' % (funcname, ', '.join(parameters)))
         body.append('    return outfunc(out)')
         body_line = '\n'.join(body)
 
@@ -632,8 +632,8 @@ def mex_hctsa(engine=None):
         comment_matrix_import(op.join(HCTSA_TOOLBOXES_DIR, path))
     # At the moment only OpenTSTool fails to compile under Linux64
     # We will need to modify OpenTSTOOL/mex-dev/makemex.m
-    engine.run_text('cd %s' % HCTSA_TOOLBOXES_DIR)
-    engine.run_text('compile_mex')
+    engine.run_command('cd %s' % HCTSA_TOOLBOXES_DIR)
+    engine.run_command('compile_mex')
 
 
 def prepare_engine_for_hctsa(engine):
@@ -644,11 +644,11 @@ def prepare_engine_for_hctsa(engine):
     # See also notes on optional package loading:
     # https://wiki.archlinux.org/index.php/Octave#Using_Octave.27s_installer
     if isinstance(engine, Oct2PyEngine):
-        engine.run_text('pkg load signal')
-        engine.run_text('pkg load statistics')
-        engine.run_text('pkg load parallel')
-        engine.run_text('pkg load optim')
-        engine.run_text('pkg load econometrics')
+        engine.run_command('pkg load parallel')
+        engine.run_command('pkg load optim')
+        engine.run_command('pkg load signal')
+        engine.run_command('pkg load statistics')
+        engine.run_command('pkg load econometrics')
 
 
 def install_hctsa(engine='octave'):
@@ -664,7 +664,7 @@ def install_hctsa(engine='octave'):
     if engine is None or engine == 'octave':
         engine = Oct2PyEngine()
     elif engine == 'matlab':
-        engine = PyMatlabEngine()
+        engine = PyMatBridgeEngine()
     # Fix some problems with the codebase
     fix_hctsa()
     # Add HCTSA to the engine path

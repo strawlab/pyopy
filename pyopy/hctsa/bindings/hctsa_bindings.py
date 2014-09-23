@@ -43,13 +43,13 @@ def HCTSA_CO_AddNoise(eng, x, tau=1, meth='quantiles', nbins=20):
                                                       'pcrossmean',
                                                       'pdec']}
     if tau is None:
-        out = eng.run_function('CO_AddNoise', x, )
+        out = eng.run_function(1, 'CO_AddNoise', x, )
     elif meth is None:
-        out = eng.run_function('CO_AddNoise', x, tau)
+        out = eng.run_function(1, 'CO_AddNoise', x, tau)
     elif nbins is None:
-        out = eng.run_function('CO_AddNoise', x, tau, meth)
+        out = eng.run_function(1, 'CO_AddNoise', x, tau, meth)
     else:
-        out = eng.run_function('CO_AddNoise', x, tau, meth, nbins)
+        out = eng.run_function(1, 'CO_AddNoise', x, tau, meth, nbins)
     return outfunc(out)
 
 
@@ -136,11 +136,11 @@ def HCTSA_CO_AutoCorr(eng, x, tau=32, WhatMethod='Fourier'):
     def outfunc(out):
         return out
     if tau is None:
-        out = eng.run_function('CO_AutoCorr', x, )
+        out = eng.run_function(1, 'CO_AutoCorr', x, )
     elif WhatMethod is None:
-        out = eng.run_function('CO_AutoCorr', x, tau)
+        out = eng.run_function(1, 'CO_AutoCorr', x, tau)
     else:
-        out = eng.run_function('CO_AutoCorr', x, tau, WhatMethod)
+        out = eng.run_function(1, 'CO_AutoCorr', x, tau, WhatMethod)
     return outfunc(out)
 
 
@@ -226,7 +226,7 @@ def HCTSA_CO_AutoCorrShape(eng, x):
                                                       'nmaxima',
                                                       'nminima',
                                                       'pextrema']}
-    out = eng.run_function('CO_AutoCorrShape', x, )
+    out = eng.run_function(1, 'CO_AutoCorrShape', x, )
     return outfunc(out)
 
 
@@ -324,11 +324,11 @@ def HCTSA_CO_CompareMinAMI(eng, x, meth='std2', nbins=MatlabSequence('2:80')):
                                                       'range',
                                                       'std']}
     if meth is None:
-        out = eng.run_function('CO_CompareMinAMI', x, )
+        out = eng.run_function(1, 'CO_CompareMinAMI', x, )
     elif nbins is None:
-        out = eng.run_function('CO_CompareMinAMI', x, meth)
+        out = eng.run_function(1, 'CO_CompareMinAMI', x, meth)
     else:
-        out = eng.run_function('CO_CompareMinAMI', x, meth, nbins)
+        out = eng.run_function(1, 'CO_CompareMinAMI', x, meth, nbins)
     return outfunc(out)
 
 
@@ -441,9 +441,9 @@ def HCTSA_CO_Embed2(eng, x, tau='tau'):
                                                       'theta_mean',
                                                       'theta_std']}
     if tau is None:
-        out = eng.run_function('CO_Embed2', x, )
+        out = eng.run_function(1, 'CO_Embed2', x, )
     else:
-        out = eng.run_function('CO_Embed2', x, tau)
+        out = eng.run_function(1, 'CO_Embed2', x, tau)
     return outfunc(out)
 
 
@@ -543,9 +543,9 @@ def HCTSA_CO_Embed2_AngleTau(eng, x, maxtau=50):
                                                       'min_thetaac2',
                                                       'min_thetaac3']}
     if maxtau is None:
-        out = eng.run_function('CO_Embed2_AngleTau', x, )
+        out = eng.run_function(1, 'CO_Embed2_AngleTau', x, )
     else:
-        out = eng.run_function('CO_Embed2_AngleTau', x, maxtau)
+        out = eng.run_function(1, 'CO_Embed2_AngleTau', x, maxtau)
     return outfunc(out)
 
 
@@ -640,9 +640,9 @@ def HCTSA_CO_Embed2_Basic(eng, x, tau=1):
                                                       'updiag01',
                                                       'updiag05']}
     if tau is None:
-        out = eng.run_function('CO_Embed2_Basic', x, )
+        out = eng.run_function(1, 'CO_Embed2_Basic', x, )
     else:
-        out = eng.run_function('CO_Embed2_Basic', x, tau)
+        out = eng.run_function(1, 'CO_Embed2_Basic', x, tau)
     return outfunc(out)
 
 
@@ -740,9 +740,9 @@ def HCTSA_CO_Embed2_Dist(eng, x, tau='tau'):
                                                       'd_min',
                                                       'd_std']}
     if tau is None:
-        out = eng.run_function('CO_Embed2_Dist', x, )
+        out = eng.run_function(1, 'CO_Embed2_Dist', x, )
     else:
-        out = eng.run_function('CO_Embed2_Dist', x, tau)
+        out = eng.run_function(1, 'CO_Embed2_Dist', x, tau)
     return outfunc(out)
 
 
@@ -830,13 +830,13 @@ def HCTSA_CO_Embed2_Shapes(eng, x, tau='tau', shape='circle', r=1):
                                                       'std',
                                                       'tau']}
     if tau is None:
-        out = eng.run_function('CO_Embed2_Shapes', x, )
+        out = eng.run_function(1, 'CO_Embed2_Shapes', x, )
     elif shape is None:
-        out = eng.run_function('CO_Embed2_Shapes', x, tau)
+        out = eng.run_function(1, 'CO_Embed2_Shapes', x, tau)
     elif r is None:
-        out = eng.run_function('CO_Embed2_Shapes', x, tau, shape)
+        out = eng.run_function(1, 'CO_Embed2_Shapes', x, tau, shape)
     else:
-        out = eng.run_function('CO_Embed2_Shapes', x, tau, shape, r)
+        out = eng.run_function(1, 'CO_Embed2_Shapes', x, tau, shape, r)
     return outfunc(out)
 
 
@@ -922,9 +922,9 @@ def HCTSA_CO_FirstMin(eng, x, MinWhat='mi'):
     def outfunc(out):
         return out
     if MinWhat is None:
-        out = eng.run_function('CO_FirstMin', x, )
+        out = eng.run_function(1, 'CO_FirstMin', x, )
     else:
-        out = eng.run_function('CO_FirstMin', x, MinWhat)
+        out = eng.run_function(1, 'CO_FirstMin', x, MinWhat)
     return outfunc(out)
 
 
@@ -986,11 +986,11 @@ def HCTSA_CO_FirstZero(eng, x, corrfn='ac', maxtau=None):
     def outfunc(out):
         return out
     if corrfn is None:
-        out = eng.run_function('CO_FirstZero', x, )
+        out = eng.run_function(1, 'CO_FirstZero', x, )
     elif maxtau is None:
-        out = eng.run_function('CO_FirstZero', x, corrfn)
+        out = eng.run_function(1, 'CO_FirstZero', x, corrfn)
     else:
-        out = eng.run_function('CO_FirstZero', x, corrfn, maxtau)
+        out = eng.run_function(1, 'CO_FirstZero', x, corrfn, maxtau)
     return outfunc(out)
 
 
@@ -1064,13 +1064,13 @@ def HCTSA_CO_HistogramAMI(eng, x, tau=2, meth='std2', nbins=10):
     def outfunc(out):
         return out
     if tau is None:
-        out = eng.run_function('CO_HistogramAMI', x, )
+        out = eng.run_function(1, 'CO_HistogramAMI', x, )
     elif meth is None:
-        out = eng.run_function('CO_HistogramAMI', x, tau)
+        out = eng.run_function(1, 'CO_HistogramAMI', x, tau)
     elif nbins is None:
-        out = eng.run_function('CO_HistogramAMI', x, tau, meth)
+        out = eng.run_function(1, 'CO_HistogramAMI', x, tau, meth)
     else:
-        out = eng.run_function('CO_HistogramAMI', x, tau, meth, nbins)
+        out = eng.run_function(1, 'CO_HistogramAMI', x, tau, meth, nbins)
     return outfunc(out)
 
 
@@ -1163,11 +1163,11 @@ def HCTSA_CO_NonlinearAutocorr(eng, x, taus=(0, 4, 5), doabs=None):
     def outfunc(out):
         return out
     if taus is None:
-        out = eng.run_function('CO_NonlinearAutocorr', x, )
+        out = eng.run_function(1, 'CO_NonlinearAutocorr', x, )
     elif doabs is None:
-        out = eng.run_function('CO_NonlinearAutocorr', x, taus)
+        out = eng.run_function(1, 'CO_NonlinearAutocorr', x, taus)
     else:
-        out = eng.run_function('CO_NonlinearAutocorr', x, taus, doabs)
+        out = eng.run_function(1, 'CO_NonlinearAutocorr', x, taus, doabs)
     return outfunc(out)
 
 
@@ -1237,9 +1237,9 @@ def HCTSA_CO_RM_AMInformation(eng, x, tau=10):
     def outfunc(out):
         return out
     if tau is None:
-        out = eng.run_function('CO_RM_AMInformation', x, )
+        out = eng.run_function(1, 'CO_RM_AMInformation', x, )
     else:
-        out = eng.run_function('CO_RM_AMInformation', x, tau)
+        out = eng.run_function(1, 'CO_RM_AMInformation', x, tau)
     return outfunc(out)
 
 
@@ -1357,7 +1357,7 @@ def HCTSA_CO_StickAngles(eng, x):
                                                       'tau_all',
                                                       'tau_n',
                                                       'tau_p']}
-    out = eng.run_function('CO_StickAngles', x, )
+    out = eng.run_function(1, 'CO_StickAngles', x, )
     return outfunc(out)
 
 
@@ -1485,9 +1485,9 @@ def HCTSA_CO_TSTL_AutoCorrMethod(eng, x, maxlag=None):
     def outfunc(out):
         return out
     if maxlag is None:
-        out = eng.run_function('CO_TSTL_AutoCorrMethod', x, )
+        out = eng.run_function(1, 'CO_TSTL_AutoCorrMethod', x, )
     else:
-        out = eng.run_function('CO_TSTL_AutoCorrMethod', x, maxlag)
+        out = eng.run_function(1, 'CO_TSTL_AutoCorrMethod', x, maxlag)
     return outfunc(out)
 
 
@@ -1581,11 +1581,11 @@ def HCTSA_CO_TSTL_amutual(eng, x, maxtau=20, nbins=10):
                                                       'pmodeperiodmax',
                                                       'stdami']}
     if maxtau is None:
-        out = eng.run_function('CO_TSTL_amutual', x, )
+        out = eng.run_function(1, 'CO_TSTL_amutual', x, )
     elif nbins is None:
-        out = eng.run_function('CO_TSTL_amutual', x, maxtau)
+        out = eng.run_function(1, 'CO_TSTL_amutual', x, maxtau)
     else:
-        out = eng.run_function('CO_TSTL_amutual', x, maxtau, nbins)
+        out = eng.run_function(1, 'CO_TSTL_amutual', x, maxtau, nbins)
     return outfunc(out)
 
 
@@ -1745,9 +1745,9 @@ def HCTSA_CO_TSTL_amutual2(eng, x, maxtau=50):
                                                       'pmodeperiodmin',
                                                       'stdami']}
     if maxtau is None:
-        out = eng.run_function('CO_TSTL_amutual2', x, )
+        out = eng.run_function(1, 'CO_TSTL_amutual2', x, )
     else:
-        out = eng.run_function('CO_TSTL_amutual2', x, maxtau)
+        out = eng.run_function(1, 'CO_TSTL_amutual2', x, maxtau)
     return outfunc(out)
 
 
@@ -1900,13 +1900,13 @@ def HCTSA_CO_TranslateShape(eng, x, shape='circle', d=3.5, howtomove='pts'):
                                                       'threes',
                                                       'twos']}
     if shape is None:
-        out = eng.run_function('CO_TranslateShape', x, )
+        out = eng.run_function(1, 'CO_TranslateShape', x, )
     elif d is None:
-        out = eng.run_function('CO_TranslateShape', x, shape)
+        out = eng.run_function(1, 'CO_TranslateShape', x, shape)
     elif howtomove is None:
-        out = eng.run_function('CO_TranslateShape', x, shape, d)
+        out = eng.run_function(1, 'CO_TranslateShape', x, shape, d)
     else:
-        out = eng.run_function('CO_TranslateShape', x, shape, d, howtomove)
+        out = eng.run_function(1, 'CO_TranslateShape', x, shape, d, howtomove)
     return outfunc(out)
 
 
@@ -1990,7 +1990,7 @@ def HCTSA_CO_f1ecac(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('CO_f1ecac', x, )
+    out = eng.run_function(1, 'CO_f1ecac', x, )
     return outfunc(out)
 
 
@@ -2040,13 +2040,13 @@ def HCTSA_CO_fzcglscf(eng, x, alpha=5, beta=10, maxtau=None):
     def outfunc(out):
         return out
     if alpha is None:
-        out = eng.run_function('CO_fzcglscf', x, )
+        out = eng.run_function(1, 'CO_fzcglscf', x, )
     elif beta is None:
-        out = eng.run_function('CO_fzcglscf', x, alpha)
+        out = eng.run_function(1, 'CO_fzcglscf', x, alpha)
     elif maxtau is None:
-        out = eng.run_function('CO_fzcglscf', x, alpha, beta)
+        out = eng.run_function(1, 'CO_fzcglscf', x, alpha, beta)
     else:
-        out = eng.run_function('CO_fzcglscf', x, alpha, beta, maxtau)
+        out = eng.run_function(1, 'CO_fzcglscf', x, alpha, beta, maxtau)
     return outfunc(out)
 
 
@@ -2112,13 +2112,13 @@ def HCTSA_CO_glscf(eng, x, alpha=2, beta=5, tau=2):
     def outfunc(out):
         return out
     if alpha is None:
-        out = eng.run_function('CO_glscf', x, )
+        out = eng.run_function(1, 'CO_glscf', x, )
     elif beta is None:
-        out = eng.run_function('CO_glscf', x, alpha)
+        out = eng.run_function(1, 'CO_glscf', x, alpha)
     elif tau is None:
-        out = eng.run_function('CO_glscf', x, alpha, beta)
+        out = eng.run_function(1, 'CO_glscf', x, alpha, beta)
     else:
-        out = eng.run_function('CO_glscf', x, alpha, beta, tau)
+        out = eng.run_function(1, 'CO_glscf', x, alpha, beta, tau)
     return outfunc(out)
 
 
@@ -2186,9 +2186,9 @@ def HCTSA_CO_tc3(eng, x, tau=1):
                                                       'num',
                                                       'raw']}
     if tau is None:
-        out = eng.run_function('CO_tc3', x, )
+        out = eng.run_function(1, 'CO_tc3', x, )
     else:
-        out = eng.run_function('CO_tc3', x, tau)
+        out = eng.run_function(1, 'CO_tc3', x, tau)
     return outfunc(out)
 
 
@@ -2263,9 +2263,9 @@ def HCTSA_CO_trev(eng, x, tau='ac'):
                                                       'num',
                                                       'raw']}
     if tau is None:
-        out = eng.run_function('CO_trev', x, )
+        out = eng.run_function(1, 'CO_trev', x, )
     else:
-        out = eng.run_function('CO_trev', x, tau)
+        out = eng.run_function(1, 'CO_trev', x, tau)
     return outfunc(out)
 
 
@@ -2385,11 +2385,11 @@ def HCTSA_CP_ML_StepDetect(eng, x, method='kv', params=None):
                                                       'rmsoffpstep',
                                                       's']}
     if method is None:
-        out = eng.run_function('CP_ML_StepDetect', x, )
+        out = eng.run_function(1, 'CP_ML_StepDetect', x, )
     elif params is None:
-        out = eng.run_function('CP_ML_StepDetect', x, method)
+        out = eng.run_function(1, 'CP_ML_StepDetect', x, method)
     else:
-        out = eng.run_function('CP_ML_StepDetect', x, method, params)
+        out = eng.run_function(1, 'CP_ML_StepDetect', x, method, params)
     return outfunc(out)
 
 
@@ -2517,9 +2517,9 @@ def HCTSA_CP_l1pwc_sweep_lambda(eng, x, lambdar=MatlabSequence('0:0.05:0.95')):
                                                       'rmserrsu02',
                                                       'rmserrsu05']}
     if lambdar is None:
-        out = eng.run_function('CP_l1pwc_sweep_lambda', x, )
+        out = eng.run_function(1, 'CP_l1pwc_sweep_lambda', x, )
     else:
-        out = eng.run_function('CP_l1pwc_sweep_lambda', x, lambdar)
+        out = eng.run_function(1, 'CP_l1pwc_sweep_lambda', x, lambdar)
     return outfunc(out)
 
 
@@ -2607,15 +2607,15 @@ def HCTSA_CP_wavelet_varchg(eng, x, wname='db3', level=3, maxnchpts=10, mindelay
     def outfunc(out):
         return out
     if wname is None:
-        out = eng.run_function('CP_wavelet_varchg', x, )
+        out = eng.run_function(1, 'CP_wavelet_varchg', x, )
     elif level is None:
-        out = eng.run_function('CP_wavelet_varchg', x, wname)
+        out = eng.run_function(1, 'CP_wavelet_varchg', x, wname)
     elif maxnchpts is None:
-        out = eng.run_function('CP_wavelet_varchg', x, wname, level)
+        out = eng.run_function(1, 'CP_wavelet_varchg', x, wname, level)
     elif mindelay is None:
-        out = eng.run_function('CP_wavelet_varchg', x, wname, level, maxnchpts)
+        out = eng.run_function(1, 'CP_wavelet_varchg', x, wname, level, maxnchpts)
     else:
-        out = eng.run_function('CP_wavelet_varchg', x, wname, level, maxnchpts, mindelay)
+        out = eng.run_function(1, 'CP_wavelet_varchg', x, wname, level, maxnchpts, mindelay)
     return outfunc(out)
 
 
@@ -2686,7 +2686,7 @@ def HCTSA_DN_Burstiness(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('DN_Burstiness', x, )
+    out = eng.run_function(1, 'DN_Burstiness', x, )
     return outfunc(out)
 
 
@@ -2748,9 +2748,9 @@ def HCTSA_DN_CompareKSFit(eng, x, whatdbn='norm'):
                                                       'peaksepy',
                                                       'relent']}
     if whatdbn is None:
-        out = eng.run_function('DN_CompareKSFit', x, )
+        out = eng.run_function(1, 'DN_CompareKSFit', x, )
     else:
-        out = eng.run_function('DN_CompareKSFit', x, whatdbn)
+        out = eng.run_function(1, 'DN_CompareKSFit', x, whatdbn)
     return outfunc(out)
 
 
@@ -2814,7 +2814,7 @@ def HCTSA_DN_Compare_zscore(eng, x):
         return {outname: out[outname] for outname in ['entropy',
                                                       'max',
                                                       'numpeaks']}
-    out = eng.run_function('DN_Compare_zscore', x, )
+    out = eng.run_function(1, 'DN_Compare_zscore', x, )
     return outfunc(out)
 
 
@@ -2869,9 +2869,9 @@ def HCTSA_DN_Cumulants(eng, x, whatcum=None):
     def outfunc(out):
         return out
     if whatcum is None:
-        out = eng.run_function('DN_Cumulants', x, )
+        out = eng.run_function(1, 'DN_Cumulants', x, )
     else:
-        out = eng.run_function('DN_Cumulants', x, whatcum)
+        out = eng.run_function(1, 'DN_Cumulants', x, whatcum)
     return outfunc(out)
 
 
@@ -2926,9 +2926,9 @@ def HCTSA_DN_CustomSkewness(eng, x, whichskew='pearson'):
     def outfunc(out):
         return out
     if whichskew is None:
-        out = eng.run_function('DN_CustomSkewness', x, )
+        out = eng.run_function(1, 'DN_CustomSkewness', x, )
     else:
-        out = eng.run_function('DN_CustomSkewness', x, whichskew)
+        out = eng.run_function(1, 'DN_CustomSkewness', x, whichskew)
     return outfunc(out)
 
 
@@ -3015,9 +3015,9 @@ def HCTSA_DN_FitKernelSmooth(eng, x, varargin='numcross'):
                                                       'numcross_050',
                                                       'plsym']}
     if varargin is None:
-        out = eng.run_function('DN_FitKernelSmooth', x, )
+        out = eng.run_function(1, 'DN_FitKernelSmooth', x, )
     else:
-        out = eng.run_function('DN_FitKernelSmooth', x, varargin)
+        out = eng.run_function(1, 'DN_FitKernelSmooth', x, varargin)
     return outfunc(out)
 
 
@@ -3108,9 +3108,9 @@ def HCTSA_DN_Fit_mle(eng, x, fitwhat='geometric'):
                                                       'mean',
                                                       'std']}
     if fitwhat is None:
-        out = eng.run_function('DN_Fit_mle', x, )
+        out = eng.run_function(1, 'DN_Fit_mle', x, )
     else:
-        out = eng.run_function('DN_Fit_mle', x, fitwhat)
+        out = eng.run_function(1, 'DN_Fit_mle', x, fitwhat)
     return outfunc(out)
 
 
@@ -3162,7 +3162,7 @@ def HCTSA_DN_HighLowMu(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('DN_HighLowMu', x, )
+    out = eng.run_function(1, 'DN_HighLowMu', x, )
     return outfunc(out)
 
 
@@ -3208,9 +3208,9 @@ def HCTSA_DN_HistogramMode(eng, x, nbins=10):
     def outfunc(out):
         return out
     if nbins is None:
-        out = eng.run_function('DN_HistogramMode', x, )
+        out = eng.run_function(1, 'DN_HistogramMode', x, )
     else:
-        out = eng.run_function('DN_HistogramMode', x, nbins)
+        out = eng.run_function(1, 'DN_HistogramMode', x, nbins)
     return outfunc(out)
 
 
@@ -3265,9 +3265,9 @@ def HCTSA_DN_Mean(eng, x, meantype='median'):
     def outfunc(out):
         return out
     if meantype is None:
-        out = eng.run_function('DN_Mean', x, )
+        out = eng.run_function(1, 'DN_Mean', x, )
     else:
-        out = eng.run_function('DN_Mean', x, meantype)
+        out = eng.run_function(1, 'DN_Mean', x, meantype)
     return outfunc(out)
 
 
@@ -3321,9 +3321,9 @@ def HCTSA_DN_MinMax(eng, x, minormax='max'):
     def outfunc(out):
         return out
     if minormax is None:
-        out = eng.run_function('DN_MinMax', x, )
+        out = eng.run_function(1, 'DN_MinMax', x, )
     else:
-        out = eng.run_function('DN_MinMax', x, minormax)
+        out = eng.run_function(1, 'DN_MinMax', x, minormax)
     return outfunc(out)
 
 
@@ -3371,9 +3371,9 @@ def HCTSA_DN_Moments(eng, x, n=3):
     def outfunc(out):
         return out
     if n is None:
-        out = eng.run_function('DN_Moments', x, )
+        out = eng.run_function(1, 'DN_Moments', x, )
     else:
-        out = eng.run_function('DN_Moments', x, n)
+        out = eng.run_function(1, 'DN_Moments', x, n)
     return outfunc(out)
 
 
@@ -3480,11 +3480,11 @@ def HCTSA_DN_OutlierInclude(eng, x, howth='abs', inc=None):
                                                       'xcmerr1',
                                                       'xcmerrn1']}
     if howth is None:
-        out = eng.run_function('DN_OutlierInclude', x, )
+        out = eng.run_function(1, 'DN_OutlierInclude', x, )
     elif inc is None:
-        out = eng.run_function('DN_OutlierInclude', x, howth)
+        out = eng.run_function(1, 'DN_OutlierInclude', x, howth)
     else:
-        out = eng.run_function('DN_OutlierInclude', x, howth, inc)
+        out = eng.run_function(1, 'DN_OutlierInclude', x, howth, inc)
     return outfunc(out)
 
 
@@ -3600,11 +3600,11 @@ def HCTSA_DN_OutlierTest(eng, x, p=2, justme=None):
         return {outname: out[outname] for outname in ['mean',
                                                       'std']}
     if p is None:
-        out = eng.run_function('DN_OutlierTest', x, )
+        out = eng.run_function(1, 'DN_OutlierTest', x, )
     elif justme is None:
-        out = eng.run_function('DN_OutlierTest', x, p)
+        out = eng.run_function(1, 'DN_OutlierTest', x, p)
     else:
-        out = eng.run_function('DN_OutlierTest', x, p, justme)
+        out = eng.run_function(1, 'DN_OutlierTest', x, p, justme)
     return outfunc(out)
 
 
@@ -3665,9 +3665,9 @@ def HCTSA_DN_ProportionValues(eng, x, propwhat='positive'):
     def outfunc(out):
         return out
     if propwhat is None:
-        out = eng.run_function('DN_ProportionValues', x, )
+        out = eng.run_function(1, 'DN_ProportionValues', x, )
     else:
-        out = eng.run_function('DN_ProportionValues', x, propwhat)
+        out = eng.run_function(1, 'DN_ProportionValues', x, propwhat)
     return outfunc(out)
 
 
@@ -3718,9 +3718,9 @@ def HCTSA_DN_Quantile(eng, x, p=0.6):
     def outfunc(out):
         return out
     if p is None:
-        out = eng.run_function('DN_Quantile', x, )
+        out = eng.run_function(1, 'DN_Quantile', x, )
     else:
-        out = eng.run_function('DN_Quantile', x, p)
+        out = eng.run_function(1, 'DN_Quantile', x, p)
     return outfunc(out)
 
 
@@ -3794,11 +3794,11 @@ def HCTSA_DN_RemovePoints(eng, x, howtorem='absclose', p=0.1):
                                                       'std',
                                                       'sumabsacfdiff']}
     if howtorem is None:
-        out = eng.run_function('DN_RemovePoints', x, )
+        out = eng.run_function(1, 'DN_RemovePoints', x, )
     elif p is None:
-        out = eng.run_function('DN_RemovePoints', x, howtorem)
+        out = eng.run_function(1, 'DN_RemovePoints', x, howtorem)
     else:
-        out = eng.run_function('DN_RemovePoints', x, howtorem, p)
+        out = eng.run_function(1, 'DN_RemovePoints', x, howtorem, p)
     return outfunc(out)
 
 
@@ -3909,11 +3909,11 @@ def HCTSA_DN_SimpleFit(eng, x, dmodel='exp1', nbins=0):
                                                       'resruns',
                                                       'rmse']}
     if dmodel is None:
-        out = eng.run_function('DN_SimpleFit', x, )
+        out = eng.run_function(1, 'DN_SimpleFit', x, )
     elif nbins is None:
-        out = eng.run_function('DN_SimpleFit', x, dmodel)
+        out = eng.run_function(1, 'DN_SimpleFit', x, dmodel)
     else:
-        out = eng.run_function('DN_SimpleFit', x, dmodel, nbins)
+        out = eng.run_function(1, 'DN_SimpleFit', x, dmodel, nbins)
     return outfunc(out)
 
 
@@ -4003,9 +4003,9 @@ def HCTSA_DN_Spread(eng, x, SpreadMeasure='std'):
     def outfunc(out):
         return out
     if SpreadMeasure is None:
-        out = eng.run_function('DN_Spread', x, )
+        out = eng.run_function(1, 'DN_Spread', x, )
     else:
-        out = eng.run_function('DN_Spread', x, SpreadMeasure)
+        out = eng.run_function(1, 'DN_Spread', x, SpreadMeasure)
     return outfunc(out)
 
 
@@ -4059,9 +4059,9 @@ def HCTSA_DN_TrimmedMean(eng, x, n=2):
     def outfunc(out):
         return out
     if n is None:
-        out = eng.run_function('DN_TrimmedMean', x, )
+        out = eng.run_function(1, 'DN_TrimmedMean', x, )
     else:
-        out = eng.run_function('DN_TrimmedMean', x, n)
+        out = eng.run_function(1, 'DN_TrimmedMean', x, n)
     return outfunc(out)
 
 
@@ -4108,9 +4108,9 @@ def HCTSA_DN_Withinp(eng, x, p=3):
     def outfunc(out):
         return out
     if p is None:
-        out = eng.run_function('DN_Withinp', x, )
+        out = eng.run_function(1, 'DN_Withinp', x, )
     else:
-        out = eng.run_function('DN_Withinp', x, p)
+        out = eng.run_function(1, 'DN_Withinp', x, p)
     return outfunc(out)
 
 
@@ -4157,9 +4157,9 @@ def HCTSA_DN_cv(eng, x, k=4):
     def outfunc(out):
         return out
     if k is None:
-        out = eng.run_function('DN_cv', x, )
+        out = eng.run_function(1, 'DN_cv', x, )
     else:
-        out = eng.run_function('DN_cv', x, k)
+        out = eng.run_function(1, 'DN_cv', x, k)
     return outfunc(out)
 
 
@@ -4205,7 +4205,7 @@ def HCTSA_DN_nlogL_norm(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('DN_nlogL_norm', x, )
+    out = eng.run_function(1, 'DN_nlogL_norm', x, )
     return outfunc(out)
 
 
@@ -4253,9 +4253,9 @@ def HCTSA_DN_pleft(eng, x, th=0.1):
     def outfunc(out):
         return out
     if th is None:
-        out = eng.run_function('DN_pleft', x, )
+        out = eng.run_function(1, 'DN_pleft', x, )
     else:
-        out = eng.run_function('DN_pleft', x, th)
+        out = eng.run_function(1, 'DN_pleft', x, th)
     return outfunc(out)
 
 
@@ -4307,7 +4307,7 @@ def HCTSA_DT_IsSeasonal(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('DT_IsSeasonal', x, )
+    out = eng.run_function(1, 'DT_IsSeasonal', x, )
     return outfunc(out)
 
 
@@ -4359,11 +4359,11 @@ def HCTSA_EN_ApEn(eng, x, mnom=1, rth=0.2):
     def outfunc(out):
         return out
     if mnom is None:
-        out = eng.run_function('EN_ApEn', x, )
+        out = eng.run_function(1, 'EN_ApEn', x, )
     elif rth is None:
-        out = eng.run_function('EN_ApEn', x, mnom)
+        out = eng.run_function(1, 'EN_ApEn', x, mnom)
     else:
-        out = eng.run_function('EN_ApEn', x, mnom, rth)
+        out = eng.run_function(1, 'EN_ApEn', x, mnom, rth)
     return outfunc(out)
 
 
@@ -4428,13 +4428,13 @@ def HCTSA_EN_DistributionEntropy(eng, x, historks='ks', nbins=(), olremp=0.1):
     def outfunc(out):
         return out
     if historks is None:
-        out = eng.run_function('EN_DistributionEntropy', x, )
+        out = eng.run_function(1, 'EN_DistributionEntropy', x, )
     elif nbins is None:
-        out = eng.run_function('EN_DistributionEntropy', x, historks)
+        out = eng.run_function(1, 'EN_DistributionEntropy', x, historks)
     elif olremp is None:
-        out = eng.run_function('EN_DistributionEntropy', x, historks, nbins)
+        out = eng.run_function(1, 'EN_DistributionEntropy', x, historks, nbins)
     else:
-        out = eng.run_function('EN_DistributionEntropy', x, historks, nbins, olremp)
+        out = eng.run_function(1, 'EN_DistributionEntropy', x, historks, nbins, olremp)
     return outfunc(out)
 
 
@@ -4513,11 +4513,11 @@ def HCTSA_EN_MS_shannon(eng, x, nbin=2, depth=2):
                                                       'minent',
                                                       'stdent']}
     if nbin is None:
-        out = eng.run_function('EN_MS_shannon', x, )
+        out = eng.run_function(1, 'EN_MS_shannon', x, )
     elif depth is None:
-        out = eng.run_function('EN_MS_shannon', x, nbin)
+        out = eng.run_function(1, 'EN_MS_shannon', x, nbin)
     else:
-        out = eng.run_function('EN_MS_shannon', x, nbin, depth)
+        out = eng.run_function(1, 'EN_MS_shannon', x, nbin, depth)
     return outfunc(out)
 
 
@@ -4590,9 +4590,9 @@ def HCTSA_EN_PermEn(eng, x, ord_=3):
     def outfunc(out):
         return out
     if ord_ is None:
-        out = eng.run_function('EN_PermEn', x, )
+        out = eng.run_function(1, 'EN_PermEn', x, )
     else:
-        out = eng.run_function('EN_PermEn', x, ord_)
+        out = eng.run_function(1, 'EN_PermEn', x, ord_)
     return outfunc(out)
 
 
@@ -4646,7 +4646,7 @@ def HCTSA_EN_RM_entropy(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('EN_RM_entropy', x, )
+    out = eng.run_function(1, 'EN_RM_entropy', x, )
     return outfunc(out)
 
 
@@ -4794,9 +4794,9 @@ def HCTSA_EN_Randomize(eng, x, howtorand='statdist'):
                                                       'xcn1fexprmse',
                                                       'xcn1hp']}
     if howtorand is None:
-        out = eng.run_function('EN_Randomize', x, )
+        out = eng.run_function(1, 'EN_Randomize', x, )
     else:
-        out = eng.run_function('EN_Randomize', x, howtorand)
+        out = eng.run_function(1, 'EN_Randomize', x, howtorand)
     return outfunc(out)
 
 
@@ -4971,13 +4971,13 @@ def HCTSA_EN_SampEn(eng, x, M=4, r=0.1, preprocess=None):
                                                       'sampen3',
                                                       'sampen4']}
     if M is None:
-        out = eng.run_function('EN_SampEn', x, )
+        out = eng.run_function(1, 'EN_SampEn', x, )
     elif r is None:
-        out = eng.run_function('EN_SampEn', x, M)
+        out = eng.run_function(1, 'EN_SampEn', x, M)
     elif preprocess is None:
-        out = eng.run_function('EN_SampEn', x, M, r)
+        out = eng.run_function(1, 'EN_SampEn', x, M, r)
     else:
-        out = eng.run_function('EN_SampEn', x, M, r, preprocess)
+        out = eng.run_function(1, 'EN_SampEn', x, M, r, preprocess)
     return outfunc(out)
 
 
@@ -5053,7 +5053,7 @@ def HCTSA_EN_Shannonpdf(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('EN_Shannonpdf', x, )
+    out = eng.run_function(1, 'EN_Shannonpdf', x, )
     return outfunc(out)
 
 
@@ -5100,9 +5100,9 @@ def HCTSA_EN_TSentropy(eng, x, q=0.6):
     def outfunc(out):
         return out
     if q is None:
-        out = eng.run_function('EN_TSentropy', x, )
+        out = eng.run_function(1, 'EN_TSentropy', x, )
     else:
-        out = eng.run_function('EN_TSentropy', x, q)
+        out = eng.run_function(1, 'EN_TSentropy', x, q)
     return outfunc(out)
 
 
@@ -5161,11 +5161,11 @@ def HCTSA_EN_wentropy(eng, x, whaten='threshold', p=1):
     def outfunc(out):
         return out
     if whaten is None:
-        out = eng.run_function('EN_wentropy', x, )
+        out = eng.run_function(1, 'EN_wentropy', x, )
     elif p is None:
-        out = eng.run_function('EN_wentropy', x, whaten)
+        out = eng.run_function(1, 'EN_wentropy', x, whaten)
     else:
-        out = eng.run_function('EN_wentropy', x, whaten, p)
+        out = eng.run_function(1, 'EN_wentropy', x, whaten, p)
     return outfunc(out)
 
 
@@ -5250,11 +5250,11 @@ def HCTSA_EX_MovingThreshold(eng, x, a=1, b=0.02):
                                                       'stdkickf',
                                                       'stdq']}
     if a is None:
-        out = eng.run_function('EX_MovingThreshold', x, )
+        out = eng.run_function(1, 'EX_MovingThreshold', x, )
     elif b is None:
-        out = eng.run_function('EX_MovingThreshold', x, a)
+        out = eng.run_function(1, 'EX_MovingThreshold', x, a)
     else:
-        out = eng.run_function('EX_MovingThreshold', x, a, b)
+        out = eng.run_function(1, 'EX_MovingThreshold', x, a, b)
     return outfunc(out)
 
 
@@ -5354,11 +5354,11 @@ def HCTSA_FC_LocalSimple(eng, x, fmeth='mean', ltrain=3):
                                                       'taures',
                                                       'tauresrat']}
     if fmeth is None:
-        out = eng.run_function('FC_LocalSimple', x, )
+        out = eng.run_function(1, 'FC_LocalSimple', x, )
     elif ltrain is None:
-        out = eng.run_function('FC_LocalSimple', x, fmeth)
+        out = eng.run_function(1, 'FC_LocalSimple', x, fmeth)
     else:
-        out = eng.run_function('FC_LocalSimple', x, fmeth, ltrain)
+        out = eng.run_function(1, 'FC_LocalSimple', x, fmeth, ltrain)
     return outfunc(out)
 
 
@@ -5459,9 +5459,9 @@ def HCTSA_FC_LoopLocalSimple(eng, x, fmeth='mean'):
                                                       'sws_stdn',
                                                       'xcorrstdrmserr']}
     if fmeth is None:
-        out = eng.run_function('FC_LoopLocalSimple', x, )
+        out = eng.run_function(1, 'FC_LoopLocalSimple', x, )
     else:
-        out = eng.run_function('FC_LoopLocalSimple', x, fmeth)
+        out = eng.run_function(1, 'FC_LoopLocalSimple', x, fmeth)
     return outfunc(out)
 
 
@@ -5585,17 +5585,17 @@ def HCTSA_FC_Surprise(eng, x, whatinf='dist', memory=50, ng=3, cgmeth='quantile'
                                                       'tstat',
                                                       'uq']}
     if whatinf is None:
-        out = eng.run_function('FC_Surprise', x, )
+        out = eng.run_function(1, 'FC_Surprise', x, )
     elif memory is None:
-        out = eng.run_function('FC_Surprise', x, whatinf)
+        out = eng.run_function(1, 'FC_Surprise', x, whatinf)
     elif ng is None:
-        out = eng.run_function('FC_Surprise', x, whatinf, memory)
+        out = eng.run_function(1, 'FC_Surprise', x, whatinf, memory)
     elif cgmeth is None:
-        out = eng.run_function('FC_Surprise', x, whatinf, memory, ng)
+        out = eng.run_function(1, 'FC_Surprise', x, whatinf, memory, ng)
     elif nits is None:
-        out = eng.run_function('FC_Surprise', x, whatinf, memory, ng, cgmeth)
+        out = eng.run_function(1, 'FC_Surprise', x, whatinf, memory, ng, cgmeth)
     else:
-        out = eng.run_function('FC_Surprise', x, whatinf, memory, ng, cgmeth, nits)
+        out = eng.run_function(1, 'FC_Surprise', x, whatinf, memory, ng, cgmeth, nits)
     return outfunc(out)
 
 
@@ -5720,13 +5720,13 @@ def HCTSA_HT_DistributionTest(eng, x, thetest='ks', thedistn='beta', nbins=None)
     def outfunc(out):
         return out
     if thetest is None:
-        out = eng.run_function('HT_DistributionTest', x, )
+        out = eng.run_function(1, 'HT_DistributionTest', x, )
     elif thedistn is None:
-        out = eng.run_function('HT_DistributionTest', x, thetest)
+        out = eng.run_function(1, 'HT_DistributionTest', x, thetest)
     elif nbins is None:
-        out = eng.run_function('HT_DistributionTest', x, thetest, thedistn)
+        out = eng.run_function(1, 'HT_DistributionTest', x, thetest, thedistn)
     else:
-        out = eng.run_function('HT_DistributionTest', x, thetest, thedistn, nbins)
+        out = eng.run_function(1, 'HT_DistributionTest', x, thetest, thedistn, nbins)
     return outfunc(out)
 
 
@@ -5812,9 +5812,9 @@ def HCTSA_HT_HypothesisTest(eng, x, thetest='runstest'):
     def outfunc(out):
         return out
     if thetest is None:
-        out = eng.run_function('HT_HypothesisTest', x, )
+        out = eng.run_function(1, 'HT_HypothesisTest', x, )
     else:
-        out = eng.run_function('HT_HypothesisTest', x, thetest)
+        out = eng.run_function(1, 'HT_HypothesisTest', x, thetest)
     return outfunc(out)
 
 
@@ -5905,7 +5905,7 @@ def HCTSA_MD_hrv_classic(eng, x):
                                                       'pnn5',
                                                       'tri',
                                                       'vlf']}
-    out = eng.run_function('MD_hrv_classic', x, )
+    out = eng.run_function(1, 'MD_hrv_classic', x, )
     return outfunc(out)
 
 
@@ -6002,7 +6002,7 @@ def HCTSA_MD_pNN(eng, x):
                                                       'pnn70',
                                                       'pnn80',
                                                       'pnn90']}
-    out = eng.run_function('MD_pNN', x, )
+    out = eng.run_function(1, 'MD_pNN', x, )
     return outfunc(out)
 
 
@@ -6087,11 +6087,11 @@ def HCTSA_MD_polvar(eng, x, d=0.1, D=3):
     def outfunc(out):
         return out
     if d is None:
-        out = eng.run_function('MD_polvar', x, )
+        out = eng.run_function(1, 'MD_polvar', x, )
     elif D is None:
-        out = eng.run_function('MD_polvar', x, d)
+        out = eng.run_function(1, 'MD_polvar', x, d)
     else:
-        out = eng.run_function('MD_polvar', x, d, D)
+        out = eng.run_function(1, 'MD_polvar', x, d, D)
     return outfunc(out)
 
 
@@ -6167,7 +6167,7 @@ def HCTSA_MD_rawHRVmeas(eng, x):
                                                       'tri10',
                                                       'tri20',
                                                       'trisqrt']}
-    out = eng.run_function('MD_rawHRVmeas', x, )
+    out = eng.run_function(1, 'MD_rawHRVmeas', x, )
     return outfunc(out)
 
 
@@ -6244,11 +6244,11 @@ def HCTSA_MF_ARMA_orders(eng, x, pr=MatlabSequence('1:6'), qr=MatlabSequence('1:
                                                       'q_aic_opt',
                                                       'std_all_aics']}
     if pr is None:
-        out = eng.run_function('MF_ARMA_orders', x, )
+        out = eng.run_function(1, 'MF_ARMA_orders', x, )
     elif qr is None:
-        out = eng.run_function('MF_ARMA_orders', x, pr)
+        out = eng.run_function(1, 'MF_ARMA_orders', x, pr)
     else:
-        out = eng.run_function('MF_ARMA_orders', x, pr, qr)
+        out = eng.run_function(1, 'MF_ARMA_orders', x, pr, qr)
     return outfunc(out)
 
 
@@ -6333,9 +6333,9 @@ def HCTSA_MF_AR_arcov(eng, x, p=3):
                                                       'rms',
                                                       'std']}
     if p is None:
-        out = eng.run_function('MF_AR_arcov', x, )
+        out = eng.run_function(1, 'MF_AR_arcov', x, )
     else:
-        out = eng.run_function('MF_AR_arcov', x, p)
+        out = eng.run_function(1, 'MF_AR_arcov', x, p)
     return outfunc(out)
 
 
@@ -6421,11 +6421,11 @@ def HCTSA_MF_CompareAR(eng, x, orders=MatlabSequence('1:10'), howtotest=0.5):
                                                       'where01max',
                                                       'whereen4']}
     if orders is None:
-        out = eng.run_function('MF_CompareAR', x, )
+        out = eng.run_function(1, 'MF_CompareAR', x, )
     elif howtotest is None:
-        out = eng.run_function('MF_CompareAR', x, orders)
+        out = eng.run_function(1, 'MF_CompareAR', x, orders)
     else:
-        out = eng.run_function('MF_CompareAR', x, orders, howtotest)
+        out = eng.run_function(1, 'MF_CompareAR', x, orders, howtotest)
     return outfunc(out)
 
 
@@ -6546,17 +6546,17 @@ def HCTSA_MF_CompareTestSets(eng, x, model='ar', ord_='best', howtosubset='unifo
                                                       'stdrats_median',
                                                       'stdrats_std']}
     if model is None:
-        out = eng.run_function('MF_CompareTestSets', x, )
+        out = eng.run_function(1, 'MF_CompareTestSets', x, )
     elif ord_ is None:
-        out = eng.run_function('MF_CompareTestSets', x, model)
+        out = eng.run_function(1, 'MF_CompareTestSets', x, model)
     elif howtosubset is None:
-        out = eng.run_function('MF_CompareTestSets', x, model, ord_)
+        out = eng.run_function(1, 'MF_CompareTestSets', x, model, ord_)
     elif samplep is None:
-        out = eng.run_function('MF_CompareTestSets', x, model, ord_, howtosubset)
+        out = eng.run_function(1, 'MF_CompareTestSets', x, model, ord_, howtosubset)
     elif steps is None:
-        out = eng.run_function('MF_CompareTestSets', x, model, ord_, howtosubset, samplep)
+        out = eng.run_function(1, 'MF_CompareTestSets', x, model, ord_, howtosubset, samplep)
     else:
-        out = eng.run_function('MF_CompareTestSets', x, model, ord_, howtosubset, samplep, steps)
+        out = eng.run_function(1, 'MF_CompareTestSets', x, model, ord_, howtosubset, samplep, steps)
     return outfunc(out)
 
 
@@ -6707,11 +6707,11 @@ def HCTSA_MF_ExpSmoothing(eng, x, ntrain=0.5, alpha='best'):
                                                       'sbc1',
                                                       'stde']}
     if ntrain is None:
-        out = eng.run_function('MF_ExpSmoothing', x, )
+        out = eng.run_function(1, 'MF_ExpSmoothing', x, )
     elif alpha is None:
-        out = eng.run_function('MF_ExpSmoothing', x, ntrain)
+        out = eng.run_function(1, 'MF_ExpSmoothing', x, ntrain)
     else:
-        out = eng.run_function('MF_ExpSmoothing', x, ntrain, alpha)
+        out = eng.run_function(1, 'MF_ExpSmoothing', x, ntrain, alpha)
     return outfunc(out)
 
 
@@ -6881,15 +6881,15 @@ def HCTSA_MF_FitSubsegments(eng, x, model='ar', order=2, howtosubset='uniform', 
                                                       'sbcs_range',
                                                       'sbcs_std']}
     if model is None:
-        out = eng.run_function('MF_FitSubsegments', x, )
+        out = eng.run_function(1, 'MF_FitSubsegments', x, )
     elif order is None:
-        out = eng.run_function('MF_FitSubsegments', x, model)
+        out = eng.run_function(1, 'MF_FitSubsegments', x, model)
     elif howtosubset is None:
-        out = eng.run_function('MF_FitSubsegments', x, model, order)
+        out = eng.run_function(1, 'MF_FitSubsegments', x, model, order)
     elif samplep is None:
-        out = eng.run_function('MF_FitSubsegments', x, model, order, howtosubset)
+        out = eng.run_function(1, 'MF_FitSubsegments', x, model, order, howtosubset)
     else:
-        out = eng.run_function('MF_FitSubsegments', x, model, order, howtosubset, samplep)
+        out = eng.run_function(1, 'MF_FitSubsegments', x, model, order, howtosubset, samplep)
     return outfunc(out)
 
 
@@ -7064,13 +7064,13 @@ def HCTSA_MF_GARCHcompare(eng, x, preproc='ar', pr=MatlabSequence('1:3'), qr=Mat
                                                       'min_meanarchps',
                                                       'min_meanlbqps']}
     if preproc is None:
-        out = eng.run_function('MF_GARCHcompare', x, )
+        out = eng.run_function(1, 'MF_GARCHcompare', x, )
     elif pr is None:
-        out = eng.run_function('MF_GARCHcompare', x, preproc)
+        out = eng.run_function(1, 'MF_GARCHcompare', x, preproc)
     elif qr is None:
-        out = eng.run_function('MF_GARCHcompare', x, preproc, pr)
+        out = eng.run_function(1, 'MF_GARCHcompare', x, preproc, pr)
     else:
-        out = eng.run_function('MF_GARCHcompare', x, preproc, pr, qr)
+        out = eng.run_function(1, 'MF_GARCHcompare', x, preproc, pr, qr)
     return outfunc(out)
 
 
@@ -7280,11 +7280,11 @@ def HCTSA_MF_GARCHfit(eng, x, preproc='ar', params="'R',2,'M',1,'P',2,'Q',1"):
                                                       'stdsigma',
                                                       'summaryexitflag']}
     if preproc is None:
-        out = eng.run_function('MF_GARCHfit', x, )
+        out = eng.run_function(1, 'MF_GARCHfit', x, )
     elif params is None:
-        out = eng.run_function('MF_GARCHfit', x, preproc)
+        out = eng.run_function(1, 'MF_GARCHfit', x, preproc)
     else:
-        out = eng.run_function('MF_GARCHfit', x, preproc, params)
+        out = eng.run_function(1, 'MF_GARCHfit', x, preproc, params)
     return outfunc(out)
 
 
@@ -7461,11 +7461,11 @@ def HCTSA_MF_GP_FitAcross(eng, x, covfunc=('covSum', ('covSEiso', 'covNoise')), 
                                                       'stdS',
                                                       'stdmu']}
     if covfunc is None:
-        out = eng.run_function('MF_GP_FitAcross', x, )
+        out = eng.run_function(1, 'MF_GP_FitAcross', x, )
     elif npoints is None:
-        out = eng.run_function('MF_GP_FitAcross', x, covfunc)
+        out = eng.run_function(1, 'MF_GP_FitAcross', x, covfunc)
     else:
-        out = eng.run_function('MF_GP_FitAcross', x, covfunc, npoints)
+        out = eng.run_function(1, 'MF_GP_FitAcross', x, covfunc, npoints)
     return outfunc(out)
 
 
@@ -7541,15 +7541,15 @@ def HCTSA_MF_GP_LearnHyperp(eng, x, nfevals=None, t=None, y=None, init_loghyper=
     def outfunc(out):
         return out
     if nfevals is None:
-        out = eng.run_function('MF_GP_LearnHyperp', x, )
+        out = eng.run_function(1, 'MF_GP_LearnHyperp', x, )
     elif t is None:
-        out = eng.run_function('MF_GP_LearnHyperp', x, nfevals)
+        out = eng.run_function(1, 'MF_GP_LearnHyperp', x, nfevals)
     elif y is None:
-        out = eng.run_function('MF_GP_LearnHyperp', x, nfevals, t)
+        out = eng.run_function(1, 'MF_GP_LearnHyperp', x, nfevals, t)
     elif init_loghyper is None:
-        out = eng.run_function('MF_GP_LearnHyperp', x, nfevals, t, y)
+        out = eng.run_function(1, 'MF_GP_LearnHyperp', x, nfevals, t, y)
     else:
-        out = eng.run_function('MF_GP_LearnHyperp', x, nfevals, t, y, init_loghyper)
+        out = eng.run_function(1, 'MF_GP_LearnHyperp', x, nfevals, t, y, init_loghyper)
     return outfunc(out)
 
 
@@ -7657,17 +7657,17 @@ def HCTSA_MF_GP_LocalPrediction(eng, x, covfunc=('covSum', ('covSEiso', 'covNois
                                                       'stdlogh3',
                                                       'stdmlik']}
     if covfunc is None:
-        out = eng.run_function('MF_GP_LocalPrediction', x, )
+        out = eng.run_function(1, 'MF_GP_LocalPrediction', x, )
     elif ntrain is None:
-        out = eng.run_function('MF_GP_LocalPrediction', x, covfunc)
+        out = eng.run_function(1, 'MF_GP_LocalPrediction', x, covfunc)
     elif ntest is None:
-        out = eng.run_function('MF_GP_LocalPrediction', x, covfunc, ntrain)
+        out = eng.run_function(1, 'MF_GP_LocalPrediction', x, covfunc, ntrain)
     elif npreds is None:
-        out = eng.run_function('MF_GP_LocalPrediction', x, covfunc, ntrain, ntest)
+        out = eng.run_function(1, 'MF_GP_LocalPrediction', x, covfunc, ntrain, ntest)
     elif pmode is None:
-        out = eng.run_function('MF_GP_LocalPrediction', x, covfunc, ntrain, ntest, npreds)
+        out = eng.run_function(1, 'MF_GP_LocalPrediction', x, covfunc, ntrain, ntest, npreds)
     else:
-        out = eng.run_function('MF_GP_LocalPrediction', x, covfunc, ntrain, ntest, npreds, pmode)
+        out = eng.run_function(1, 'MF_GP_LocalPrediction', x, covfunc, ntrain, ntest, npreds, pmode)
     return outfunc(out)
 
 
@@ -7806,15 +7806,15 @@ def HCTSA_MF_GP_hyperparameters(eng, x, covfunc=('covSum', ('covSEiso', 'covNois
                                                       'std_S_data',
                                                       'std_mu_data']}
     if covfunc is None:
-        out = eng.run_function('MF_GP_hyperparameters', x, )
+        out = eng.run_function(1, 'MF_GP_hyperparameters', x, )
     elif squishorsquash is None:
-        out = eng.run_function('MF_GP_hyperparameters', x, covfunc)
+        out = eng.run_function(1, 'MF_GP_hyperparameters', x, covfunc)
     elif maxN is None:
-        out = eng.run_function('MF_GP_hyperparameters', x, covfunc, squishorsquash)
+        out = eng.run_function(1, 'MF_GP_hyperparameters', x, covfunc, squishorsquash)
     elif methds is None:
-        out = eng.run_function('MF_GP_hyperparameters', x, covfunc, squishorsquash, maxN)
+        out = eng.run_function(1, 'MF_GP_hyperparameters', x, covfunc, squishorsquash, maxN)
     else:
-        out = eng.run_function('MF_GP_hyperparameters', x, covfunc, squishorsquash, maxN, methds)
+        out = eng.run_function(1, 'MF_GP_hyperparameters', x, covfunc, squishorsquash, maxN, methds)
     return outfunc(out)
 
 
@@ -7907,7 +7907,7 @@ def HCTSA_MF_ResidualAnalysis(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('MF_ResidualAnalysis', x, )
+    out = eng.run_function(1, 'MF_ResidualAnalysis', x, )
     return outfunc(out)
 
 
@@ -7971,9 +7971,9 @@ def HCTSA_MF_StateSpaceCompOrder(eng, x, maxorder=8):
                                                       'minlossfn',
                                                       'ndownaic']}
     if maxorder is None:
-        out = eng.run_function('MF_StateSpaceCompOrder', x, )
+        out = eng.run_function(1, 'MF_StateSpaceCompOrder', x, )
     else:
-        out = eng.run_function('MF_StateSpaceCompOrder', x, maxorder)
+        out = eng.run_function(1, 'MF_StateSpaceCompOrder', x, maxorder)
     return outfunc(out)
 
 
@@ -8103,13 +8103,13 @@ def HCTSA_MF_StateSpace_n4sid(eng, x, ord_=3, ptrain=0.5, steps=1):
                                                       'stde',
                                                       'x0mod']}
     if ord_ is None:
-        out = eng.run_function('MF_StateSpace_n4sid', x, )
+        out = eng.run_function(1, 'MF_StateSpace_n4sid', x, )
     elif ptrain is None:
-        out = eng.run_function('MF_StateSpace_n4sid', x, ord_)
+        out = eng.run_function(1, 'MF_StateSpace_n4sid', x, ord_)
     elif steps is None:
-        out = eng.run_function('MF_StateSpace_n4sid', x, ord_, ptrain)
+        out = eng.run_function(1, 'MF_StateSpace_n4sid', x, ord_, ptrain)
     else:
-        out = eng.run_function('MF_StateSpace_n4sid', x, ord_, ptrain, steps)
+        out = eng.run_function(1, 'MF_StateSpace_n4sid', x, ord_, ptrain, steps)
     return outfunc(out)
 
 
@@ -8308,13 +8308,13 @@ def HCTSA_MF_arfit(eng, x, pmin=1, pmax=8, selector='sbc'):
                                                       'sumA',
                                                       'sumsqA']}
     if pmin is None:
-        out = eng.run_function('MF_arfit', x, )
+        out = eng.run_function(1, 'MF_arfit', x, )
     elif pmax is None:
-        out = eng.run_function('MF_arfit', x, pmin)
+        out = eng.run_function(1, 'MF_arfit', x, pmin)
     elif selector is None:
-        out = eng.run_function('MF_arfit', x, pmin, pmax)
+        out = eng.run_function(1, 'MF_arfit', x, pmin, pmax)
     else:
-        out = eng.run_function('MF_arfit', x, pmin, pmax, selector)
+        out = eng.run_function(1, 'MF_arfit', x, pmin, pmax, selector)
     return outfunc(out)
 
 
@@ -8503,13 +8503,13 @@ def HCTSA_MF_armax(eng, x, orders=(2, 2), ptrain=0.5, nsteps=1):
                                                       'sbc1',
                                                       'stde']}
     if orders is None:
-        out = eng.run_function('MF_armax', x, )
+        out = eng.run_function(1, 'MF_armax', x, )
     elif ptrain is None:
-        out = eng.run_function('MF_armax', x, orders)
+        out = eng.run_function(1, 'MF_armax', x, orders)
     elif nsteps is None:
-        out = eng.run_function('MF_armax', x, orders, ptrain)
+        out = eng.run_function(1, 'MF_armax', x, orders, ptrain)
     else:
-        out = eng.run_function('MF_armax', x, orders, ptrain, nsteps)
+        out = eng.run_function(1, 'MF_armax', x, orders, ptrain, nsteps)
     return outfunc(out)
 
 
@@ -8643,11 +8643,11 @@ def HCTSA_MF_hmm_CompareNStates(eng, x, trainp=0.6, nstater=MatlabSequence('2:4'
                                                       'meanLLtrain',
                                                       'meandiffLLtt']}
     if trainp is None:
-        out = eng.run_function('MF_hmm_CompareNStates', x, )
+        out = eng.run_function(1, 'MF_hmm_CompareNStates', x, )
     elif nstater is None:
-        out = eng.run_function('MF_hmm_CompareNStates', x, trainp)
+        out = eng.run_function(1, 'MF_hmm_CompareNStates', x, trainp)
     else:
-        out = eng.run_function('MF_hmm_CompareNStates', x, trainp, nstater)
+        out = eng.run_function(1, 'MF_hmm_CompareNStates', x, trainp, nstater)
     return outfunc(out)
 
 
@@ -8742,11 +8742,11 @@ def HCTSA_MF_hmm_fit(eng, x, trainp=0.7, nstates=3):
                                                       'stdP',
                                                       'stdmeanP']}
     if trainp is None:
-        out = eng.run_function('MF_hmm_fit', x, )
+        out = eng.run_function(1, 'MF_hmm_fit', x, )
     elif nstates is None:
-        out = eng.run_function('MF_hmm_fit', x, trainp)
+        out = eng.run_function(1, 'MF_hmm_fit', x, trainp)
     else:
-        out = eng.run_function('MF_hmm_fit', x, trainp, nstates)
+        out = eng.run_function(1, 'MF_hmm_fit', x, trainp, nstates)
     return outfunc(out)
 
 
@@ -8859,13 +8859,13 @@ def HCTSA_MF_steps_ahead(eng, x, model='ar', order='best', maxsteps=6):
                                                       'rmserr_6',
                                                       'stddiffrms']}
     if model is None:
-        out = eng.run_function('MF_steps_ahead', x, )
+        out = eng.run_function(1, 'MF_steps_ahead', x, )
     elif order is None:
-        out = eng.run_function('MF_steps_ahead', x, model)
+        out = eng.run_function(1, 'MF_steps_ahead', x, model)
     elif maxsteps is None:
-        out = eng.run_function('MF_steps_ahead', x, model, order)
+        out = eng.run_function(1, 'MF_steps_ahead', x, model, order)
     else:
-        out = eng.run_function('MF_steps_ahead', x, model, order, maxsteps)
+        out = eng.run_function(1, 'MF_steps_ahead', x, model, order, maxsteps)
     return outfunc(out)
 
 
@@ -9052,11 +9052,11 @@ def HCTSA_NL_BoxCorrDim(eng, x, nbins=50, embedparams=('ac', 5)):
                                                       'stdmean',
                                                       'stdmedian']}
     if nbins is None:
-        out = eng.run_function('NL_BoxCorrDim', x, )
+        out = eng.run_function(1, 'NL_BoxCorrDim', x, )
     elif embedparams is None:
-        out = eng.run_function('NL_BoxCorrDim', x, nbins)
+        out = eng.run_function(1, 'NL_BoxCorrDim', x, nbins)
     else:
-        out = eng.run_function('NL_BoxCorrDim', x, nbins, embedparams)
+        out = eng.run_function(1, 'NL_BoxCorrDim', x, nbins, embedparams)
     return outfunc(out)
 
 
@@ -9277,17 +9277,17 @@ def HCTSA_NL_CaosMethod(eng, x, maxdim=10, tau='mi', NNR=2, Nref=100, justanum=N
                                                       'std1',
                                                       'std2']}
     if maxdim is None:
-        out = eng.run_function('NL_CaosMethod', x, )
+        out = eng.run_function(1, 'NL_CaosMethod', x, )
     elif tau is None:
-        out = eng.run_function('NL_CaosMethod', x, maxdim)
+        out = eng.run_function(1, 'NL_CaosMethod', x, maxdim)
     elif NNR is None:
-        out = eng.run_function('NL_CaosMethod', x, maxdim, tau)
+        out = eng.run_function(1, 'NL_CaosMethod', x, maxdim, tau)
     elif Nref is None:
-        out = eng.run_function('NL_CaosMethod', x, maxdim, tau, NNR)
+        out = eng.run_function(1, 'NL_CaosMethod', x, maxdim, tau, NNR)
     elif justanum is None:
-        out = eng.run_function('NL_CaosMethod', x, maxdim, tau, NNR, Nref)
+        out = eng.run_function(1, 'NL_CaosMethod', x, maxdim, tau, NNR, Nref)
     else:
-        out = eng.run_function('NL_CaosMethod', x, maxdim, tau, NNR, Nref, justanum)
+        out = eng.run_function(1, 'NL_CaosMethod', x, maxdim, tau, NNR, Nref, justanum)
     return outfunc(out)
 
 
@@ -9438,11 +9438,11 @@ def HCTSA_NL_MS_LZcomplexity(eng, x, n=7, preproc='diff'):
     def outfunc(out):
         return out
     if n is None:
-        out = eng.run_function('NL_MS_LZcomplexity', x, )
+        out = eng.run_function(1, 'NL_MS_LZcomplexity', x, )
     elif preproc is None:
-        out = eng.run_function('NL_MS_LZcomplexity', x, n)
+        out = eng.run_function(1, 'NL_MS_LZcomplexity', x, n)
     else:
-        out = eng.run_function('NL_MS_LZcomplexity', x, n, preproc)
+        out = eng.run_function(1, 'NL_MS_LZcomplexity', x, n, preproc)
     return outfunc(out)
 
 
@@ -9546,19 +9546,19 @@ def HCTSA_NL_MS_fnn(eng, x, de=MatlabSequence('1:10'), tau='mi', th=5, kth=1, ju
                                                       'pfnn_9',
                                                       'stdpfnn']}
     if de is None:
-        out = eng.run_function('NL_MS_fnn', x, )
+        out = eng.run_function(1, 'NL_MS_fnn', x, )
     elif tau is None:
-        out = eng.run_function('NL_MS_fnn', x, de)
+        out = eng.run_function(1, 'NL_MS_fnn', x, de)
     elif th is None:
-        out = eng.run_function('NL_MS_fnn', x, de, tau)
+        out = eng.run_function(1, 'NL_MS_fnn', x, de, tau)
     elif kth is None:
-        out = eng.run_function('NL_MS_fnn', x, de, tau, th)
+        out = eng.run_function(1, 'NL_MS_fnn', x, de, tau, th)
     elif justbest is None:
-        out = eng.run_function('NL_MS_fnn', x, de, tau, th, kth)
+        out = eng.run_function(1, 'NL_MS_fnn', x, de, tau, th, kth)
     elif bestp is None:
-        out = eng.run_function('NL_MS_fnn', x, de, tau, th, kth, justbest)
+        out = eng.run_function(1, 'NL_MS_fnn', x, de, tau, th, kth, justbest)
     else:
-        out = eng.run_function('NL_MS_fnn', x, de, tau, th, kth, justbest, bestp)
+        out = eng.run_function(1, 'NL_MS_fnn', x, de, tau, th, kth, justbest, bestp)
     return outfunc(out)
 
 
@@ -9699,13 +9699,13 @@ def HCTSA_NL_MS_nlpe(eng, x, de='fnn', tau='mi', maxN=None):
                                                       'sbc1',
                                                       'stde']}
     if de is None:
-        out = eng.run_function('NL_MS_nlpe', x, )
+        out = eng.run_function(1, 'NL_MS_nlpe', x, )
     elif tau is None:
-        out = eng.run_function('NL_MS_nlpe', x, de)
+        out = eng.run_function(1, 'NL_MS_nlpe', x, de)
     elif maxN is None:
-        out = eng.run_function('NL_MS_nlpe', x, de, tau)
+        out = eng.run_function(1, 'NL_MS_nlpe', x, de, tau)
     else:
-        out = eng.run_function('NL_MS_nlpe', x, de, tau, maxN)
+        out = eng.run_function(1, 'NL_MS_nlpe', x, de, tau, maxN)
     return outfunc(out)
 
 
@@ -9839,15 +9839,15 @@ def HCTSA_NL_TISEAN_c1(eng, x, tau=1, mmm=(1, 7), tsep=0.02, Nref=0.5):
                                                       'mind',
                                                       'ranged']}
     if tau is None:
-        out = eng.run_function('NL_TISEAN_c1', x, )
+        out = eng.run_function(1, 'NL_TISEAN_c1', x, )
     elif mmm is None:
-        out = eng.run_function('NL_TISEAN_c1', x, tau)
+        out = eng.run_function(1, 'NL_TISEAN_c1', x, tau)
     elif tsep is None:
-        out = eng.run_function('NL_TISEAN_c1', x, tau, mmm)
+        out = eng.run_function(1, 'NL_TISEAN_c1', x, tau, mmm)
     elif Nref is None:
-        out = eng.run_function('NL_TISEAN_c1', x, tau, mmm, tsep)
+        out = eng.run_function(1, 'NL_TISEAN_c1', x, tau, mmm, tsep)
     else:
-        out = eng.run_function('NL_TISEAN_c1', x, tau, mmm, tsep, Nref)
+        out = eng.run_function(1, 'NL_TISEAN_c1', x, tau, mmm, tsep, Nref)
     return outfunc(out)
 
 
@@ -10028,13 +10028,13 @@ def HCTSA_NL_TISEAN_d2(eng, x, tau=1, maxm=10, theilerwin=0):
                                                       'takens05mmin_ri',
                                                       'takens05mmin_stabled']}
     if tau is None:
-        out = eng.run_function('NL_TISEAN_d2', x, )
+        out = eng.run_function(1, 'NL_TISEAN_d2', x, )
     elif maxm is None:
-        out = eng.run_function('NL_TISEAN_d2', x, tau)
+        out = eng.run_function(1, 'NL_TISEAN_d2', x, tau)
     elif theilerwin is None:
-        out = eng.run_function('NL_TISEAN_d2', x, tau, maxm)
+        out = eng.run_function(1, 'NL_TISEAN_d2', x, tau, maxm)
     else:
-        out = eng.run_function('NL_TISEAN_d2', x, tau, maxm, theilerwin)
+        out = eng.run_function(1, 'NL_TISEAN_d2', x, tau, maxm, theilerwin)
     return outfunc(out)
 
 
@@ -10218,23 +10218,23 @@ def HCTSA_NL_TSTL_FractalDimensions(eng, x, kmin=2, kmax=100, Nref=0.2, gstart=1
                                                       'rangeDq',
                                                       'rangeq']}
     if kmin is None:
-        out = eng.run_function('NL_TSTL_FractalDimensions', x, )
+        out = eng.run_function(1, 'NL_TSTL_FractalDimensions', x, )
     elif kmax is None:
-        out = eng.run_function('NL_TSTL_FractalDimensions', x, kmin)
+        out = eng.run_function(1, 'NL_TSTL_FractalDimensions', x, kmin)
     elif Nref is None:
-        out = eng.run_function('NL_TSTL_FractalDimensions', x, kmin, kmax)
+        out = eng.run_function(1, 'NL_TSTL_FractalDimensions', x, kmin, kmax)
     elif gstart is None:
-        out = eng.run_function('NL_TSTL_FractalDimensions', x, kmin, kmax, Nref)
+        out = eng.run_function(1, 'NL_TSTL_FractalDimensions', x, kmin, kmax, Nref)
     elif gend is None:
-        out = eng.run_function('NL_TSTL_FractalDimensions', x, kmin, kmax, Nref, gstart)
+        out = eng.run_function(1, 'NL_TSTL_FractalDimensions', x, kmin, kmax, Nref, gstart)
     elif past is None:
-        out = eng.run_function('NL_TSTL_FractalDimensions', x, kmin, kmax, Nref, gstart, gend)
+        out = eng.run_function(1, 'NL_TSTL_FractalDimensions', x, kmin, kmax, Nref, gstart, gend)
     elif steps is None:
-        out = eng.run_function('NL_TSTL_FractalDimensions', x, kmin, kmax, Nref, gstart, gend, past)
+        out = eng.run_function(1, 'NL_TSTL_FractalDimensions', x, kmin, kmax, Nref, gstart, gend, past)
     elif embedparams is None:
-        out = eng.run_function('NL_TSTL_FractalDimensions', x, kmin, kmax, Nref, gstart, gend, past, steps)
+        out = eng.run_function(1, 'NL_TSTL_FractalDimensions', x, kmin, kmax, Nref, gstart, gend, past, steps)
     else:
-        out = eng.run_function('NL_TSTL_FractalDimensions', x, kmin, kmax, Nref, gstart, gend, past, steps, embedparams)
+        out = eng.run_function(1, 'NL_TSTL_FractalDimensions', x, kmin, kmax, Nref, gstart, gend, past, steps, embedparams)
     return outfunc(out)
 
 
@@ -10383,19 +10383,19 @@ def HCTSA_NL_TSTL_GPCorrSum(eng, x, Nref=-1, r=0.1, thwin=40, nbins=20, embedpar
                                                       'robfitresmeanabs',
                                                       'robfitresmeansq']}
     if Nref is None:
-        out = eng.run_function('NL_TSTL_GPCorrSum', x, )
+        out = eng.run_function(1, 'NL_TSTL_GPCorrSum', x, )
     elif r is None:
-        out = eng.run_function('NL_TSTL_GPCorrSum', x, Nref)
+        out = eng.run_function(1, 'NL_TSTL_GPCorrSum', x, Nref)
     elif thwin is None:
-        out = eng.run_function('NL_TSTL_GPCorrSum', x, Nref, r)
+        out = eng.run_function(1, 'NL_TSTL_GPCorrSum', x, Nref, r)
     elif nbins is None:
-        out = eng.run_function('NL_TSTL_GPCorrSum', x, Nref, r, thwin)
+        out = eng.run_function(1, 'NL_TSTL_GPCorrSum', x, Nref, r, thwin)
     elif embedparams is None:
-        out = eng.run_function('NL_TSTL_GPCorrSum', x, Nref, r, thwin, nbins)
+        out = eng.run_function(1, 'NL_TSTL_GPCorrSum', x, Nref, r, thwin, nbins)
     elif dotwo is None:
-        out = eng.run_function('NL_TSTL_GPCorrSum', x, Nref, r, thwin, nbins, embedparams)
+        out = eng.run_function(1, 'NL_TSTL_GPCorrSum', x, Nref, r, thwin, nbins, embedparams)
     else:
-        out = eng.run_function('NL_TSTL_GPCorrSum', x, Nref, r, thwin, nbins, embedparams, dotwo)
+        out = eng.run_function(1, 'NL_TSTL_GPCorrSum', x, Nref, r, thwin, nbins, embedparams, dotwo)
     return outfunc(out)
 
 
@@ -10550,17 +10550,17 @@ def HCTSA_NL_TSTL_LargestLyap(eng, x, Nref=0.5, maxtstep=0.1, past=0.01, NNR=3, 
                                                       'vse_minbad',
                                                       'vse_rmsres']}
     if Nref is None:
-        out = eng.run_function('NL_TSTL_LargestLyap', x, )
+        out = eng.run_function(1, 'NL_TSTL_LargestLyap', x, )
     elif maxtstep is None:
-        out = eng.run_function('NL_TSTL_LargestLyap', x, Nref)
+        out = eng.run_function(1, 'NL_TSTL_LargestLyap', x, Nref)
     elif past is None:
-        out = eng.run_function('NL_TSTL_LargestLyap', x, Nref, maxtstep)
+        out = eng.run_function(1, 'NL_TSTL_LargestLyap', x, Nref, maxtstep)
     elif NNR is None:
-        out = eng.run_function('NL_TSTL_LargestLyap', x, Nref, maxtstep, past)
+        out = eng.run_function(1, 'NL_TSTL_LargestLyap', x, Nref, maxtstep, past)
     elif embedparams is None:
-        out = eng.run_function('NL_TSTL_LargestLyap', x, Nref, maxtstep, past, NNR)
+        out = eng.run_function(1, 'NL_TSTL_LargestLyap', x, Nref, maxtstep, past, NNR)
     else:
-        out = eng.run_function('NL_TSTL_LargestLyap', x, Nref, maxtstep, past, NNR, embedparams)
+        out = eng.run_function(1, 'NL_TSTL_LargestLyap', x, Nref, maxtstep, past, NNR, embedparams)
     return outfunc(out)
 
 
@@ -10737,11 +10737,11 @@ def HCTSA_NL_TSTL_PoincareSection(eng, x, ref='max', embedparams=('ac', 3)):
                                                       'zerospbox10',
                                                       'zerospbox5']}
     if ref is None:
-        out = eng.run_function('NL_TSTL_PoincareSection', x, )
+        out = eng.run_function(1, 'NL_TSTL_PoincareSection', x, )
     elif embedparams is None:
-        out = eng.run_function('NL_TSTL_PoincareSection', x, ref)
+        out = eng.run_function(1, 'NL_TSTL_PoincareSection', x, ref)
     else:
-        out = eng.run_function('NL_TSTL_PoincareSection', x, ref, embedparams)
+        out = eng.run_function(1, 'NL_TSTL_PoincareSection', x, ref, embedparams)
     return outfunc(out)
 
 
@@ -10890,17 +10890,17 @@ def HCTSA_NL_TSTL_ReturnTime(eng, x, NNR=0.05, maxT=1, past=0.05, Nref=-1, embed
                                                       'std',
                                                       'stdpeaksep']}
     if NNR is None:
-        out = eng.run_function('NL_TSTL_ReturnTime', x, )
+        out = eng.run_function(1, 'NL_TSTL_ReturnTime', x, )
     elif maxT is None:
-        out = eng.run_function('NL_TSTL_ReturnTime', x, NNR)
+        out = eng.run_function(1, 'NL_TSTL_ReturnTime', x, NNR)
     elif past is None:
-        out = eng.run_function('NL_TSTL_ReturnTime', x, NNR, maxT)
+        out = eng.run_function(1, 'NL_TSTL_ReturnTime', x, NNR, maxT)
     elif Nref is None:
-        out = eng.run_function('NL_TSTL_ReturnTime', x, NNR, maxT, past)
+        out = eng.run_function(1, 'NL_TSTL_ReturnTime', x, NNR, maxT, past)
     elif embedparams is None:
-        out = eng.run_function('NL_TSTL_ReturnTime', x, NNR, maxT, past, Nref)
+        out = eng.run_function(1, 'NL_TSTL_ReturnTime', x, NNR, maxT, past, Nref)
     else:
-        out = eng.run_function('NL_TSTL_ReturnTime', x, NNR, maxT, past, Nref, embedparams)
+        out = eng.run_function(1, 'NL_TSTL_ReturnTime', x, NNR, maxT, past, Nref, embedparams)
     return outfunc(out)
 
 
@@ -11000,15 +11000,15 @@ def HCTSA_NL_TSTL_TakensEstimator(eng, x, Nref=-1, rad=0.05, past=0.05, embedpar
     def outfunc(out):
         return out
     if Nref is None:
-        out = eng.run_function('NL_TSTL_TakensEstimator', x, )
+        out = eng.run_function(1, 'NL_TSTL_TakensEstimator', x, )
     elif rad is None:
-        out = eng.run_function('NL_TSTL_TakensEstimator', x, Nref)
+        out = eng.run_function(1, 'NL_TSTL_TakensEstimator', x, Nref)
     elif past is None:
-        out = eng.run_function('NL_TSTL_TakensEstimator', x, Nref, rad)
+        out = eng.run_function(1, 'NL_TSTL_TakensEstimator', x, Nref, rad)
     elif embedparams is None:
-        out = eng.run_function('NL_TSTL_TakensEstimator', x, Nref, rad, past)
+        out = eng.run_function(1, 'NL_TSTL_TakensEstimator', x, Nref, rad, past)
     else:
-        out = eng.run_function('NL_TSTL_TakensEstimator', x, Nref, rad, past, embedparams)
+        out = eng.run_function(1, 'NL_TSTL_TakensEstimator', x, Nref, rad, past, embedparams)
     return outfunc(out)
 
 
@@ -11147,17 +11147,17 @@ def HCTSA_NL_TSTL_acp(eng, x, tau='mi', past=1, maxdelay=((), 10, ()), maxdim=No
                                                       'sacpf_9',
                                                       'stdmacpfdiff']}
     if tau is None:
-        out = eng.run_function('NL_TSTL_acp', x, )
+        out = eng.run_function(1, 'NL_TSTL_acp', x, )
     elif past is None:
-        out = eng.run_function('NL_TSTL_acp', x, tau)
+        out = eng.run_function(1, 'NL_TSTL_acp', x, tau)
     elif maxdelay is None:
-        out = eng.run_function('NL_TSTL_acp', x, tau, past)
+        out = eng.run_function(1, 'NL_TSTL_acp', x, tau, past)
     elif maxdim is None:
-        out = eng.run_function('NL_TSTL_acp', x, tau, past, maxdelay)
+        out = eng.run_function(1, 'NL_TSTL_acp', x, tau, past, maxdelay)
     elif Nref is None:
-        out = eng.run_function('NL_TSTL_acp', x, tau, past, maxdelay, maxdim)
+        out = eng.run_function(1, 'NL_TSTL_acp', x, tau, past, maxdelay, maxdim)
     else:
-        out = eng.run_function('NL_TSTL_acp', x, tau, past, maxdelay, maxdim, Nref)
+        out = eng.run_function(1, 'NL_TSTL_acp', x, tau, past, maxdelay, maxdim, Nref)
     return outfunc(out)
 
 
@@ -11501,11 +11501,11 @@ def HCTSA_NL_TSTL_dimensions(eng, x, nbins=50, embedparams=('ac', 'cao')):
                                                       'scr_in_mopt_scaling_exp',
                                                       'scr_in_mopt_scaling_int']}
     if nbins is None:
-        out = eng.run_function('NL_TSTL_dimensions', x, )
+        out = eng.run_function(1, 'NL_TSTL_dimensions', x, )
     elif embedparams is None:
-        out = eng.run_function('NL_TSTL_dimensions', x, nbins)
+        out = eng.run_function(1, 'NL_TSTL_dimensions', x, nbins)
     else:
-        out = eng.run_function('NL_TSTL_dimensions', x, nbins, embedparams)
+        out = eng.run_function(1, 'NL_TSTL_dimensions', x, nbins, embedparams)
     return outfunc(out)
 
 
@@ -11792,15 +11792,15 @@ def HCTSA_NL_crptool_fnn(eng, x, maxm=10, r=2, taum='ac', th=None):
                                                       'mdrop',
                                                       'pdrop']}
     if maxm is None:
-        out = eng.run_function('NL_crptool_fnn', x, )
+        out = eng.run_function(1, 'NL_crptool_fnn', x, )
     elif r is None:
-        out = eng.run_function('NL_crptool_fnn', x, maxm)
+        out = eng.run_function(1, 'NL_crptool_fnn', x, maxm)
     elif taum is None:
-        out = eng.run_function('NL_crptool_fnn', x, maxm, r)
+        out = eng.run_function(1, 'NL_crptool_fnn', x, maxm, r)
     elif th is None:
-        out = eng.run_function('NL_crptool_fnn', x, maxm, r, taum)
+        out = eng.run_function(1, 'NL_crptool_fnn', x, maxm, r, taum)
     else:
-        out = eng.run_function('NL_crptool_fnn', x, maxm, r, taum, th)
+        out = eng.run_function(1, 'NL_crptool_fnn', x, maxm, r, taum, th)
     return outfunc(out)
 
 
@@ -11901,11 +11901,11 @@ def HCTSA_NL_embed_PCA(eng, x, tau='mi', m=10):
                                                       'std',
                                                       'top2']}
     if tau is None:
-        out = eng.run_function('NL_embed_PCA', x, )
+        out = eng.run_function(1, 'NL_embed_PCA', x, )
     elif m is None:
-        out = eng.run_function('NL_embed_PCA', x, tau)
+        out = eng.run_function(1, 'NL_embed_PCA', x, tau)
     else:
-        out = eng.run_function('NL_embed_PCA', x, tau, m)
+        out = eng.run_function(1, 'NL_embed_PCA', x, tau, m)
     return outfunc(out)
 
 
@@ -12049,11 +12049,11 @@ def HCTSA_NW_VisibilityGraph(eng, x, meth='horiz', maxL=None):
                                                       'rangek',
                                                       'stdk']}
     if meth is None:
-        out = eng.run_function('NW_VisibilityGraph', x, )
+        out = eng.run_function(1, 'NW_VisibilityGraph', x, )
     elif maxL is None:
-        out = eng.run_function('NW_VisibilityGraph', x, meth)
+        out = eng.run_function(1, 'NW_VisibilityGraph', x, meth)
     else:
-        out = eng.run_function('NW_VisibilityGraph', x, meth, maxL)
+        out = eng.run_function(1, 'NW_VisibilityGraph', x, meth, maxL)
     return outfunc(out)
 
 
@@ -12193,7 +12193,7 @@ def HCTSA_PD_PeriodicityWang(eng, x):
                                                       'th5',
                                                       'th6',
                                                       'th7']}
-    out = eng.run_function('PD_PeriodicityWang', x, )
+    out = eng.run_function(1, 'PD_PeriodicityWang', x, )
     return outfunc(out)
 
 
@@ -12299,11 +12299,11 @@ def HCTSA_PH_ForcePotential(eng, x, whatpot='dblwell', params=(1, 0.2, 0.1)):
                                                       'std',
                                                       'tau']}
     if whatpot is None:
-        out = eng.run_function('PH_ForcePotential', x, )
+        out = eng.run_function(1, 'PH_ForcePotential', x, )
     elif params is None:
-        out = eng.run_function('PH_ForcePotential', x, whatpot)
+        out = eng.run_function(1, 'PH_ForcePotential', x, whatpot)
     else:
-        out = eng.run_function('PH_ForcePotential', x, whatpot, params)
+        out = eng.run_function(1, 'PH_ForcePotential', x, whatpot, params)
     return outfunc(out)
 
 
@@ -12450,11 +12450,11 @@ def HCTSA_PH_Walker(eng, x, walkerrule='prop', wparam=0.9):
                                                       'w_std',
                                                       'w_tau']}
     if walkerrule is None:
-        out = eng.run_function('PH_Walker', x, )
+        out = eng.run_function(1, 'PH_Walker', x, )
     elif wparam is None:
-        out = eng.run_function('PH_Walker', x, walkerrule)
+        out = eng.run_function(1, 'PH_Walker', x, walkerrule)
     else:
-        out = eng.run_function('PH_Walker', x, walkerrule, wparam)
+        out = eng.run_function(1, 'PH_Walker', x, walkerrule, wparam)
     return outfunc(out)
 
 
@@ -12659,9 +12659,9 @@ def HCTSA_PP_Compare(eng, x, detrndmeth='medianf4'):
                                                       'swss5_1',
                                                       'swss5_2']}
     if detrndmeth is None:
-        out = eng.run_function('PP_Compare', x, )
+        out = eng.run_function(1, 'PP_Compare', x, )
     else:
-        out = eng.run_function('PP_Compare', x, detrndmeth)
+        out = eng.run_function(1, 'PP_Compare', x, detrndmeth)
     return outfunc(out)
 
 
@@ -12857,9 +12857,9 @@ def HCTSA_PP_Iterate(eng, x, detrndmeth='diff'):
                                                       'xcn1_lin',
                                                       'xcn1_trend']}
     if detrndmeth is None:
-        out = eng.run_function('PP_Iterate', x, )
+        out = eng.run_function(1, 'PP_Iterate', x, )
     else:
-        out = eng.run_function('PP_Iterate', x, detrndmeth)
+        out = eng.run_function(1, 'PP_Iterate', x, detrndmeth)
     return outfunc(out)
 
 
@@ -12993,11 +12993,11 @@ def HCTSA_PP_ModelFit(eng, x, model='ar', order=2):
                                                       'rmserrrat_peaks_08_d1',
                                                       'rmserrrat_rmgd']}
     if model is None:
-        out = eng.run_function('PP_ModelFit', x, )
+        out = eng.run_function(1, 'PP_ModelFit', x, )
     elif order is None:
-        out = eng.run_function('PP_ModelFit', x, model)
+        out = eng.run_function(1, 'PP_ModelFit', x, model)
     else:
-        out = eng.run_function('PP_ModelFit', x, model, order)
+        out = eng.run_function(1, 'PP_ModelFit', x, model, order)
     return outfunc(out)
 
 
@@ -13095,15 +13095,15 @@ def HCTSA_PP_PreProcess(eng, x, choosebest=None, order=None, beatthis=None, dosp
     def outfunc(out):
         return out
     if choosebest is None:
-        out = eng.run_function('PP_PreProcess', x, )
+        out = eng.run_function(1, 'PP_PreProcess', x, )
     elif order is None:
-        out = eng.run_function('PP_PreProcess', x, choosebest)
+        out = eng.run_function(1, 'PP_PreProcess', x, choosebest)
     elif beatthis is None:
-        out = eng.run_function('PP_PreProcess', x, choosebest, order)
+        out = eng.run_function(1, 'PP_PreProcess', x, choosebest, order)
     elif dospectral is None:
-        out = eng.run_function('PP_PreProcess', x, choosebest, order, beatthis)
+        out = eng.run_function(1, 'PP_PreProcess', x, choosebest, order, beatthis)
     else:
-        out = eng.run_function('PP_PreProcess', x, choosebest, order, beatthis, dospectral)
+        out = eng.run_function(1, 'PP_PreProcess', x, choosebest, order, beatthis, dospectral)
     return outfunc(out)
 
 
@@ -13170,7 +13170,7 @@ def HCTSA_RN_Gaussian(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('RN_Gaussian', x, )
+    out = eng.run_function(1, 'RN_Gaussian', x, )
     return outfunc(out)
 
 
@@ -13244,9 +13244,9 @@ def HCTSA_SB_BinaryStats(eng, x, binarymeth='diff'):
                                                       'stdstretch1',
                                                       'stdstretchrat']}
     if binarymeth is None:
-        out = eng.run_function('SB_BinaryStats', x, )
+        out = eng.run_function(1, 'SB_BinaryStats', x, )
     else:
-        out = eng.run_function('SB_BinaryStats', x, binarymeth)
+        out = eng.run_function(1, 'SB_BinaryStats', x, binarymeth)
     return outfunc(out)
 
 
@@ -13328,9 +13328,9 @@ def HCTSA_SB_BinaryStretch(eng, x, stretchwhat='lseq0'):
     def outfunc(out):
         return out
     if stretchwhat is None:
-        out = eng.run_function('SB_BinaryStretch', x, )
+        out = eng.run_function(1, 'SB_BinaryStretch', x, )
     else:
-        out = eng.run_function('SB_BinaryStretch', x, stretchwhat)
+        out = eng.run_function(1, 'SB_BinaryStretch', x, stretchwhat)
     return outfunc(out)
 
 
@@ -13386,11 +13386,11 @@ def HCTSA_SB_CoarseGrain(eng, x, howtocg=None, ng=None):
     def outfunc(out):
         return out
     if howtocg is None:
-        out = eng.run_function('SB_CoarseGrain', x, )
+        out = eng.run_function(1, 'SB_CoarseGrain', x, )
     elif ng is None:
-        out = eng.run_function('SB_CoarseGrain', x, howtocg)
+        out = eng.run_function(1, 'SB_CoarseGrain', x, howtocg)
     else:
-        out = eng.run_function('SB_CoarseGrain', x, howtocg, ng)
+        out = eng.run_function(1, 'SB_CoarseGrain', x, howtocg, ng)
     return outfunc(out)
 
 
@@ -13568,9 +13568,9 @@ def HCTSA_SB_MotifThree(eng, x, trit='diffquant'):
                                                       'hhh',
                                                       'hhhh']}
     if trit is None:
-        out = eng.run_function('SB_MotifThree', x, )
+        out = eng.run_function(1, 'SB_MotifThree', x, )
     else:
-        out = eng.run_function('SB_MotifThree', x, trit)
+        out = eng.run_function(1, 'SB_MotifThree', x, trit)
     return outfunc(out)
 
 
@@ -13790,9 +13790,9 @@ def HCTSA_SB_MotifTwo(eng, x, bint='mean'):
                                                       'uuud',
                                                       'uuuu']}
     if bint is None:
-        out = eng.run_function('SB_MotifTwo', x, )
+        out = eng.run_function(1, 'SB_MotifTwo', x, )
     else:
-        out = eng.run_function('SB_MotifTwo', x, bint)
+        out = eng.run_function(1, 'SB_MotifTwo', x, bint)
     return outfunc(out)
 
 
@@ -13930,13 +13930,13 @@ def HCTSA_SB_TransitionMatrix(eng, x, discmeth='quantile', ng=2, tau=1):
                                                       'symdiff',
                                                       'symsumdiff']}
     if discmeth is None:
-        out = eng.run_function('SB_TransitionMatrix', x, )
+        out = eng.run_function(1, 'SB_TransitionMatrix', x, )
     elif ng is None:
-        out = eng.run_function('SB_TransitionMatrix', x, discmeth)
+        out = eng.run_function(1, 'SB_TransitionMatrix', x, discmeth)
     elif tau is None:
-        out = eng.run_function('SB_TransitionMatrix', x, discmeth, ng)
+        out = eng.run_function(1, 'SB_TransitionMatrix', x, discmeth, ng)
     else:
-        out = eng.run_function('SB_TransitionMatrix', x, discmeth, ng, tau)
+        out = eng.run_function(1, 'SB_TransitionMatrix', x, discmeth, ng, tau)
     return outfunc(out)
 
 
@@ -14092,11 +14092,11 @@ def HCTSA_SB_TransitionpAlphabet(eng, x, ng=MatlabSequence('2:40'), tau=1):
                                                       'trflin10adjr2',
                                                       'trflin5_adjr2']}
     if ng is None:
-        out = eng.run_function('SB_TransitionpAlphabet', x, )
+        out = eng.run_function(1, 'SB_TransitionpAlphabet', x, )
     elif tau is None:
-        out = eng.run_function('SB_TransitionpAlphabet', x, ng)
+        out = eng.run_function(1, 'SB_TransitionpAlphabet', x, ng)
     else:
-        out = eng.run_function('SB_TransitionpAlphabet', x, ng, tau)
+        out = eng.run_function(1, 'SB_TransitionpAlphabet', x, ng, tau)
     return outfunc(out)
 
 
@@ -14294,19 +14294,19 @@ def HCTSA_SC_FluctAnal(eng, x, q=2, wtf='dfa', taustep=2, k=2, lag=(), loginc=0)
                                                       'ssr',
                                                       'stats_coeffcorr']}
     if q is None:
-        out = eng.run_function('SC_FluctAnal', x, )
+        out = eng.run_function(1, 'SC_FluctAnal', x, )
     elif wtf is None:
-        out = eng.run_function('SC_FluctAnal', x, q)
+        out = eng.run_function(1, 'SC_FluctAnal', x, q)
     elif taustep is None:
-        out = eng.run_function('SC_FluctAnal', x, q, wtf)
+        out = eng.run_function(1, 'SC_FluctAnal', x, q, wtf)
     elif k is None:
-        out = eng.run_function('SC_FluctAnal', x, q, wtf, taustep)
+        out = eng.run_function(1, 'SC_FluctAnal', x, q, wtf, taustep)
     elif lag is None:
-        out = eng.run_function('SC_FluctAnal', x, q, wtf, taustep, k)
+        out = eng.run_function(1, 'SC_FluctAnal', x, q, wtf, taustep, k)
     elif loginc is None:
-        out = eng.run_function('SC_FluctAnal', x, q, wtf, taustep, k, lag)
+        out = eng.run_function(1, 'SC_FluctAnal', x, q, wtf, taustep, k, lag)
     else:
-        out = eng.run_function('SC_FluctAnal', x, q, wtf, taustep, k, lag, loginc)
+        out = eng.run_function(1, 'SC_FluctAnal', x, q, wtf, taustep, k, lag, loginc)
     return outfunc(out)
 
 
@@ -14453,7 +14453,7 @@ def HCTSA_SC_HurstExponent(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('SC_HurstExponent', x, )
+    out = eng.run_function(1, 'SC_HurstExponent', x, )
     return outfunc(out)
 
 
@@ -14499,7 +14499,7 @@ def HCTSA_SC_fastdfa(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('SC_fastdfa', x, )
+    out = eng.run_function(1, 'SC_fastdfa', x, )
     return outfunc(out)
 
 
@@ -14562,13 +14562,13 @@ def HCTSA_SD_MakeSurrogates(eng, x, surrmethod=None, nsurrs=None, extrap=None):
     def outfunc(out):
         return out
     if surrmethod is None:
-        out = eng.run_function('SD_MakeSurrogates', x, )
+        out = eng.run_function(1, 'SD_MakeSurrogates', x, )
     elif nsurrs is None:
-        out = eng.run_function('SD_MakeSurrogates', x, surrmethod)
+        out = eng.run_function(1, 'SD_MakeSurrogates', x, surrmethod)
     elif extrap is None:
-        out = eng.run_function('SD_MakeSurrogates', x, surrmethod, nsurrs)
+        out = eng.run_function(1, 'SD_MakeSurrogates', x, surrmethod, nsurrs)
     else:
-        out = eng.run_function('SD_MakeSurrogates', x, surrmethod, nsurrs, extrap)
+        out = eng.run_function(1, 'SD_MakeSurrogates', x, surrmethod, nsurrs, extrap)
     return outfunc(out)
 
 
@@ -14695,15 +14695,15 @@ def HCTSA_SD_SurrogateTest(eng, x, surrmeth='RP', nsurrs=99, extrap=(), teststat
                                                       'tc3_prank',
                                                       'tc3_zscore']}
     if surrmeth is None:
-        out = eng.run_function('SD_SurrogateTest', x, )
+        out = eng.run_function(1, 'SD_SurrogateTest', x, )
     elif nsurrs is None:
-        out = eng.run_function('SD_SurrogateTest', x, surrmeth)
+        out = eng.run_function(1, 'SD_SurrogateTest', x, surrmeth)
     elif extrap is None:
-        out = eng.run_function('SD_SurrogateTest', x, surrmeth, nsurrs)
+        out = eng.run_function(1, 'SD_SurrogateTest', x, surrmeth, nsurrs)
     elif teststat is None:
-        out = eng.run_function('SD_SurrogateTest', x, surrmeth, nsurrs, extrap)
+        out = eng.run_function(1, 'SD_SurrogateTest', x, surrmeth, nsurrs, extrap)
     else:
-        out = eng.run_function('SD_SurrogateTest', x, surrmeth, nsurrs, extrap, teststat)
+        out = eng.run_function(1, 'SD_SurrogateTest', x, surrmeth, nsurrs, extrap, teststat)
     return outfunc(out)
 
 
@@ -14844,15 +14844,15 @@ def HCTSA_SD_TSTL_surrogates(eng, x, tau='mi', nsurr=100, surrmethod=1, surrfn='
                                                       'stdsurr',
                                                       'ztestp']}
     if tau is None:
-        out = eng.run_function('SD_TSTL_surrogates', x, )
+        out = eng.run_function(1, 'SD_TSTL_surrogates', x, )
     elif nsurr is None:
-        out = eng.run_function('SD_TSTL_surrogates', x, tau)
+        out = eng.run_function(1, 'SD_TSTL_surrogates', x, tau)
     elif surrmethod is None:
-        out = eng.run_function('SD_TSTL_surrogates', x, tau, nsurr)
+        out = eng.run_function(1, 'SD_TSTL_surrogates', x, tau, nsurr)
     elif surrfn is None:
-        out = eng.run_function('SD_TSTL_surrogates', x, tau, nsurr, surrmethod)
+        out = eng.run_function(1, 'SD_TSTL_surrogates', x, tau, nsurr, surrmethod)
     else:
-        out = eng.run_function('SD_TSTL_surrogates', x, tau, nsurr, surrmethod, surrfn)
+        out = eng.run_function(1, 'SD_TSTL_surrogates', x, tau, nsurr, surrmethod, surrfn)
     return outfunc(out)
 
 
@@ -15114,17 +15114,17 @@ def HCTSA_SP_Summaries(eng, x, psdmeth='periodogram', wmeth='hamming', nf=(), do
                                                       'w5_95mel',
                                                       'ylogareatopeak']}
     if psdmeth is None:
-        out = eng.run_function('SP_Summaries', x, )
+        out = eng.run_function(1, 'SP_Summaries', x, )
     elif wmeth is None:
-        out = eng.run_function('SP_Summaries', x, psdmeth)
+        out = eng.run_function(1, 'SP_Summaries', x, psdmeth)
     elif nf is None:
-        out = eng.run_function('SP_Summaries', x, psdmeth, wmeth)
+        out = eng.run_function(1, 'SP_Summaries', x, psdmeth, wmeth)
     elif dologabs is None:
-        out = eng.run_function('SP_Summaries', x, psdmeth, wmeth, nf)
+        out = eng.run_function(1, 'SP_Summaries', x, psdmeth, wmeth, nf)
     elif dopower is None:
-        out = eng.run_function('SP_Summaries', x, psdmeth, wmeth, nf, dologabs)
+        out = eng.run_function(1, 'SP_Summaries', x, psdmeth, wmeth, nf, dologabs)
     else:
-        out = eng.run_function('SP_Summaries', x, psdmeth, wmeth, nf, dologabs, dopower)
+        out = eng.run_function(1, 'SP_Summaries', x, psdmeth, wmeth, nf, dologabs, dopower)
     return outfunc(out)
 
 
@@ -15366,9 +15366,9 @@ def HCTSA_ST_FitPolynomial(eng, x, k=10):
     def outfunc(out):
         return out
     if k is None:
-        out = eng.run_function('ST_FitPolynomial', x, )
+        out = eng.run_function(1, 'ST_FitPolynomial', x, )
     else:
-        out = eng.run_function('ST_FitPolynomial', x, k)
+        out = eng.run_function(1, 'ST_FitPolynomial', x, k)
     return outfunc(out)
 
 
@@ -15418,7 +15418,7 @@ def HCTSA_ST_Length(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('ST_Length', x, )
+    out = eng.run_function(1, 'ST_Length', x, )
     return outfunc(out)
 
 
@@ -15494,11 +15494,11 @@ def HCTSA_ST_LocalExtrema(eng, x, lorf='l', n=50):
                                                       'uord',
                                                       'zcext']}
     if lorf is None:
-        out = eng.run_function('ST_LocalExtrema', x, )
+        out = eng.run_function(1, 'ST_LocalExtrema', x, )
     elif n is None:
-        out = eng.run_function('ST_LocalExtrema', x, lorf)
+        out = eng.run_function(1, 'ST_LocalExtrema', x, lorf)
     else:
-        out = eng.run_function('ST_LocalExtrema', x, lorf, n)
+        out = eng.run_function(1, 'ST_LocalExtrema', x, lorf, n)
     return outfunc(out)
 
 
@@ -15604,17 +15604,17 @@ def HCTSA_ST_MomentCorr(eng, x, wl=0.02, olap=0.2, mom1='median', mom2='iqr', tr
                                                       'density',
                                                       'mi']}
     if wl is None:
-        out = eng.run_function('ST_MomentCorr', x, )
+        out = eng.run_function(1, 'ST_MomentCorr', x, )
     elif olap is None:
-        out = eng.run_function('ST_MomentCorr', x, wl)
+        out = eng.run_function(1, 'ST_MomentCorr', x, wl)
     elif mom1 is None:
-        out = eng.run_function('ST_MomentCorr', x, wl, olap)
+        out = eng.run_function(1, 'ST_MomentCorr', x, wl, olap)
     elif mom2 is None:
-        out = eng.run_function('ST_MomentCorr', x, wl, olap, mom1)
+        out = eng.run_function(1, 'ST_MomentCorr', x, wl, olap, mom1)
     elif transf is None:
-        out = eng.run_function('ST_MomentCorr', x, wl, olap, mom1, mom2)
+        out = eng.run_function(1, 'ST_MomentCorr', x, wl, olap, mom1, mom2)
     else:
-        out = eng.run_function('ST_MomentCorr', x, wl, olap, mom1, mom2, transf)
+        out = eng.run_function(1, 'ST_MomentCorr', x, wl, olap, mom1, mom2, transf)
     return outfunc(out)
 
 
@@ -15705,9 +15705,9 @@ def HCTSA_ST_SimpleStats(eng, x, whatstat='pmcross'):
     def outfunc(out):
         return out
     if whatstat is None:
-        out = eng.run_function('ST_SimpleStats', x, )
+        out = eng.run_function(1, 'ST_SimpleStats', x, )
     else:
-        out = eng.run_function('ST_SimpleStats', x, whatstat)
+        out = eng.run_function(1, 'ST_SimpleStats', x, whatstat)
     return outfunc(out)
 
 
@@ -15788,11 +15788,11 @@ def HCTSA_SY_DriftingMean(eng, x, howl='num', l=10):
                                                       'meanmaxmin',
                                                       'min']}
     if howl is None:
-        out = eng.run_function('SY_DriftingMean', x, )
+        out = eng.run_function(1, 'SY_DriftingMean', x, )
     elif l is None:
-        out = eng.run_function('SY_DriftingMean', x, howl)
+        out = eng.run_function(1, 'SY_DriftingMean', x, howl)
     else:
-        out = eng.run_function('SY_DriftingMean', x, howl, l)
+        out = eng.run_function(1, 'SY_DriftingMean', x, howl, l)
     return outfunc(out)
 
 
@@ -15891,9 +15891,9 @@ def HCTSA_SY_DynWin(eng, x, maxnseg=10):
                                                       'stdstd',
                                                       'stdtaul']}
     if maxnseg is None:
-        out = eng.run_function('SY_DynWin', x, )
+        out = eng.run_function(1, 'SY_DynWin', x, )
     else:
-        out = eng.run_function('SY_DynWin', x, maxnseg)
+        out = eng.run_function(1, 'SY_DynWin', x, maxnseg)
     return outfunc(out)
 
 
@@ -15985,9 +15985,9 @@ def HCTSA_SY_KPSStest(eng, x, lags=MatlabSequence('0:10')):
                                                       'pValue',
                                                       'stat']}
     if lags is None:
-        out = eng.run_function('SY_KPSStest', x, )
+        out = eng.run_function(1, 'SY_KPSStest', x, )
     else:
-        out = eng.run_function('SY_KPSStest', x, lags)
+        out = eng.run_function(1, 'SY_KPSStest', x, lags)
     return outfunc(out)
 
 
@@ -16056,7 +16056,7 @@ def HCTSA_SY_LinearTrend(eng, x):
     """
     def outfunc(out):
         return out
-    out = eng.run_function('SY_LinearTrend', x, )
+    out = eng.run_function(1, 'SY_LinearTrend', x, )
     return outfunc(out)
 
 
@@ -16128,13 +16128,13 @@ def HCTSA_SY_LocalDistributions(eng, x, nseg=4, eachorpar='each', npoints=None):
                                                       'mindiv',
                                                       'stddiv']}
     if nseg is None:
-        out = eng.run_function('SY_LocalDistributions', x, )
+        out = eng.run_function(1, 'SY_LocalDistributions', x, )
     elif eachorpar is None:
-        out = eng.run_function('SY_LocalDistributions', x, nseg)
+        out = eng.run_function(1, 'SY_LocalDistributions', x, nseg)
     elif npoints is None:
-        out = eng.run_function('SY_LocalDistributions', x, nseg, eachorpar)
+        out = eng.run_function(1, 'SY_LocalDistributions', x, nseg, eachorpar)
     else:
-        out = eng.run_function('SY_LocalDistributions', x, nseg, eachorpar, npoints)
+        out = eng.run_function(1, 'SY_LocalDistributions', x, nseg, eachorpar, npoints)
     return outfunc(out)
 
 
@@ -16238,11 +16238,11 @@ def HCTSA_SY_LocalGlobal(eng, x, lorp='l', n=50):
                                                       'skewness',
                                                       'std']}
     if lorp is None:
-        out = eng.run_function('SY_LocalGlobal', x, )
+        out = eng.run_function(1, 'SY_LocalGlobal', x, )
     elif n is None:
-        out = eng.run_function('SY_LocalGlobal', x, lorp)
+        out = eng.run_function(1, 'SY_LocalGlobal', x, lorp)
     else:
-        out = eng.run_function('SY_LocalGlobal', x, lorp, n)
+        out = eng.run_function(1, 'SY_LocalGlobal', x, lorp, n)
     return outfunc(out)
 
 
@@ -16348,13 +16348,13 @@ def HCTSA_SY_PPtest(eng, x, lags=MatlabSequence('0:5'), model='ts', teststat='t1
                                                       'minstat',
                                                       'stdpValue']}
     if lags is None:
-        out = eng.run_function('SY_PPtest', x, )
+        out = eng.run_function(1, 'SY_PPtest', x, )
     elif model is None:
-        out = eng.run_function('SY_PPtest', x, lags)
+        out = eng.run_function(1, 'SY_PPtest', x, lags)
     elif teststat is None:
-        out = eng.run_function('SY_PPtest', x, lags, model)
+        out = eng.run_function(1, 'SY_PPtest', x, lags, model)
     else:
-        out = eng.run_function('SY_PPtest', x, lags, model, teststat)
+        out = eng.run_function(1, 'SY_PPtest', x, lags, model, teststat)
     return outfunc(out)
 
 
@@ -16452,7 +16452,7 @@ def HCTSA_SY_RangeEvolve(eng, x):
                                                       'p20',
                                                       'p50',
                                                       'totnuq']}
-    out = eng.run_function('SY_RangeEvolve', x, )
+    out = eng.run_function(1, 'SY_RangeEvolve', x, )
     return outfunc(out)
 
 
@@ -16547,15 +16547,15 @@ def HCTSA_SY_SlidingWindow(eng, x, windowstat='ent', acrosswindowstat='ent', nse
     def outfunc(out):
         return out
     if windowstat is None:
-        out = eng.run_function('SY_SlidingWindow', x, )
+        out = eng.run_function(1, 'SY_SlidingWindow', x, )
     elif acrosswindowstat is None:
-        out = eng.run_function('SY_SlidingWindow', x, windowstat)
+        out = eng.run_function(1, 'SY_SlidingWindow', x, windowstat)
     elif nseg is None:
-        out = eng.run_function('SY_SlidingWindow', x, windowstat, acrosswindowstat)
+        out = eng.run_function(1, 'SY_SlidingWindow', x, windowstat, acrosswindowstat)
     elif nmov is None:
-        out = eng.run_function('SY_SlidingWindow', x, windowstat, acrosswindowstat, nseg)
+        out = eng.run_function(1, 'SY_SlidingWindow', x, windowstat, acrosswindowstat, nseg)
     else:
-        out = eng.run_function('SY_SlidingWindow', x, windowstat, acrosswindowstat, nseg, nmov)
+        out = eng.run_function(1, 'SY_SlidingWindow', x, windowstat, acrosswindowstat, nseg, nmov)
     return outfunc(out)
 
 
@@ -16667,11 +16667,11 @@ def HCTSA_SY_SpreadRandomLocal(eng, x, l='ac5', nseg=None):
                                                       'stdstd',
                                                       'stdtaul']}
     if l is None:
-        out = eng.run_function('SY_SpreadRandomLocal', x, )
+        out = eng.run_function(1, 'SY_SpreadRandomLocal', x, )
     elif nseg is None:
-        out = eng.run_function('SY_SpreadRandomLocal', x, l)
+        out = eng.run_function(1, 'SY_SpreadRandomLocal', x, l)
     else:
-        out = eng.run_function('SY_SpreadRandomLocal', x, l, nseg)
+        out = eng.run_function(1, 'SY_SpreadRandomLocal', x, l, nseg)
     return outfunc(out)
 
 
@@ -16760,11 +16760,11 @@ def HCTSA_SY_StatAv(eng, x, whattype='len', n=100):
     def outfunc(out):
         return out
     if whattype is None:
-        out = eng.run_function('SY_StatAv', x, )
+        out = eng.run_function(1, 'SY_StatAv', x, )
     elif n is None:
-        out = eng.run_function('SY_StatAv', x, whattype)
+        out = eng.run_function(1, 'SY_StatAv', x, whattype)
     else:
-        out = eng.run_function('SY_StatAv', x, whattype, n)
+        out = eng.run_function(1, 'SY_StatAv', x, whattype, n)
     return outfunc(out)
 
 
@@ -16833,9 +16833,9 @@ def HCTSA_SY_StdNthDer(eng, x, n=6):
     def outfunc(out):
         return out
     if n is None:
-        out = eng.run_function('SY_StdNthDer', x, )
+        out = eng.run_function(1, 'SY_StdNthDer', x, )
     else:
-        out = eng.run_function('SY_StdNthDer', x, n)
+        out = eng.run_function(1, 'SY_StdNthDer', x, n)
     return outfunc(out)
 
 
@@ -16908,9 +16908,9 @@ def HCTSA_SY_StdNthDerChange(eng, x, maxd=None):
                                                       'fexp_r2',
                                                       'fexp_rmse']}
     if maxd is None:
-        out = eng.run_function('SY_StdNthDerChange', x, )
+        out = eng.run_function(1, 'SY_StdNthDerChange', x, )
     else:
-        out = eng.run_function('SY_StdNthDerChange', x, maxd)
+        out = eng.run_function(1, 'SY_StdNthDerChange', x, maxd)
     return outfunc(out)
 
 
@@ -17029,11 +17029,11 @@ def HCTSA_SY_TISEAN_nstat_z(eng, x, nseg=5, embedparams=(1, 3)):
                                                       'stdstd',
                                                       'trace']}
     if nseg is None:
-        out = eng.run_function('SY_TISEAN_nstat_z', x, )
+        out = eng.run_function(1, 'SY_TISEAN_nstat_z', x, )
     elif embedparams is None:
-        out = eng.run_function('SY_TISEAN_nstat_z', x, nseg)
+        out = eng.run_function(1, 'SY_TISEAN_nstat_z', x, nseg)
     else:
-        out = eng.run_function('SY_TISEAN_nstat_z', x, nseg, embedparams)
+        out = eng.run_function(1, 'SY_TISEAN_nstat_z', x, nseg, embedparams)
     return outfunc(out)
 
 
@@ -17158,11 +17158,11 @@ def HCTSA_SY_VarRatioTest(eng, x, periods=4, IIDs=0):
                                                       'ratio',
                                                       'stat']}
     if periods is None:
-        out = eng.run_function('SY_VarRatioTest', x, )
+        out = eng.run_function(1, 'SY_VarRatioTest', x, )
     elif IIDs is None:
-        out = eng.run_function('SY_VarRatioTest', x, periods)
+        out = eng.run_function(1, 'SY_VarRatioTest', x, periods)
     else:
-        out = eng.run_function('SY_VarRatioTest', x, periods, IIDs)
+        out = eng.run_function(1, 'SY_VarRatioTest', x, periods, IIDs)
     return outfunc(out)
 
 
@@ -17253,11 +17253,11 @@ def HCTSA_TSTL_delaytime(eng, x, maxdelay=0.1, past=1):
                                                       'tau2',
                                                       'tau3']}
     if maxdelay is None:
-        out = eng.run_function('TSTL_delaytime', x, )
+        out = eng.run_function(1, 'TSTL_delaytime', x, )
     elif past is None:
-        out = eng.run_function('TSTL_delaytime', x, maxdelay)
+        out = eng.run_function(1, 'TSTL_delaytime', x, maxdelay)
     else:
-        out = eng.run_function('TSTL_delaytime', x, maxdelay, past)
+        out = eng.run_function(1, 'TSTL_delaytime', x, maxdelay, past)
     return outfunc(out)
 
 
@@ -17356,13 +17356,13 @@ def HCTSA_TSTL_localdensity(eng, x, NNR=5, past=40, embedparams=('ac', 'cao')):
                                                       'tauacden',
                                                       'taumiden']}
     if NNR is None:
-        out = eng.run_function('TSTL_localdensity', x, )
+        out = eng.run_function(1, 'TSTL_localdensity', x, )
     elif past is None:
-        out = eng.run_function('TSTL_localdensity', x, NNR)
+        out = eng.run_function(1, 'TSTL_localdensity', x, NNR)
     elif embedparams is None:
-        out = eng.run_function('TSTL_localdensity', x, NNR, past)
+        out = eng.run_function(1, 'TSTL_localdensity', x, NNR, past)
     else:
-        out = eng.run_function('TSTL_localdensity', x, NNR, past, embedparams)
+        out = eng.run_function(1, 'TSTL_localdensity', x, NNR, past, embedparams)
     return outfunc(out)
 
 
@@ -17489,17 +17489,17 @@ def HCTSA_TSTL_predict(eng, x, plen=1, NNR=1, stepsize=2, pmode=1, embedparams=(
                                                       'predminc',
                                                       'stdxcf']}
     if plen is None:
-        out = eng.run_function('TSTL_predict', x, )
+        out = eng.run_function(1, 'TSTL_predict', x, )
     elif NNR is None:
-        out = eng.run_function('TSTL_predict', x, plen)
+        out = eng.run_function(1, 'TSTL_predict', x, plen)
     elif stepsize is None:
-        out = eng.run_function('TSTL_predict', x, plen, NNR)
+        out = eng.run_function(1, 'TSTL_predict', x, plen, NNR)
     elif pmode is None:
-        out = eng.run_function('TSTL_predict', x, plen, NNR, stepsize)
+        out = eng.run_function(1, 'TSTL_predict', x, plen, NNR, stepsize)
     elif embedparams is None:
-        out = eng.run_function('TSTL_predict', x, plen, NNR, stepsize, pmode)
+        out = eng.run_function(1, 'TSTL_predict', x, plen, NNR, stepsize, pmode)
     else:
-        out = eng.run_function('TSTL_predict', x, plen, NNR, stepsize, pmode, embedparams)
+        out = eng.run_function(1, 'TSTL_predict', x, plen, NNR, stepsize, pmode, embedparams)
     return outfunc(out)
 
 
@@ -17626,11 +17626,11 @@ def HCTSA_WL_DetailCoeffs(eng, x, wname='db3', maxlevel='max'):
                                                       'wslesr_mean',
                                                       'wslesr_median']}
     if wname is None:
-        out = eng.run_function('WL_DetailCoeffs', x, )
+        out = eng.run_function(1, 'WL_DetailCoeffs', x, )
     elif maxlevel is None:
-        out = eng.run_function('WL_DetailCoeffs', x, wname)
+        out = eng.run_function(1, 'WL_DetailCoeffs', x, wname)
     else:
-        out = eng.run_function('WL_DetailCoeffs', x, wname, maxlevel)
+        out = eng.run_function(1, 'WL_DetailCoeffs', x, wname, maxlevel)
     return outfunc(out)
 
 
@@ -17719,11 +17719,11 @@ def HCTSA_WL_coeffs(eng, x, wname='db3', level=5):
                                                       'wb90m',
                                                       'wb99m']}
     if wname is None:
-        out = eng.run_function('WL_coeffs', x, )
+        out = eng.run_function(1, 'WL_coeffs', x, )
     elif level is None:
-        out = eng.run_function('WL_coeffs', x, wname)
+        out = eng.run_function(1, 'WL_coeffs', x, wname)
     else:
-        out = eng.run_function('WL_coeffs', x, wname, level)
+        out = eng.run_function(1, 'WL_coeffs', x, wname, level)
     return outfunc(out)
 
 
@@ -17826,11 +17826,11 @@ def HCTSA_WL_cwt(eng, x, wname='sym2', maxscale=32):
                                                       'stat_5_s_s',
                                                       'std_ssc']}
     if wname is None:
-        out = eng.run_function('WL_cwt', x, )
+        out = eng.run_function(1, 'WL_cwt', x, )
     elif maxscale is None:
-        out = eng.run_function('WL_cwt', x, wname)
+        out = eng.run_function(1, 'WL_cwt', x, wname)
     else:
-        out = eng.run_function('WL_cwt', x, wname, maxscale)
+        out = eng.run_function(1, 'WL_cwt', x, wname, maxscale)
     return outfunc(out)
 
 
@@ -17943,11 +17943,11 @@ def HCTSA_WL_dwtcoeff(eng, x, wname='sym2', level=5):
                                                       'stddd_l4',
                                                       'stddd_l5']}
     if wname is None:
-        out = eng.run_function('WL_dwtcoeff', x, )
+        out = eng.run_function(1, 'WL_dwtcoeff', x, )
     elif level is None:
-        out = eng.run_function('WL_dwtcoeff', x, wname)
+        out = eng.run_function(1, 'WL_dwtcoeff', x, wname)
     else:
-        out = eng.run_function('WL_dwtcoeff', x, wname, level)
+        out = eng.run_function(1, 'WL_dwtcoeff', x, wname, level)
     return outfunc(out)
 
 
@@ -18025,7 +18025,7 @@ def HCTSA_WL_fBM(eng, x):
         return {outname: out[outname] for outname in ['p1',
                                                       'p2',
                                                       'p3']}
-    out = eng.run_function('WL_fBM', x, )
+    out = eng.run_function(1, 'WL_fBM', x, )
     return outfunc(out)
 
 
@@ -18089,13 +18089,13 @@ def HCTSA_WL_scal2frq(eng, x, wname='db3', amax='max', delta=1):
                                                       'period',
                                                       'pf']}
     if wname is None:
-        out = eng.run_function('WL_scal2frq', x, )
+        out = eng.run_function(1, 'WL_scal2frq', x, )
     elif amax is None:
-        out = eng.run_function('WL_scal2frq', x, wname)
+        out = eng.run_function(1, 'WL_scal2frq', x, wname)
     elif delta is None:
-        out = eng.run_function('WL_scal2frq', x, wname, amax)
+        out = eng.run_function(1, 'WL_scal2frq', x, wname, amax)
     else:
-        out = eng.run_function('WL_scal2frq', x, wname, amax, delta)
+        out = eng.run_function(1, 'WL_scal2frq', x, wname, amax, delta)
     return outfunc(out)
 
 
