@@ -424,6 +424,14 @@ class EngineResponse(object):
         self.figures = figures
         self.stdout = stdout
 
+    @classmethod
+    def from_pymatbridge_response(cls, response):
+        return cls(success=response[u'success'],
+                   figures=response[u'content'].get(u'figures', None),
+                   code=response[u'content'].get(u'code', None),
+                   datadir=response[u'content'].get(u'datadir', None),
+                   stdout=response[u'content'].get(u'stdout', None))
+
 
 class EngineVar(object):
     """Represents a variable already in (matlab|octave)-land.
@@ -503,7 +511,7 @@ class MatlabEngine(object):
         Returns
         -------
         A tuple (matlab_response, result)
-        The result of running the command (ans or the output variables) as a dictionary if outs2py is True.
+        The result of running the command (ans or the output variables) as a list if outs2py is True.
         None otherwise
         """
         try:
@@ -523,7 +531,23 @@ class MatlabEngine(object):
         raise NotImplementedError()
 
     def run_function(self, nout, funcname, *args):
-        """Runs a function and returns the first nout values."""
+        """Runs a function and returns the first nout values.
+
+        Parameters
+        ----------
+        nout: int
+          The number of output arguments
+
+        funcname: string
+          The name of the function to executes
+
+        args: values
+          The arguments to the call. Everything will be moved to python land except for EngineVar values
+
+        Returns
+        -------
+        The result(s) of the call in python land (a single value if nout=1, else a list of values)
+        """
         result_vars = ['pyopy_result_%d' % i for i in xrange(self._num_results, self._num_results + nout)]
         try:
             with self.context(args) as args:
@@ -591,7 +615,7 @@ class MatlabEngine(object):
     def who(self):
         """Returns a list with the variable names in the current matlab/octave workspace."""
         # Remember also whos, class, clear, clearvars...
-        return self.run_command('who()', outs2py=True)[1][0]  # run with ()
+        return self.run_command('ans=who();', outs2py=True)[1][0]  # run with ()
 
     def matlab_class(self, varname):
         return self.run_command('class(%s)' % varname, outs2py=True)[1][0]
@@ -623,13 +647,12 @@ class MatlabEngine(object):
         The matlab path after this operation has completed.
         """
         path = op.abspath(path)
-        _, (matlab_path,) = self.run_command('path();', outs2py=True)
+        _, (matlab_path,) = self.run_command('ans=path();', outs2py=True)
         if path not in matlab_path or force:
             if recursive:
-                self.run_command('generated_path=genpath(\'%s\')' % path)
-                path = self.get('generated_path')
+                path = self.run_command('generated_path=genpath(\'%s\')' % path, outs2py=True)[1][0]
             self.run_command('addpath(\'%s\', \'%s\')' % (path, '-begin' if begin else '-end'))
-        return self.run_command('path();', outs2py=True)[1][0]
+        return self.run_command('ans=path();', outs2py=True)[1][0]
 
     #######
     # Context manager stuff
@@ -771,6 +794,11 @@ class MatWriteNotAll(MatWrite):
 
 
 class Oct2PyNotAll(Oct2Py):
+
+    def __init__(self, executable=None, logger=None, timeout=None, oned_as='row', temp_dir=None):
+        self._writer = None
+        super(Oct2PyNotAll, self).__init__(executable, logger, timeout, oned_as, temp_dir)
+
     def restart(self):
         super(Oct2PyNotAll, self).restart()
         self._writer = MatWriteNotAll()  # Fixme: lame, ask for pull request of EngineVar + MatWrite
@@ -790,6 +818,8 @@ class Oct2PyEngine(MatlabEngine):
         self._timeout = timeout
         self._log = log
         super(Oct2PyEngine, self).__init__(engine_location)
+
+    # --- Command running
 
     def _run_command_hook(self, command):
 
@@ -818,9 +848,25 @@ class Oct2PyEngine(MatlabEngine):
     # def run_function(self, funcname, *args):
     #     return getattr(self.session(), funcname)(*args)
 
-    def put(self, varnames, values, by_file=True):
-        # we require lists...
-        if not isinstance(varnames, list):
+    # --- Matlab -> Python
+
+    def get(self, varnames, strategy=None):
+        # we require lists or tuples, not ducks...
+        if not isinstance(varnames, (list, tuple)):
+            varnames = [varnames]
+        # get name from EngineVar objects
+        varnames = [var.varname if isinstance(var, EngineVar) else var for var in varnames]
+        # oct2py does not like much non-unicode strings
+        varnames = map(unicode, varnames)
+        # transfer memory from matlab to python land
+        return self.session().pull(list(varnames))
+        # N.B. copy to workaround side effects of oct2py push (that pops from the original list!)
+
+    # --- Python -> Matlab
+
+    def put(self, varnames, values, strategy=None):
+        # we require lists or tuples, not ducks...
+        if not isinstance(varnames, (list, tuple)):
             varnames = [varnames]
         if not isinstance(values, list):
             values = [values]
@@ -828,7 +874,7 @@ class Oct2PyEngine(MatlabEngine):
         varnames = map(unicode, varnames)
         # treat differently enginevar from other values
         not_ev_names, not_ev_values, ev_names, ev_values = EngineVar.segregate_evs(varnames, values)
-        # Values in matlab land get transfered...
+        # values not in matlab land get transfered...
         self.session().push(not_ev_names, not_ev_values, verbose=self._verbose, timeout=self._timeout)
         # ...as opposed to values in matlab land, that get aliased
         self.run_command(','.join('%s=%s' % (alias, val.varname)
@@ -839,17 +885,7 @@ class Oct2PyEngine(MatlabEngine):
         # ...or a list of vars
         return [EngineVar(self, varname) for varname in varnames]
 
-    def get(self, varnames, by_file=True):
-        # we require a list
-        if isinstance(varnames, (unicode, str, EngineVar)):
-            varnames = [varnames]
-        # get name from EngineVar objects
-        varnames = [var.varname if isinstance(var, EngineVar) else var for var in varnames]
-        # oct2py does not like much non-unicode strings
-        varnames = map(unicode, varnames)
-        # transfer memory from matlab to python land
-        return self.session().pull(list(varnames))  # N.B. copy to workaround side effects of oct2py push
-                                                    # (that pops from the original list!)
+    # --- Session management
 
     def session(self, engine_location=None):
         if self._session is None:
@@ -863,33 +899,6 @@ class Oct2PyEngine(MatlabEngine):
             self._session = None
 
 
-####################
-#
-# from time import time
-# with Oct2PyEngine() as eng:
-#
-#     # roundtrip tests (copy from oct2py...)
-#     response, result = eng.run_command('a=[1,2]', outs2py=True)
-#     assert np.allclose(result, np.array([1, 2]))
-#
-#     # who call
-#     start = time()
-#     eng.run_command('meshgrid(4,5)', outs2py=False)
-#     print 'simplemost call took %.2f seconds' % (time() - start)
-#
-#     # function call - slow as hell because of the overhead in oct2py + overhead in Oct2PyEngine
-#     start = time()
-#     assert np.allclose(eng.run_function(2, 'meshgrid', 4, 5), [4, 5])
-#     print 'function overhead is like call took %.2f seconds' % (time() - start)
-#
-#     # which variables are at the moment there?
-#     print 'variables in octave workspace:', eng.who()
-#
-#     exit(33)
-#
-####################
-
-
 #########################
 # Matlab engines (optional)
 #########################
@@ -900,13 +909,108 @@ class PyMatBridgeEngine(MatlabEngine):
 
     def __init__(self,
                  engine_location=None,
-                 tmp_dir_root=None):
+                 tmp_dir_root=None,
+                 sid='python-matlab-bridge'):
+        # session control
         self._session = None
+        self._id = sid
+        # file based data transit
         self._tmpdir_root = tmp_dir_root
         self._tmpdir = None
         self._matwrite = None
         self._matread = None
         super(PyMatBridgeEngine, self).__init__(engine_location)
+
+    # --- Command running
+
+    def _run_command_hook(self, command):
+        return EngineResponse.from_pymatbridge_response(self._session.run_code(command)), command
+
+    # --- Matlab -> Python
+
+    def get(self, varnames, strategy='by_file'):
+        # we require lists or tuples, not ducks...
+        if not isinstance(varnames, (list, tuple)):
+            varnames = [varnames]
+        # this is the easy, slow way
+        if strategy != 'by_file':
+            if len(varnames) == 1:
+                return self._session.get_variable(varnames[0])
+            return map(self._session.get_variable, varnames)
+        # Adapted from oct2py.pull (N.B. as side effect, varname gets empty, so copy)
+        argout_list, save_line = self.matread().setup(len(varnames), list(varnames))
+        self.run_command(save_line)
+        data = self.matread().extract_file(variables=varnames)
+        self.matread().remove_file()
+        self._matread = None  # not the fastest, but avoids any leak
+        if isinstance(data, dict) and not isinstance(data, Struct):
+            return [data.get(v, None) for v in argout_list]
+        else:
+            return data
+
+    # --- Python -> Matlab
+
+    def put(self, varnames, values, strategy='by_file'):
+        # we like too much oct2py stuff...
+        if not strategy == 'by_file':
+            raise Exception('strategy %r for pymatbridge not supported, please use "by_file" only')
+        # we require lists or tuples, not ducks...
+        if not isinstance(varnames, (list, tuple)):
+            varnames = [varnames]
+        if not isinstance(values, (list, tuple)):
+            values = [values]
+        # until we move to py3, let's deal with non-unicode stuff
+        varnames = map(unicode, varnames)
+        # adapted from oct2py.push...
+        for name in varnames:
+            if name.startswith('_'):
+                raise Exception('Invalid name {0}'.format(name))
+        # treat differently enginevar from other values
+        not_ev_names, not_ev_values, ev_names, ev_values = EngineVar.segregate_evs(varnames, values)
+        # values not in matlab land get transfered...
+        _, load_line = self.matwrite().create_file(not_ev_values, not_ev_names)
+        load_line = load_line.replace('"', "'")   # matlab does not understand if it is quoted with "
+        self.run_command(load_line)
+        self.matwrite().remove_file()
+        # ...as opposed to values in matlab land, that get aliased
+        self.run_command(','.join('%s=%s' % (alias, val.varname)
+                                  for alias, val in zip(ev_names, ev_values)), outs2py=False)
+        # return a single var...
+        if len(varnames) == 1:
+            return EngineVar(self, varnames[0])
+        # ...or a list of vars
+        return [EngineVar(self, varname) for varname in varnames]
+
+    # --- Session management
+
+    def session(self, engine_location=None):
+        if self._session is None:
+            import pymatbridge
+            self._session = pymatbridge.Matlab()  # capture_stdout=True requires John's branch
+            self._session.start()
+        return self._session
+
+    def close_session(self):
+        try:
+            self._session.stop()
+        finally:
+            self._session = None
+
+    # --- Context manager
+
+    def __exit__(self, etype, value, traceback):
+        super(PyMatBridgeEngine, self).__exit__(type, value, traceback)
+        if self._tmpdir is not None and op.isdir(self._tmpdir):
+            shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    #
+    # --- By default we will use Oct2Py mechanism to transfer data
+    #
+    # John, in pass-as-mat pymatbridge.Method.__call__ has already implemented some good stuff.
+    # transplant has a seemingly fast protocol based also in json, might be interesting to see how it compares
+    # time allowing, explore other options
+    # best stuff typewise is, though, oct2py (it even supports sparse matrices) or hdf5storage
+    #
 
     def tempdir(self):
         if self._tmpdir is None:
@@ -922,72 +1026,6 @@ class PyMatBridgeEngine(MatlabEngine):
         if self._matread is None:
             self._matread = MatRead(temp_dir=self.tempdir())
         return self._matread
-
-    def get(self, varname, by_file=False):
-        if not by_file:
-            return self._session.get_variable(varname)
-        # Adapted from oct2py.pull
-        if isinstance(varname, (str, unicode)):
-            varname = [varname]
-        argout_list, save_line = self.matread().setup(len(varname), list(varname))  # N.B. as side effect,
-                                                                                    # varname gets empty
-        self.run_command(save_line)
-        data = self.matread().extract_file(variables=varname)
-        self.matread().remove_file()
-        self._matread = None
-        if isinstance(data, dict) and not isinstance(data, Struct):
-            return [data.get(v, None) for v in argout_list]
-        else:
-            return data
-
-    def put(self, varname, value, by_file=False):
-        #
-        # John, in pass-as-mat pymatbridge.Method.__call__ has already implemented some good stuff.
-        # transplant has a seemingly fast protocol based also in json, might be interesting to see how it compares
-        # time allowing, explore other options
-        # best stuff typewise is, though, oct2py (it even supports sparse matrices)
-        #
-
-        # Adapted from oct2py.push
-        if isinstance(varname, (str, unicode)):
-            vars_ = [value]
-            names = [varname]
-        else:
-            vars_ = value
-            names = varname
-        for name in names:
-            if name.startswith('_'):
-                raise Exception('Invalid name {0}'.format(name))
-        _, load_line = self.matwrite().create_file(vars_, names)
-        load_line = load_line.replace('"', "'")  # matlab does not understand if it is quoted with "
-        self.run_command(load_line)
-        self.matwrite().remove_file()
-
-    def _run(self, command, *args):
-
-        response = self._session.run_code(command)
-        if response['success'] != 'true':
-            raise Exception('Command "%s" failed')
-
-        return response
-
-    def session(self, engine_location=None):
-        if self._session is None:
-            import pymatbridge
-            self._session = pymatbridge.Matlab()  # capture_stdout=True requires John's branch
-            self._session.start()
-        return self._session
-
-    def close_session(self):
-        try:
-            self._session.close()
-        finally:
-            self._session = None
-
-    def __exit__(self, etype, value, traceback):
-        super(PyMatBridgeEngine, self).__exit__(type, value, traceback)
-        if self._tmpdir is not None and op.isdir(self._tmpdir):
-            shutil.rmtree(self._tmpdir, ignore_errors=True)
 
 
 ####################

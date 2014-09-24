@@ -1,138 +1,148 @@
 # coding=utf-8
 import time
-
-import numpy as np
-from oscail.common.config import Configurable
-
-from pyopy.hctsa.bindings.hctsa_bindings import HCTSA_SY_SpreadRandomLocal, HCTSA_CO_AddNoise
-from pyopy.hctsa.hctsa_utils import prepare_engine_for_hctsa
-from pyopy.matlab_utils import Oct2PyEngine, py2matstr, PyMatBridgeEngine
 import inspect
 
+import numpy as np
+import oct2py
 
-class CO_AddNoise(Configurable):
-    """
-    Matlab doc:
-    ----------------------------------------
-    %
-    % Analyzes changes in the automutual information function with the addition of
-    % noise to the input time series.
-    % Adds Gaussian-distributed noise to the time series with increasing standard
-    % deviation, eta, across the range eta = 0, 0.1, ..., 2, and measures the
-    % mutual information at each point using histograms with
-    % nbins bins (implemented using CO_HistogramAMI).
-    %
-    % The output is a set of statistics on the resulting set of automutual
-    % information estimates, including a fit to an exponential decay, since the
-    % automutual information decreases with the added white noise.
-    %
-    % Can calculate these statistics for time delays 'tau', and for a number 'nbins'
-    % bins.
-    %
-    % This algorithm is quite different, but was based on the idea of 'noise
-    % titration' presented in: "Titration of chaos with added noise", Chi-Sang Poon
-    % and Mauricio Barahona P. Natl. Acad. Sci. USA, 98(13) 7107 (2001)
-    %
-    ----------------------------------------
-    """
+from pyopy.hctsa.bindings.hctsa_bindings import HCTSA_SY_SpreadRandomLocal, CO_AddNoise, DN_Cumulants, WL_fBM, \
+    WL_scal2frq
+from pyopy.hctsa.hctsa_utils import prepare_engine_for_hctsa
+from pyopy.matlab_utils import Oct2PyEngine, py2matstr, PyMatBridgeEngine
 
-    _partials_cache = {}
-    _num_partials = 0
 
-    outnames = ('ac1',
-                'ac2',
-                'fitexpa',
-                'fitexpadjr2',
-                'fitexpb',
-                'fitexpr2',
-                'fitexprmse',
-                'fitlina',
-                'fitlinb',
-                'meanch',
-                'mse',
-                'pcrossmean',
-                'pdec')
-
-    def __init__(self, tau=1, meth='quantiles', nbins=20):
-        super(CO_AddNoise, self).__init__(add_descriptors=False)
-        self.tau = tau
-        self.meth = meth
-        self.nbins = nbins
-
-    def eval(self, engine, x):
-        return HCTSA_CO_AddNoise(engine,
-                                 x,
-                                 tau=self.tau,
-                                 meth=self.meth,
-                                 nbins=self.nbins)
-
-    def as_partial_call(self, engine=None):
-        if self.configuration().id() not in self._partials_cache:
-            func_name = self.__class__.__name__
-            parameters_sorted_as_in_matlab_call = inspect.getargspec(self.__init__)[0][1:]
-            parameters = []
-            for param in parameters_sorted_as_in_matlab_call:
-                val = self.__getattribute__(param)
-                if val is not None:
-                    parameters.append(val)
-                else:
-                    break
-            if 0 == len(parameters):
-                command = '(@(x)%s(x))' % func_name
+def as_partial_call(hctsa_feat, engine=None, partials_cache={}):
+    if hctsa_feat.configuration().id() not in partials_cache:
+        func_name = hctsa_feat.__class__.__name__
+        parameters_sorted_as_in_matlab_call = inspect.getargspec(hctsa_feat.__init__)[0][1:]
+        parameters = []
+        for param in parameters_sorted_as_in_matlab_call:
+            val = hctsa_feat.__getattribute__(param)
+            if val is not None:
+                parameters.append(val)
             else:
-                command = '(@(x)%s(x, %s))' % (func_name, ', '.join(map(py2matstr, parameters)))
+                break
+        if 0 == len(parameters):
+            command = '(@(x)%s(x))' % func_name
+        else:
+            command = '(@(x)%s(x, %s))' % (func_name, ', '.join(map(py2matstr, parameters)))
 
-            if engine is None:
-                return command
-            # Now, if we are provided an engine, we will put the function call in octave-land and cache it in memory
-            raise NotImplementedError('Still need to implement getting a partial in octave-land')
-            # engine.run_text()
-
-partials = (
-    CO_AddNoise().as_partial_call(),
-    CO_AddNoise(meth=None).as_partial_call(),
-    CO_AddNoise(tau=1.2, meth=None).as_partial_call()
-)
+        if engine is None:
+            return command
+        # Now, if we are provided an engine, we will put the function call in octave-land and cache it in memory
+        raise NotImplementedError('Still need to implement getting a partial in octave-land')
+        # engine.run_text()
+    return partials_cache.get(hctsa_feat.configuration().id())
 
 
-def arrays2cells_and_partial():
+def hctsa_partials_poc(eng='matlab',
+                       data=None,
+                       # A few hctsa features chosen for no reason
+                       features=(CO_AddNoise(),
+                                 DN_Cumulants(whatcum='skew1'),
+                                 DN_Cumulants(whatcum='skew2'),
+                                 DN_Cumulants(whatcum='kurt1'),
+                                 DN_Cumulants(whatcum='kurt2'),
+                                 WL_fBM(),
+                                 WL_scal2frq(wname='db3'),
+                                 WL_scal2frq(wname='sym2', amax='max', delta=10))):
 
-    engine = Oct2PyEngine()
+    with (Oct2PyEngine() if eng == 'octave' else PyMatBridgeEngine()) as eng:
+
+        # Prepare for HCTSA
+        prepare_engine_for_hctsa(eng)
+
+        # Some fake data here
+        if data is None:
+            ne = 100
+            rng = np.random.RandomState(2147483647)
+            data = [rng.randn(rng.randint(100, 10000)) for _ in xrange(10)]
+            print ','.join(map(str, map(len, data)))
+        else:
+            ne = len(data)
+
+        # To matlab-land
+        eng.put(u'data', [data])
+        print 'type of data in matlab-land:', eng.matlab_class(u'data')
+
+        # Compute features
+        start = time.time()
+        results = {}
+        for feature in features:
+            partial = as_partial_call(feature)
+            response, result = eng.run_command(u'cellfun(%s, data, \'UniformOutput\', 0)' % partial,
+                                               outs2py=True)
+            if not response.success:
+                raise Exception(response.stdout)
+            results[feature.configuration().id()] = result
+        print 'Taken %.2f seconds' % (time.time() - start)
+        # results to matrix +
+        matrix = []
+        fnames = []
+        for fname, fvals in results.iteritems():
+            print fname
+            # extract from list returned by run_command
+            fvals = fvals[0]
+            print type(fvals), len(fvals)
+            if isinstance(fvals, np.ndarray):
+                fnames.append(fname)
+                fvals = fvals[0]
+                assert len(fvals) == ne
+                matrix.append(fvals)
+            else:
+                out_names = fvals[0].dtype.names
+                print 'num-outputs = %d' % len(out_names)
+                for out_name in out_names:
+                    fnames.append('%s#out=%s' % (fname, out_name))
+                    v = np.array([fval[out_name][0][0][0] for fval in fvals])  # LAME
+                    assert len(fvals) == ne
+                    matrix.append(v)
+        X = np.array(matrix).T  # Make it recarray...
+        # ...or better, pandas
+        import pandas as pd
+        df = pd.DataFrame(data=X, columns=fnames)
+        # print df.describe()
+        return df
+
+
+def arrays2cells_and_partial(eng='octave'):
+
+    eng = Oct2PyEngine() if eng == 'octave' else PyMatBridgeEngine()
 
     # Prepare for HCTSA
-    prepare_engine_for_hctsa(engine)
+    prepare_engine_for_hctsa(eng)
 
     # Generate data
     arrays = [np.random.randn(size) for size in (100, 500, 100, 35, 200, 130, 230)]
     # To octave land
-    _ = engine.put('x', [arrays])  # N.B. needs to be list to make a cell
+    _ = eng.put('x', [arrays])  # N.B. needs to be list to make a cell
 
     # cellfun passing lambda (can be useful for partial application and to aggregate operators)
     start = time.time()
-    engine.run_command('f1=@(x) SY_SpreadRandomLocal(x, l=\'ac5\')')
-    print engine.run_command('cellfun(f1, x, \'UniformOutput\', 0)', outs2py=True)
+    eng.run_command('f1=@(x) SY_SpreadRandomLocal(x, \'ac5\')')
+    response, result = eng.run_command('ans=cellfun(f1, x, \'UniformOutput\', 0)', outs2py=True)
+    print response.success, response.stdout
+    print result
     print 'cellfun with partial took %.2f seconds' % (time.time() - start)
-    # cellfun with partial took 5.42 seconds
-
-    # cellfun without lambda
-    start = time.time()
-    print engine.run_command('cellfun(\'SY_SpreadRandomLocal\', x, \'UniformOutput\', 0)', outs2py=True)
-    print 'cellfun took %.2f seconds' % (time.time() - start)
-    # cellfun took 43.95 seconds
+    # cellfun with partial took 5.42 seconds (octave)
+    # cellfun with partial took 1.12 seconds (matlab) - bye oct2py call overhead + octave slower (use faster builds)
 
     # python-land loop
     taken = 0
+    result = []
     for array in arrays:
-        array = engine.put('blah', array)
+        array = eng.put('blah', array)
         start = time.time()
-        HCTSA_SY_SpreadRandomLocal(engine, array)  # even without memory copy hurdles
-                                                   # add 0.1s per call because of python introsprection
-                                                   # and bytecode disassembly
+        result.append(HCTSA_SY_SpreadRandomLocal(eng, array, l='ac5'))
         taken += time.time() - start
+    print result
     print 'python-land loop took %.2f seconds' % taken
-    # python-land loop took 6.18 seconds
+    # python-land loop took 6.18 seconds (octave)
+    # python-land loop took 1.27 seconds (matlab) - bye oct2py call overhead + octave slower (use faster builds)
 
 
 if __name__ == '__main__':
 
-    arrays2cells_and_partial()
+    # arrays2cells_and_partial(eng='matlab')
+    # arrays2cells_and_partial(eng='octave')
+    hctsa_partials_poc()

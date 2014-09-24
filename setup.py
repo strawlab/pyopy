@@ -30,10 +30,11 @@ setup(
               'scipy',
               'matplotlib',
               'oct2py',
+              'pymatbridge',
               'argh'],
-    extras_require={
-        'matlab': ['pymatbridge']
-    },
+    # extras_require={
+    #     'matlab': ['pymatbridge']
+    # },
     test_require=['pytest'],
     # And of course, HCTSA and other pimped matlab libraries
 )
