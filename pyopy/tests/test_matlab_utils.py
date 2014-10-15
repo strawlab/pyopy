@@ -24,7 +24,7 @@ def test_pymatbridge_engine():
         assert a == 3
         assert b.shape == (3, 3)
 
-        print eng.who()
+        print eng.mwho()
 
         var = eng.put('c', 'lala')
         assert var.varname == 'c'
