@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#!/usr/bin/env python2
 # coding=utf-8
 
 # Authors: Santi Villalba <sdvillal@gmail.com>
@@ -31,10 +31,15 @@ setup(
               'matplotlib',
               'oct2py',
               'pymatbridge',
-              'argh'],
+              'argh',
+              'pytest'],
+    #
     # extras_require={
     #     'matlab': ['pymatbridge']
     # },
-    test_require=['pytest'],
+    #
+    # test_require=['pytest'],
+    #
     # And of course, HCTSA and other pimped matlab libraries
+    #
 )
