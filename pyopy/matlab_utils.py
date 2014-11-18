@@ -1,5 +1,6 @@
 # coding=utf-8
 """Ad-hoc parsing of m-files, matlab pimping and other goodies to deal with matlab/octave libraries."""
+import atexit
 from functools import partial
 import os.path as op
 import re
@@ -11,21 +12,18 @@ import sys
 
 import numpy as np
 from scipy.io import savemat
+from whatami import whatable, is_iterable
 
 from oct2py import Struct
 from oct2py.matread import MatRead
 from oct2py import Oct2PyError, Oct2Py
 from oct2py.matwrite import MatWrite, putvals, putval
 from oct2py.utils import create_file
-from oscail.common.config import Configurable
-from oscail.common.misc import is_iterable
 from pyopy.externals.ompc.ompcply import translate_to_str
 
 
-###################################
-# Matlab source code manipulation
+# --- Matlab source code manipulation
 # These are very ad-hoc, but work for all our cases.
-###################################
 
 
 def matlab_funcname_from_filename(mfile):
@@ -226,7 +224,7 @@ class MatlabSequence(object):
 
 
 def parse_matlab_params(matlab_params_string):
-    """Parses a matlab parameter values string and return each value in python land.
+    """Parses a matlab parameter values string and returns each value in python land.
 
     For parsing matlab expressions we use GPLed OMPC
     http://ompc.juricap.com/
@@ -246,9 +244,9 @@ def parse_matlab_params(matlab_params_string):
     Examples
     --------
     >>> parse_matlab_params("[2,4,6,8,2,4,6,8],[0,0,0,0,1,1,1,1]")
-    [[2,4,6,8,2,4,6,8], [0,0,0,0,1,1,1,1]]
+    [(2.0, 4.0, 6.0, 8.0, 2.0, 4.0, 6.0, 8.0), (0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0)]
     >>> parse_matlab_params("{'covSum',{'covSEiso','covNoise'}},1,200,'resample'")
-    This fails so I go to a full parser (ompc)
+    [('covSum', ('covSEiso', 'covNoise')), 1, 200, 'resample']
     >>> parse_matlab_params("0.5,'best'")
     [0.5, 'best']
     >>> parse_matlab_params("'ar','''R'',2,''M'',1,''P'',2,''Q'',1'")
@@ -362,9 +360,7 @@ def ints2floats(*args):
     return map(lambda x: float(x) if isinstance(x, int) else x, args)
 
 
-#########
-# Stuff to generate identifiers
-#########
+# --- Stuff to generate identifiers
 
 def strings_generator(prefix='', suffix=''):
     from string import digits, ascii_uppercase, ascii_lowercase
@@ -384,9 +380,7 @@ def some_strings(n, as_list=False, prefix='', suffix=''):
     return islice(strings_generator(), n)
 
 
-###################################
-# Common API for matlab/octave as computational engines
-###################################
+# --- Common API for matlab/octave as computational engines
 
 
 class EngineResponse(object):
@@ -472,7 +466,8 @@ def _segregate_mss(varnames, values):
     return not_ms_names, not_ms_values, ms_names, ms_values
 
 
-class MatlabEngine(Configurable):
+@whatable
+class MatlabEngine(object):
     """Simple unifying API to wrap different python->(octave|matlab)->python integration tools.
 
     This API should allow also to:
@@ -745,9 +740,7 @@ class MatlabEngine(Configurable):
             self.run_command('addpath(\'%s\', \'%s\')' % (path, '-begin' if begin else '-end'))
         return self.run_command('ans=path();', outs2py=True)[1][0]
 
-    #######
-    # Context manager stuff
-    #######
+    # --- Context manager stuff
 
     def __enter__(self):
         self.session()
@@ -759,11 +752,9 @@ class MatlabEngine(Configurable):
         except:
             pass
 
-    #######
-    # Arbitrary cleanup stuff
-    #######
+    # --- Arbitrary cleanup stuff
     # FIXME: decide whether we want __del__ or not
-    #######
+
     #
     # def __del__(self):
     #     self.__exit__(None, None, None)
@@ -1057,10 +1048,6 @@ class Oct2PyEngine(Oct2PyTransferEngine):
             self._session = None
 
 
-#########################
-# Matlab engines (optional)
-#########################
-
 # --- PyMatBridge adaptor
 
 class PyMatBridgeEngine(Oct2PyTransferEngine):
@@ -1070,11 +1057,13 @@ class PyMatBridgeEngine(Oct2PyTransferEngine):
                  tmp_dir_root=None,
                  sid=None,
                  octave=False,
-                 warmup=False):
+                 warmup=False,
+                 single_threaded=True):
         # session control
         self._session = None
         self._id = 'pymatbridge-' + str(uuid.uuid1()) if sid is None else sid
         self._octave = octave
+        self._single_threaded = single_threaded
         if engine_location is None:
             engine_location = 'octave' if octave else 'matlab'
         # we transfer data using matfiles and oct2py conversion rules
@@ -1093,9 +1082,17 @@ class PyMatBridgeEngine(Oct2PyTransferEngine):
         if self._session is None:
             import pymatbridge
             # N.B. capture_stdout=True in John's branch
-            # N.B. this requires version > 0.3 (git when writing this)
+            # N.B. Octave requires version > 0.3 (git when writing this)
             eng = pymatbridge.Octave if self._octave else pymatbridge.Matlab
-            self._session = eng(executable=self._engine_location, id=self._id)
+            if self._octave:
+                startup_ops = None
+            else:
+                startup_ops = ' -nodesktop -nodisplay' if not self._single_threaded else \
+                    ' -nodesktop -nodisplay -singleCompThread'
+            self._session = eng(executable=self._engine_location,
+                                id=self._id,
+                                socket_addr='ipc:///tmp/%s' % self._id,
+                                startup_options=startup_ops)
             self._session.start()
         return self._session
 
@@ -1108,9 +1105,70 @@ class PyMatBridgeEngine(Oct2PyTransferEngine):
     # TODO: if ever needed for performance,refine put/get values, if scalar use json via zmq, if not use files
 
 
-###################################
-# Entry point
-###################################
+# --- Global engines
+
+class Engines(object):
+
+    _engines = {}
+    _default = None
+
+    @staticmethod
+    def engine(name, thunk=None):
+        if name not in Engines._engines:
+            Engines._engines[name] = thunk()
+        return Engines._engines[name]
+
+    @staticmethod
+    def matlab():
+        return Engines.engine('matlab', thunk=PyMatBridgeEngine)
+
+    @staticmethod
+    def octave():
+        return Engines.engine('octave', thunk=Oct2PyEngine)
+
+    @staticmethod
+    def close(name):
+        if name in Engines._engines:
+            try:
+                Engines._engines[name].close_session()
+            except:
+                pass
+            finally:
+                del Engines._engines[name]
+
+    @staticmethod
+    def close_all():
+        for _, v in Engines._engines.iteritems():
+            try:
+                v.close_session()
+            except:
+                pass
+        Engines._engines = {}
+
+    @staticmethod
+    def close_matlab():
+        Engines.close('matlab')
+
+    @staticmethod
+    def close_octave():
+        Engines.close('octave')
+
+    @staticmethod
+    def default():
+        try:
+            print 'Using matlab...'
+            return Engines.matlab()
+        except:
+            print 'Using octave...'
+            return Engines.octave()
+
+    @staticmethod
+    def set_default(name, thunk):
+        raise NotImplementedError('To implement ASAP')
+
+atexit.register(Engines.close_all)
+
+# --- Entry point
 
 if __name__ == '__main__':
 
@@ -1205,6 +1263,13 @@ if __name__ == '__main__':
 # TODO: how much running things on pycharm affect performance?
 #
 # TODO: better control timeouts
+#    it seems it is not simple in single-threaded matlab-land, if possible at all
+#    we could go for python (signal or multiprocessing + kill matlab session)
+#       http://eli.thegreenplace.net/2011/08/22/how-not-to-set-a-timeout-on-a-computation-in-python
+#       http://stackoverflow.com/questions/2281850/timeout-function-if-it-takes-too-long-to-finish
+#       http://stackoverflow.com/questions/492519/timeout-on-a-python-function-call
+#    oct2py already provides a session-wide timeout
+#       http://blink1073.github.io/oct2py/source/info.html#timeout
 #
 ####################
 #
@@ -1240,7 +1305,7 @@ if __name__ == '__main__':
 #   mkoctfile --mex -lzmq messenger.c
 # Put somewhere in the octave path
 #
-
+#
 #####################################################################
 #
 # Old parameter-line parsing machinery (pre OMPC reimplementation)

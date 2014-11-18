@@ -1,6 +1,6 @@
 # coding=utf-8
 from functools import partial
-from pyopy.hctsa.hctsa_utils import hctsa_sine
+from pyopy.hctsa.hctsa_data import hctsa_sine
 from pyopy.matlab_utils import Oct2PyEngine, PyMatBridgeEngine, MatlabSequence
 import numpy as np
 import pytest

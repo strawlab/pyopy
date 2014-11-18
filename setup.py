@@ -15,7 +15,7 @@ setup(
     url='https://github.com/strawlab/pyopy',
     author='Santi Villalba',
     author_email='sdvillal@gmail.com',
-    classifiers=[  # plagiarism from sklearn
+    classifiers=[
         'Intended Audience :: Science/Research',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD 3 clause'
@@ -32,6 +32,7 @@ setup(
               'oct2py',
               'pymatbridge',
               'argh',
+              'whatami',
               'pytest'],
     #
     # extras_require={

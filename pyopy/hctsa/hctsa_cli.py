@@ -1,8 +1,8 @@
 # coding=utf-8
 """Command-line access to some tools to manage HCTSA."""
 import argh
-from pyopy.hctsa.hctsa_catalog import hctsa_summary
-from pyopy.hctsa.hctsa_pygen import gen_python_bindings
+from pyopy.hctsa.hctsa_utils import hctsa_summary
+from pyopy.hctsa.hctsa_bindings_gen import gen_python_bindings
 from pyopy.hctsa.hctsa_setup import fix_hctsa, install_hctsa
 
 if __name__ == '__main__':

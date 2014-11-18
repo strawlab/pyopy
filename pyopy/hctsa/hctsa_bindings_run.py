@@ -10,36 +10,6 @@ from pyopy.hctsa.hctsa_setup import prepare_engine_for_hctsa
 from pyopy.matlab_utils import py2matstr, PyMatBridgeEngine
 
 
-# ----- Input preprocessing
-
-def check_prepare_hctsa_input(x, z_scored=False):
-    """
-    Given a 1D array x, prepare it to be transferred to hctsa land.
-      - HCTSA expects floating point numbers.
-        So we cast if needed.
-      - HCTSA expects column vectors.
-        In order for this to work regardless of oned_as configuration of the engine, we reshape it to (-1, 1).
-    N.B. other preconditions for some HCTSA operators, like z-scored time series, must be hadled somewhere else.
-    """
-    if x.ndim == 1:
-        x = x.reshape(-1, 1)  # hctsa expects a column vector
-    elif not 2 == x.ndim:
-        raise Exception('Only one dimensional column vectors for HCTSA, please')
-    elif x.shape[1] != 1:
-        raise Exception('Only column vectors for HCTSA, please')
-    if z_scored:
-        return standardize(x.astype(np.float))
-    return x.astype(np.float)
-
-
-def standardize(x):
-    """Standardize x so that they are z-scores (as could have been done in matlab-land).
-    Note that default numpy and matlab std computation differ:
-      See http://stackoverflow.com/questions/7482205/precision-why-do-matlab-and-python-numpy-give-so-different-outputs
-    """
-    return (x - x.mean()) / (x.std(ddof=1))
-
-
 # ----- Octave code generation
 
 def as_partial_call(hctsa_feat):
@@ -172,3 +142,10 @@ def hctsa_partials_poc(eng_thunk=PyMatBridgeEngine,
 # TODO: create tests with outputs from matlab
 #
 ######################################
+
+
+#
+# pyopy.matlab_utils.EngineException: Engine failed to run: load /tmp/pymatbridge_engine_HkbHNM/tmp0ABTER.mat 'pyopy_context_59571_1' 'pyopy_context_59571_2';
+# 	Engine Reason: The current workspace already has too many variables; there is no room for "pyopy_context_59571_1".
+# caused by Exception(u'The current workspace already has too many variables; there is no room for "pyopy_context_59571_1".',)
+#

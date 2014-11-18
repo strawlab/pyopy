@@ -1,22 +1,28 @@
 # coding=utf-8
 """Python bindings generation for HCTSA."""
 from itertools import chain
-import inspect
+from whatami import whatable
 
-from oscail.common.config import Configurable
 from pyopy.hctsa import HCTSA_BINDINGS_FILE, HCTSA_BINDINGS_DIR
 from pyopy.hctsa.hctsa_catalog import HCTSACatalog
 from pyopy.hctsa.hctsa_data import hctsa_sine
+from pyopy.matlab_utils import Engines
 from pyopy.misc import ensure_python_package
 
 
-class HCTSASuper(Configurable):
+@whatable
+class HCTSASuper(object):
 
     TAGS = ()
 
-    def __init__(self, outnames=None):
-        super(HCTSASuper, self).__init__(add_descriptors=False)
+    def __init__(self, outnames=None, eng=None):
         self._outnames = outnames
+        self._eng = eng
+
+    def _infer_eng(self, eng):
+        if eng is None:
+            eng = self._eng if self._eng is not None else Engines.default()
+        return eng
 
     def output_names(self, eng=None, x=hctsa_sine()[:40], force=False):
         """
@@ -24,18 +30,31 @@ class HCTSASuper(Configurable):
         -------
         A string list of the outputs in HCTSA order
         """
+        eng = self._infer_eng(eng)
         if force or self._outnames is None:
-            x = eng.put('outputs_for_ts_87010877aawer98', x)
-            out = self.eval(eng, x)
+            # N.B. this is not deterministic inference, as sometimes the number of outputs depend on the T.S.
+            # Is there an "upper bound on the amount of outputs"?
+            x = eng.put('outputs_for_ts_87010877aawer98', x)  # FIXME: put this ts in the engine on prepare
+            out = self.transform(x, eng=eng)
             if isinstance(out, dict):
                 self._outnames = sorted(out.keys())  # No easy way to get here the order in the struct
             else:
                 self._outnames = None
         return self._outnames
 
+    def transform(self, x, eng=None):
+        eng = self._infer_eng(eng)
+        return self._eval_hook(eng, x)
+
+    def _eval_hook(self, eng, x):
+        raise NotImplementedError()
+
     def has_tag(self, tag='shit'):
         """Returns True iff this operation has the specified tag."""
         return tag in self.TAGS
+
+    def use_eng(self, eng):
+        self._eng = eng
 
 
 def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
@@ -86,53 +105,6 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
         # assemble all together
         return pyfuncname, '\n'.join([defline, doc_line, body_line])
 
-    def gen_class_from_function(hctsa_function, function_prefix='HCTSA_'):
-
-        # Our indentation levels
-        indent1 = ' ' * 4
-        indent2 = ' ' * 8
-
-        # Introspection...
-        func_name = hctsa_function.__name__
-        mlab_name = func_name[len(function_prefix):]
-        docstring = hctsa_function.__doc__
-        args, _, _, defaults = inspect.getargspec(hctsa_function)
-
-        # Arguments string
-        if defaults is not None:
-            args_string = ', '.join('%s=%r' % (name, value) for name, value in zip(args[2:], defaults))
-        else:
-            args_string = ''
-
-        # Constructor body
-        constructor_string = indent2 + 'super(%s, self).__init__(add_descriptors=False)\n' % mlab_name
-        if len(args) > 2:
-            constructor_string += indent2 + indent2.join('self.%s = %s\n' % (param, param) for param in args[2:])
-
-        # eval method
-        if len(args) == 2:
-            eval_method = indent1 + '@staticmethod\n'
-            eval_method += indent1 + 'def eval(engine, x):\n'
-            eval_method += indent2 + 'return %s(engine, x)' % func_name
-        else:
-            eval_method = indent1 + 'def eval(self, engine, x):\n'
-            eval_method += indent2 + 'return %s(engine,\n' % func_name
-            visual_indent = indent2 + ' ' * len('return %s(' % func_name)
-            eval_method += visual_indent + 'x,\n'
-            if len(args) > 3:
-                eval_method += visual_indent + visual_indent.join('%s=self.%s,\n' % (param, param)
-                                                                  for param in args[2:-1])
-            eval_method += visual_indent + '%s=self.%s)' % (args[-1], args[-1])
-
-        code = [
-            'class %s(Configurable):' % mlab_name,
-            '%s"""%s"""' % (indent1, docstring),
-            indent1 + 'def __init__(self, %s):' % args_string,
-            constructor_string,
-            eval_method,
-        ]
-        return mlab_name, '\n'.join(code)
-
     def gen_class_from_function_string(hctsa_function, func_params, function_prefix='HCTSA_', catalog=None):
 
         if catalog is None:
@@ -142,7 +114,7 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
         indent1 = ' ' * 4
         indent2 = ' ' * 8
 
-        # Avoid shadowing + work well with oscail
+        # Avoid shadowing + work well with whatami
         func_params = [{'ord': 'ordd'}.get(param, param) for param in func_params]
         hctsa_function = hctsa_function.replace('ord_', 'ordd')
 
@@ -183,13 +155,8 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
             constructor_string += indent2 + indent2.join('self.%s = %s\n' % (param, param) for param in func_params)
 
         # eval method
-        if len(func_params) == 0:
-            eval_method = indent1 + '@staticmethod\n'
-            eval_method += indent1 + 'def eval(eng, x):\n'
-            eval_method += indent2 + body
-        else:
-            eval_method = indent1 + 'def eval(self, eng, x):\n'
-            eval_method += indent1 + '\n'.join(indent1 + line for line in body.splitlines())
+        eval_method = indent1 + 'def _eval_hook(self, eng, x):\n'
+        eval_method += indent1 + '\n'.join(indent1 + line for line in body.splitlines())
 
         # cosmetics
         def break_long(line):
@@ -211,7 +178,7 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
         ]
         return name, '\n'.join(code)
 
-    def gen_categories_class(catalog=None, add_commented_out=False):
+    def gen_operations_class(catalog=None, add_commented_out=False):
         """Returns text with all the metaops in the current HCTSA release under a class namespace."""
         if catalog is None:
             catalog = HCTSACatalog()
@@ -235,8 +202,9 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
                                  ','.join(map(str, outs) if category.known_outputs() else ''))
                 lines.append('# tags: %s' %
                              ','.join(map(str, category.tags()) if category.tags() else ''))
-                lines.append('%s =\\' % category.catname)
-                instline = '    %s(%s)\n' % (fname, params_string)
+                lines.append('%s = (' % category.catname)
+                lines.append('    \'%s\',' % category.catname)
+                instline = '    %s(%s))\n' % (fname, params_string)
                 if len(instline) < 110:
                     lines.append(instline)
                 else:
@@ -245,11 +213,11 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
                     lines.append(' ' * len('    %s(' % fname) + instline[first_comma+2:])
         lines.append('@staticmethod')
         lines.append('def all():')
-        lines.append('    return sorted((name, comp) for name, comp in HCTSA_Categories.__dict__.iteritems()')
+        lines.append('    return sorted((name, comp) for name, comp in HCTSAOperations.__dict__.iteritems()')
         lines.append('                  if not name.startswith(\'_\') and not name == \'all\')')
         lines = ['    %s' % line for line in lines]
-        return 'class HCTSA_Categories(object):\n' \
-               '    """Namespace for HCTSA selected features."""' \
+        return 'class HCTSAOperations(object):\n' \
+               '    """Namespace for HCTSA selected operations."""' \
                '\n\n%s' % '\n'.join(lines)
 
     # Read-in the catalog
@@ -280,10 +248,8 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
             if write_function_too:
                 writer.write(funcdef)
                 writer.write('\n\n\n')
-                exec funcdef in globals()  # Nasty, but avoids second passes and acts as a sanity check
-                classname, classdef = gen_class_from_function(eval(funcname))
-            else:
-                classname, classdef = gen_class_from_function_string(funcdef, func.params, catalog=hctsa_catalog)
+
+            classname, classdef = gen_class_from_function_string(funcdef, func.params, catalog=hctsa_catalog)
 
             writer.write(classdef)
             writer.write('\n\n\n')
@@ -295,7 +261,7 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
             writer.write('\n\n')
         writer.write('HCTSA_ALL_CLASSES = (\n    %s)' % '    '.join('%s,\n' % f for f in classnames))
         writer.write('\n\n\n')
-        writer.write(gen_categories_class())
+        writer.write(gen_operations_class())
 
 if __name__ == '__main__':
     gen_python_bindings()

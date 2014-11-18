@@ -123,13 +123,17 @@ class HCTSAFeatureCategory(object):
 
     function : HCTSAFunction
         The function used to generate this category of features
+
+    standardize : bool, default False
+        Many categories require the input time series to be standardized (marked by "y" instead of "x" as input)
     """
     def __init__(self,
                  catname,
                  funcname,
                  param_values,
                  is_commented,
-                 function=None):
+                 function=None,
+                 standardize=False):
         super(HCTSAFeatureCategory, self).__init__()
         self.catname = catname
         self.funcname = funcname
@@ -137,6 +141,7 @@ class HCTSAFeatureCategory(object):
         self.is_commented = is_commented
         self.function = function
         self.features = []
+        self.standardize = standardize
 
     def add_feature(self, hctsa_feature):
         """Adds a feature to this category "known features".
@@ -186,6 +191,9 @@ class HCTSACatalog(object):
     features_dict : dictionary
         A map {feature_name -> HCTSAFeature}
     """
+
+    _catalog = None
+
     def __init__(self,
                  mfiles_dir=HCTSA_OPERATIONS_DIR,
                  mops_file=HCTSA_MOPS_FILE,
@@ -238,29 +246,32 @@ class HCTSACatalog(object):
               funcname = 'CO_CompareMinAMI'
               params = ['even', '2:80']
               is_commented = False
+              is_standardized = True  # Because ts is y
             """
             line, is_commented = manage_comments(line)
             if line is None:  # Ignore commented lines
-                return None, None, None, None
+                return None, None, None, None, None
             callspec, category = line.split()
             funcname, _, params = callspec.partition('(')
             funcname = funcname.strip()
             params = params.rpartition(')')[0].strip()
-            params = params.partition(',')[2]  # The first parameter is always the time series
+            series, _, params = params.partition(',')  # The first parameter is always the time series
             params = parse_matlab_params(params)
-            return category, funcname, params, is_commented
+            is_standardized = series == 'y'
+            return category, funcname, params, is_commented, is_standardized
 
         self.categories_dict = {}
         with open(self.mops_file) as reader:
             for line in reader:
                 if not line.strip():
                     continue
-                categoryname, funcname, params, is_commented = parse_mops_line(line)
+                categoryname, funcname, params, is_commented, is_standardized = parse_mops_line(line)
                 if categoryname is None:
                     continue  # Ignore commented lines
                 if categoryname in self.categories_dict:
                     raise Exception('Repeated category: %s' % categoryname)
-                self.categories_dict[categoryname] = HCTSAFeatureCategory(categoryname, funcname, params, is_commented)
+                self.categories_dict[categoryname] = \
+                    HCTSAFeatureCategory(categoryname, funcname, params, is_commented, standardize=is_standardized)
 
         #
         # 2) Get all the features defined in the OPS (operations) file
@@ -335,7 +346,7 @@ class HCTSACatalog(object):
         #    function -> {category -> {features}}
         #
 
-    def report(self):
+    def summary(self):
         report = [
             'Number of operators (functions in mfiles):    %d' % len(self.functions_dict),
 
@@ -384,10 +395,30 @@ class HCTSACatalog(object):
                     outnames.add(feature.outname)
         return sorted(outnames)
 
+    @staticmethod
+    def catalog():
+        if HCTSACatalog._catalog is None:
+            HCTSACatalog._catalog = HCTSACatalog()
+        return HCTSACatalog._catalog
 
-def hctsa_summary():
-    """Shows a summary of the operations in the current HCTSA codebase."""
-    print HCTSACatalog().report()
+    _whatami2hctsa = None
 
-#
-# TODO: FeatureCategory to MetaFeature (or MetaOps, as Ben seems to call them)#
+    @staticmethod
+    def what2op(whatid):
+        """Finds the correspondence between a whatami id and the HCTSA operator."""
+        if HCTSACatalog._whatami2hctsa is None:
+            HCTSACatalog._whatami2hctsa = {}
+            from hctsa_bindings import HCTSA_Categories
+            for hctsaop, comp in HCTSA_Categories.all():
+                # N.B. this is not unique until we use a Standardizer for these features which require standardisation
+                HCTSACatalog._whatami2hctsa[comp.what().id()] = hctsaop
+        return HCTSACatalog._whatami2hctsa.get(whatid, None)
+
+    @staticmethod
+    def must_standardize(category):
+        # Copes with Ben's inconvenient (x -> normal | y -> standardised) convention
+        cat = HCTSACatalog.catalog().categories_dict.get(category, None)
+        return cat is not None and cat.standardize
+
+if __name__ == '__main__':
+    HCTSACatalog().summary()
