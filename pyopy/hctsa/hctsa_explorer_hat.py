@@ -3,16 +3,12 @@ from operator import itemgetter
 import time
 
 import numpy as np
-from whatami import is_iterable
 
-from pyopy.hctsa.hctsa_bindings import CO_AddNoise, SY_SpreadRandomLocal, HCTSA_Categories
-from pyopy.hctsa.hctsa_bindings_gen import HCTSASuper
-from pyopy.hctsa.hctsa_bindings_run import flatten_hctsa_result
-from pyopy.hctsa.hctsa_catalog import HCTSACatalog
+from pyopy.base import EngineException, PyopyEngines
+from pyopy.hctsa.hctsa_bindings import CO_AddNoise, SY_SpreadRandomLocal, HCTSAOperations
 from pyopy.hctsa.hctsa_data import hctsa_sine
 from pyopy.hctsa.hctsa_setup import prepare_engine_for_hctsa
-from pyopy.hctsa.transformers import Chain, MatlabStandardize, check_prepare_hctsa_input
-from pyopy.matlab_utils import PyMatBridgeEngine, EngineException
+
 
 # ncs = computable_econometrics()
 # oks = []
@@ -45,49 +41,64 @@ def compare(eng,
             timeout=None):
     try:
         start = time.time()
-        result = fex.eval(eng, x)
-        flatten_hctsa_result(result)
+        result = fex.transform(x, eng=eng)
         return result, 'Success', time.time() - start
     except EngineException, e:
         return None, e.engine_response.stdout, e.engine_response.code, None
     except Exception, e:
         return None, str(e), None, None
 
+# eng = PyopyEngines.octave()
+eng = PyopyEngines.matlab()
+print 'Preparing...'
+prepare_engine_for_hctsa(eng)
+print 'Comparing...'
+# TODO: reshape should be done automatically by HCTSA classes, but can be bad for performance
+#       or use oned_as='col'...
+x = eng.put('x', hctsa_sine().reshape(-1, 1))
+print compare(eng, fex=HCTSAOperations.CO_CompareMinAMI_std2_2_80[1], x=x)
+print compare(eng, fex=HCTSAOperations.EN_PermEn_2[1], x=x)
+print compare(eng, fex=HCTSAOperations.CO_HistogramAMI_1_even_10[1], x=x)
+print compare(eng, fex=HCTSAOperations.PP_Compare_medianf2[1], x=x)
+print compare(eng, fex=HCTSAOperations.MF_CompareAR_1_10_05[1], x=x)
+print compare(eng, fex=HCTSAOperations.WL_cwt_db3_32[1], x=x)
+exit(22)
+
 
 def arrays2cells_and_partial(eng='octave'):
 
-    with (PyMatBridgeEngine(octave=True) if eng == 'octave' else PyMatBridgeEngine(octave=False)) as eng:
+    eng = PyopyEngines.engine_or_matlab_or_octave(eng)
 
-        # Prepare for HCTSA
-        prepare_engine_for_hctsa(eng)
+    # Prepare for HCTSA
+    prepare_engine_for_hctsa(eng)
 
-        # Generate data
-        arrays = [np.random.randn(size) for size in (100, 500, 100, 35, 200, 130, 230)]
-        # To octave land
-        _ = eng.put('x', [arrays])  # N.B. needs to be list to make a cell
+    # Generate data
+    arrays = [np.random.randn(size) for size in (100, 500, 100, 35, 200, 130, 230)]
+    # To octave land
+    _ = eng.put('x', [arrays])  # N.B. needs to be list to make a cell
 
-        # cellfun passing lambda (can be useful for partial application and to aggregate operators)
+    # cellfun passing lambda (can be useful for partial application and to aggregate operators)
+    start = time.time()
+    eng.run_command('f1=@(x) SY_SpreadRandomLocal(x, \'ac5\')')
+    response, result = eng.run_command('ans=cellfun(f1, x, \'UniformOutput\', 0)', outs2py=True)
+    print response.success, response.stdout
+    print result
+    print 'cellfun with partial took %.2f seconds' % (time.time() - start)
+    # cellfun with partial took 5.42 seconds (octave)
+    # cellfun with partial took 1.12 seconds (matlab) - bye oct2py call overhead + octave slower (use faster builds)
+
+    # python-land loop
+    taken = 0
+    result = []
+    for array in arrays:
+        array = eng.put('blah', array)
         start = time.time()
-        eng.run_command('f1=@(x) SY_SpreadRandomLocal(x, \'ac5\')')
-        response, result = eng.run_command('ans=cellfun(f1, x, \'UniformOutput\', 0)', outs2py=True)
-        print response.success, response.stdout
-        print result
-        print 'cellfun with partial took %.2f seconds' % (time.time() - start)
-        # cellfun with partial took 5.42 seconds (octave)
-        # cellfun with partial took 1.12 seconds (matlab) - bye oct2py call overhead + octave slower (use faster builds)
-
-        # python-land loop
-        taken = 0
-        result = []
-        for array in arrays:
-            array = eng.put('blah', array)
-            start = time.time()
-            result.append(SY_SpreadRandomLocal(l='ac5').eval(eng, array))
-            taken += time.time() - start
-        print result
-        print 'python-land loop took %.2f seconds' % taken
-        # python-land loop took 6.18 seconds (octave)
-        # python-land loop took 1.27 seconds (matlab) - bye oct2py call overhead + octave slower (use faster builds)
+        result.append(SY_SpreadRandomLocal(l='ac5').eval(eng, array))
+        taken += time.time() - start
+    print result
+    print 'python-land loop took %.2f seconds' % taken
+    # python-land loop took 6.18 seconds (octave)
+    # python-land loop took 1.27 seconds (matlab) - bye oct2py call overhead + octave slower (use faster builds)
 
 
 #

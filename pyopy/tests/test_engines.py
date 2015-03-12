@@ -1,16 +1,41 @@
 # coding=utf-8
 from functools import partial
-from pyopy.hctsa.hctsa_data import hctsa_sine
-from pyopy.matlab_utils import Oct2PyEngine, PyMatBridgeEngine, MatlabSequence
+
 import numpy as np
 import pytest
 
+from pyopy.base import MatlabSequence
+from pyopy.hctsa.hctsa_data import hctsa_sine
+from pyopy.pyopy_mathworks_backend import MathworksEngine, MathworksTransplanter
+from pyopy.pyopy_oct2py_backend import Oct2PyEngine
+from pyopy.pyopy_pymatbridge_backend import PyMatBridgeEngine, PyMatBridgeTransplanter
+from pyopy.pyopy_matlab_wrapper_backend import MatlabWrapperEngine, MatlabWrapperTransplanter
 
-@pytest.yield_fixture(scope='module', params=['oct2py', 'pymatbridge-oct', 'pymatbridge-mat'])
+
+@pytest.yield_fixture(scope='module', params=['oct2py',
+                                              # pymatbridge is quite unreliable as per 2015/02/11
+                                              # 'pymatbridge-oct',
+                                              # 'pymatbridge-mat',
+                                              # 'pymatbridge-oct-pmb',
+                                              # 'pymatbridge-mat-pmb',
+                                              # matlabwrapper dispatch is too slow as per 2015/02/11
+                                              # 'matlabwrapper',
+                                              # 'matlabwrapper-mwr',
+                                              # Mathworks dispatch rocks, data transfer with oct2py is perfect combo
+                                              'mathworks',
+                                              # 'mathworks-mathworks',
+                                              ])
 def eng(request):
     engines = {'oct2py': Oct2PyEngine,
                'pymatbridge-mat': partial(PyMatBridgeEngine, octave=False),
-               'pymatbridge-oct': partial(PyMatBridgeEngine, octave=True)}
+               'pymatbridge-oct': partial(PyMatBridgeEngine, octave=True),
+               'oct2py-pmb': partial(Oct2PyEngine, transplanter=PyMatBridgeTransplanter()),
+               'pymatbridge-mat-pmb': partial(PyMatBridgeEngine, octave=False, transplanter=PyMatBridgeTransplanter()),
+               'pymatbridge-oct-pmb': partial(PyMatBridgeEngine, octave=True, transplanter=PyMatBridgeTransplanter()),
+               'matlabwrapper': MatlabWrapperEngine,
+               'matlabwrapper-mwr': partial(MatlabWrapperEngine, transplanter=MatlabWrapperTransplanter()),
+               'mathworks': MathworksEngine,
+               'mathworks-mathworks': partial(MatlabWrapperEngine, transplanter=MathworksTransplanter())}
     with engines[request.param]() as eng:
         yield eng
 
@@ -28,9 +53,7 @@ def test_roundtrip_scalar(eng):
     assert not val.exists()
 
     # Same, without automatic cast
-    eng.int2float = False  # This is nasty, part 1
-    val = eng.put('a', 12)
-    eng.int2float = True  # This is nasty, part 2
+    val = eng.put('a', 12, int2float=False)
     assert val.name == 'a'
     assert val.get() == 12
     assert eng.get('a') == 12

@@ -4,7 +4,7 @@ from functools import partial
 import pytest
 
 from pyopy.hctsa.hctsa_utils import prepare_engine_for_hctsa
-from pyopy.matlab_utils import Oct2PyEngine, PyMatBridgeEngine
+from pyopy.matlab.matlab_utils import Oct2PyEngine, PyMatBridgeEngine
 
 
 @pytest.yield_fixture(scope='module', params=['oct2py', 'pymatbridge-oct', 'pymatbridge-mat'])

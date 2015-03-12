@@ -3,14 +3,19 @@
 Assumes the bindings have already been generated.
 """
 import inspect
-import numpy as np
 import time
+
+import numpy as np
+
 from pyopy.hctsa.hctsa_bindings import CO_AddNoise, DN_Cumulants, WL_fBM, WL_scal2frq
 from pyopy.hctsa.hctsa_setup import prepare_engine_for_hctsa
-from pyopy.matlab_utils import py2matstr, PyMatBridgeEngine
+from pyopy.hctsa.transformers import check_prepare_hctsa_input
+from pyopy.base import py2matstr
 
 
 # ----- Octave code generation
+from pyopy.pyopy_matlab_wrapper_backend import MatlabWrapperEngine
+
 
 def as_partial_call(hctsa_feat):
     """
@@ -49,7 +54,7 @@ def flatten_hctsa_result(result, name=''):
 
 # ----- High-level usage of the library
 
-def hctsa_partials_poc(eng_thunk=PyMatBridgeEngine,
+def hctsa_partials_poc(eng_thunk=MatlabWrapperEngine,
                        data=None,
                        # A few hctsa features chosen for no reason
                        features=(CO_AddNoise(),

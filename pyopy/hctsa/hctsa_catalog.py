@@ -8,8 +8,9 @@ A "Category" represents a call to an "Operator" with certain parameters, produci
 from glob import glob
 from itertools import chain
 import os.path as op
+
 from pyopy.hctsa import HCTSA_OPS_FILE, HCTSA_MOPS_FILE, HCTSA_OPERATIONS_DIR
-from pyopy.matlab_utils import matlab_funcname_from_filename, parse_matlab_params, parse_matlab_funcdef
+from pyopy.code import matlab_funcname_from_filename, parse_matlab_params, parse_matlab_funcdef
 
 
 class HCTSAFunction(object):
@@ -408,8 +409,8 @@ class HCTSACatalog(object):
         """Finds the correspondence between a whatami id and the HCTSA operator."""
         if HCTSACatalog._whatami2hctsa is None:
             HCTSACatalog._whatami2hctsa = {}
-            from hctsa_bindings import HCTSA_Categories
-            for hctsaop, comp in HCTSA_Categories.all():
+            from hctsa_bindings import HCTSAOperations
+            for hctsaop, comp in HCTSAOperations.all():
                 # N.B. this is not unique until we use a Standardizer for these features which require standardisation
                 HCTSACatalog._whatami2hctsa[comp.what().id()] = hctsaop
         return HCTSACatalog._whatami2hctsa.get(whatid, None)
@@ -420,5 +421,9 @@ class HCTSACatalog(object):
         cat = HCTSACatalog.catalog().categories_dict.get(category, None)
         return cat is not None and cat.standardize
 
-if __name__ == '__main__':
+
+def hctsa_summary():
     HCTSACatalog().summary()
+
+if __name__ == '__main__':
+    hctsa_summary()

@@ -4,9 +4,7 @@ import os.path as op
 import time
 
 import numpy as np
-
-from pyopy.hctsa.hctsa_utils import prepare_engine_for_hctsa
-
+from pyopy.hctsa.hctsa_setup import prepare_engine_for_hctsa
 
 
 # Write OK and Failed tuples
@@ -22,11 +20,11 @@ def check_bindings(engine=None,
                    error_extractor=lambda e: str(e).rpartition("Octave returned:")[2].strip()):
 
     if engine is None or engine == 'octave':
-        from pyopy.matlab_utils import Oct2PyEngine
+        from pyopy.matlab.matlab_utils import Oct2PyEngine
         engine = Oct2PyEngine()
         prepare_engine_for_hctsa(engine)
     elif engine == 'matlab':
-        from pyopy.matlab_utils import PyMatlabEngine
+        from pyopy.matlab.matlab_utils import PyMatlabEngine
         engine = PyMatlabEngine()
     prepare_engine_for_hctsa(engine)
 

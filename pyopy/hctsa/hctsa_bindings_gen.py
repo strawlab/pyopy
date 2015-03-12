@@ -1,12 +1,13 @@
 # coding=utf-8
 """Python bindings generation for HCTSA."""
 from itertools import chain
+
 from whatami import whatable
 
 from pyopy.hctsa import HCTSA_BINDINGS_FILE, HCTSA_BINDINGS_DIR
 from pyopy.hctsa.hctsa_catalog import HCTSACatalog
 from pyopy.hctsa.hctsa_data import hctsa_sine
-from pyopy.matlab_utils import Engines
+from pyopy.base import PyopyEngines
 from pyopy.misc import ensure_python_package
 
 
@@ -21,7 +22,7 @@ class HCTSASuper(object):
 
     def _infer_eng(self, eng):
         if eng is None:
-            eng = self._eng if self._eng is not None else Engines.default()
+            eng = self._eng if self._eng is not None else PyopyEngines.default()
         return eng
 
     def output_names(self, eng=None, x=hctsa_sine()[:40], force=False):
@@ -228,7 +229,7 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
     with open(HCTSA_BINDINGS_FILE, 'w') as writer:
         # Bindings imports
         binding_imports = (
-            'from pyopy.matlab_utils import MatlabSequence',
+            'from pyopy.base import MatlabSequence',
             'from pyopy.hctsa.hctsa_bindings_gen import HCTSASuper')
         exec '\n'.join(binding_imports) in globals()  # We are using nasty execs around that need these imports
         # Write the header
