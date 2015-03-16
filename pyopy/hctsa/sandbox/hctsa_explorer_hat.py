@@ -4,10 +4,10 @@ import time
 
 import numpy as np
 
-from pyopy.base import EngineException, PyopyEngines
-from pyopy.hctsa.hctsa_bindings import CO_AddNoise, SY_SpreadRandomLocal, HCTSAOperations
+from pyopy.base import PyopyEngines
+from pyopy.hctsa.hctsa_bindings import SY_SpreadRandomLocal
 from pyopy.hctsa.hctsa_data import hctsa_sine
-from pyopy.hctsa.hctsa_setup import prepare_engine_for_hctsa
+from pyopy.hctsa.hctsa_install import hctsa_prepare_engine
 
 
 # ncs = computable_econometrics()
@@ -35,42 +35,12 @@ from pyopy.hctsa.hctsa_setup import prepare_engine_for_hctsa
 # exit(33)
 
 
-def compare(eng,
-            x=hctsa_sine(),
-            fex=CO_AddNoise(),
-            timeout=None):
-    try:
-        start = time.time()
-        result = fex.transform(x, eng=eng)
-        return result, 'Success', time.time() - start
-    except EngineException, e:
-        return None, e.engine_response.stdout, e.engine_response.code, None
-    except Exception, e:
-        return None, str(e), None, None
-
-# eng = PyopyEngines.octave()
-eng = PyopyEngines.matlab()
-print 'Preparing...'
-prepare_engine_for_hctsa(eng)
-print 'Comparing...'
-# TODO: reshape should be done automatically by HCTSA classes, but can be bad for performance
-#       or use oned_as='col'...
-x = eng.put('x', hctsa_sine().reshape(-1, 1))
-print compare(eng, fex=HCTSAOperations.CO_CompareMinAMI_std2_2_80[1], x=x)
-print compare(eng, fex=HCTSAOperations.EN_PermEn_2[1], x=x)
-print compare(eng, fex=HCTSAOperations.CO_HistogramAMI_1_even_10[1], x=x)
-print compare(eng, fex=HCTSAOperations.PP_Compare_medianf2[1], x=x)
-print compare(eng, fex=HCTSAOperations.MF_CompareAR_1_10_05[1], x=x)
-print compare(eng, fex=HCTSAOperations.WL_cwt_db3_32[1], x=x)
-exit(22)
-
-
 def arrays2cells_and_partial(eng='octave'):
 
     eng = PyopyEngines.engine_or_matlab_or_octave(eng)
 
     # Prepare for HCTSA
-    prepare_engine_for_hctsa(eng)
+    hctsa_prepare_engine(eng)
 
     # Generate data
     arrays = [np.random.randn(size) for size in (100, 500, 100, 35, 200, 130, 230)]

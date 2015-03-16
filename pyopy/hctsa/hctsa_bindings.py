@@ -2393,39 +2393,6 @@ class EN_Shannonpdf(HCTSASuper):
         return eng.run_function(1, 'EN_Shannonpdf', x, )
 
 
-class EN_TSentropy(HCTSASuper):
-    """
-    Matlab doc:
-    ----------------------------------------
-    % 
-    % Estimates the Tsallis entropy of a signal using a parameter q that
-    % measures the non-extensivity of the system; q = 1 recovers the Shannon
-    % entropy.
-    % 
-    %---INPUTS:
-    % x, the time series
-    % q, the non-extensivity parameter
-    % 
-    % Uses code written by D. Tolstonogov and obtained from
-    % http://download.tsresearchgroup.com/all/tsmatlablink/TSentropy.m.
-    %
-    ----------------------------------------
-    """
-
-    KNOWN_OUTPUTS_SIZES = (1,)
-
-    TAGS = ('entropy',)
-
-    def __init__(self, q=0.6):
-        super(EN_TSentropy, self).__init__()
-        self.q = q
-
-    def _eval_hook(self, eng, x):
-        if self.q is None:
-            return eng.run_function(1, 'EN_TSentropy', x, )
-        return eng.run_function(1, 'EN_TSentropy', x, self.q)
-
-
 class EN_wentropy(HCTSASuper):
     """
     Matlab doc:
@@ -7544,7 +7511,6 @@ HCTSA_ALL_CLASSES = (
     EN_Randomize,
     EN_SampEn,
     EN_Shannonpdf,
-    EN_TSentropy,
     EN_wentropy,
     EX_MovingThreshold,
     FC_LocalSimple,
@@ -10644,6 +10610,13 @@ class HCTSAOperations(object):
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
+    # tags: distribution,gauss2,gof
+    DN_SimpleFit_gauss2_h10 = (
+        'DN_SimpleFit_gauss2_h10',
+        DN_SimpleFit(dmodel='gauss2', nbins=10))
+
+    # outs: adjr2,r2,resAC1,resAC2,resruns
+    # outs: rmse
     # tags: distribution,gof,power1
     DN_SimpleFit_power1_h10 = (
         'DN_SimpleFit_power1_h10',
@@ -10655,13 +10628,6 @@ class HCTSAOperations(object):
     DN_SimpleFit_exp1_h10 = (
         'DN_SimpleFit_exp1_h10',
         DN_SimpleFit(dmodel='exp1', nbins=10))
-
-    # outs: adjr2,r2,resAC1,resAC2,resruns
-    # outs: rmse
-    # tags: distribution,gauss2,gof
-    DN_SimpleFit_gauss2_h10 = (
-        'DN_SimpleFit_gauss2_h10',
-        DN_SimpleFit(dmodel='gauss2', nbins=10))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -11293,13 +11259,6 @@ class HCTSAOperations(object):
 
     # outs: meanchp,meanchsampen,p1,p2,p3
     # outs: p4,sampen1,sampen2,sampen3,sampen4
-    # tags: controlen,entropy
-    EN_SampEn_4_01_diff1 = (
-        'EN_SampEn_4_01_diff1',
-        EN_SampEn(M=4, r=0.1, preprocess='diff1'))
-
-    # outs: meanchp,meanchsampen,p1,p2,p3
-    # outs: p4,sampen1,sampen2,sampen3,sampen4
     # tags: entropy,sampen
     EN_SampEn_4_02 = (
         'EN_SampEn_4_02',
@@ -11326,95 +11285,18 @@ class HCTSAOperations(object):
         'EN_SampEn_4_005',
         EN_SampEn(M=4, r=0.05))
 
+    # outs: meanchp,meanchsampen,p1,p2,p3
+    # outs: p4,sampen1,sampen2,sampen3,sampen4
+    # tags: controlen,entropy
+    EN_SampEn_4_01_diff1 = (
+        'EN_SampEn_4_01_diff1',
+        EN_SampEn(M=4, r=0.1, preprocess='diff1'))
+
     # outs: None
     # tags: entropy,shannonpdf
     EN_Shannonpdf = (
         'EN_Shannonpdf',
         EN_Shannonpdf())
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_06 = (
-        'EN_TSentropy_06',
-        EN_TSentropy(q=0.6))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_55 = (
-        'EN_TSentropy_55',
-        EN_TSentropy(q=5.5))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_5 = (
-        'EN_TSentropy_5',
-        EN_TSentropy(q=5))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_4 = (
-        'EN_TSentropy_4',
-        EN_TSentropy(q=4))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_1 = (
-        'EN_TSentropy_1',
-        EN_TSentropy(q=1))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_3 = (
-        'EN_TSentropy_3',
-        EN_TSentropy(q=3))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_2 = (
-        'EN_TSentropy_2',
-        EN_TSentropy(q=2))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_15 = (
-        'EN_TSentropy_15',
-        EN_TSentropy(q=1.5))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_04 = (
-        'EN_TSentropy_04',
-        EN_TSentropy(q=0.4))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_02 = (
-        'EN_TSentropy_02',
-        EN_TSentropy(q=0.2))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_08 = (
-        'EN_TSentropy_08',
-        EN_TSentropy(q=0.8))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_45 = (
-        'EN_TSentropy_45',
-        EN_TSentropy(q=4.5))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_35 = (
-        'EN_TSentropy_35',
-        EN_TSentropy(q=3.5))
-
-    # outs: None
-    # tags: entropy
-    EN_TSentropy_25 = (
-        'EN_TSentropy_25',
-        EN_TSentropy(q=2.5))
 
     # outs: None
     # tags: entropy,threshold
@@ -14280,6 +14162,26 @@ class HCTSAOperations(object):
     # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
     # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
     # outs: se1,se2,ssr,stats_coeffcorr
+    # tags: lengthdep,lini,rsrange,scaling
+    SC_FluctAnal_2_rsrange_1 = (
+        'SC_FluctAnal_2_rsrange_1',
+        SC_FluctAnal(q=2, wtf='rsrange', taustep=1, k=(), lag=(), loginc=0))
+
+    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
+    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
+    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
+    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
+    # outs: se1,se2,ssr,stats_coeffcorr
+    # tags: fa,lengthdep,scaling
+    SC_FluctAnal_2_endptdiff_25_logi = (
+        'SC_FluctAnal_2_endptdiff_25_logi',
+        SC_FluctAnal(q=2, wtf='endptdiff', taustep=25, k=(), lag=(), loginc=1))
+
+    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
+    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
+    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
+    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
+    # outs: se1,se2,ssr,stats_coeffcorr
     # tags: fa,lengthdep,scaling
     SC_FluctAnal_2_iqr_25_logi = (
         'SC_FluctAnal_2_iqr_25_logi',
@@ -14304,16 +14206,6 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_rsrangefit_2_1 = (
         'SC_FluctAnal_2_rsrangefit_2_1',
         SC_FluctAnal(q=2, wtf='rsrangefit', taustep=2, k=1, lag=(), loginc=0))
-
-    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
-    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
-    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
-    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
-    # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: fa,lengthdep,scaling
-    SC_FluctAnal_2_endptdiff_25_logi = (
-        'SC_FluctAnal_2_endptdiff_25_logi',
-        SC_FluctAnal(q=2, wtf='endptdiff', taustep=25, k=(), lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14384,16 +14276,6 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_2_0 = (
         'SC_FluctAnal_2_dfa_2_0',
         SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=0, lag=(), loginc=0))
-
-    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
-    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
-    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
-    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
-    # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: lengthdep,lini,rsrange,scaling
-    SC_FluctAnal_2_rsrange_1 = (
-        'SC_FluctAnal_2_rsrange_1',
-        SC_FluctAnal(q=2, wtf='rsrange', taustep=1, k=(), lag=(), loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -16748,8 +16630,8 @@ class HCTSAOperations(object):
     # tags: econometricstoolbox,pvalue,vratiotest
     SY_VarRatioTest_24682468_00001111 = (
         'SY_VarRatioTest_24682468_00001111',
-        SY_VarRatioTest(periods=(2.0, 4.0, 6.0, 8.0, 2.0, 4.0, 6.0, 8.0),
-                        IIDs=(0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0)))
+        SY_VarRatioTest(periods=(2.0, 4.0, 6.0, 8.0, 2.0, 4.0, 6.0, 8.0), IIDs=(0.0, 0.0, 0.0, 0.0,
+                        1.0, 1.0, 1.0, 1.0)))
 
     # outs: difftau12,difftau13,maxtau,meantau,mintau
     # outs: stdtau,tau1,tau2,tau3
@@ -16887,5 +16769,5 @@ class HCTSAOperations(object):
 
     @staticmethod
     def all():
-        return sorted((name, comp) for name, comp in HCTSAOperations.__dict__.iteritems()
+        return sorted((name, comp[1]) for name, comp in HCTSAOperations.__dict__.iteritems()
                       if not name.startswith('_') and not name == 'all')

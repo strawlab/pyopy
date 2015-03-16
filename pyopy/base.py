@@ -1,6 +1,7 @@
 # coding=utf-8
 """Common API for matlab/octave as computational engines."""
 import atexit
+import copy
 from itertools import izip
 import os.path as op
 import sys
@@ -35,8 +36,8 @@ class EngineVar(object):
     def exists(self):
         return self.eng.exists(self)
 
-    def matlab_class(self):
-        return self.eng.matlab_class(self)
+    def engine_class(self):
+        return self.eng.engine_class(self)
 
 
 def _segregate_evs(varnames, values):
@@ -88,6 +89,9 @@ class MatlabSequence(object):
     """
 
     __slots__ = ['msequence', 'lower', 'upper', 'step']
+
+    # Cope with the duality matlab/python efficiently (see py2matstr)
+    USE_MATLAB_REPR = False
 
     def __init__(self, msequence):
         super(MatlabSequence, self).__init__()
@@ -149,11 +153,27 @@ class MatlabSequence(object):
             return '%r:%r:%r' % (self.lower, self.step, self.upper)
         return '%r:%r' % (self.lower, self.upper)
 
+    def python_sequence_string(self):
+        return 'MatlabSequence(\'%s\')' % self.matlab_sequence_string()
+
+    def copy_for_matlab(self):
+        """Copes with the duality python/matlab on __repr__."""
+        # ...this is is necessary for correct dispatch given our current implementation
+        myself = copy.copy(self)
+        myself.__repr__ = myself.matlab_sequence_string
+        return myself
+
+    def copy_for_python(self):
+        """Copes with the duality python/matlab on __repr__."""
+        # ...this is is necessary for correct dispatch given our current implementation
+        myself = copy.copy(self)
+        myself.__repr__ = myself.python_sequence_string
+        return myself
+
     def __repr__(self):
-        return self.matlab_sequence_string()
-        # N.B. this should be the proper implementation...
-        #   return 'MatlabSequence(\'%s\')' % self.matlab_sequence_string()
-        # ...but keep it like this is necessary for correct dispatch given our current implementation
+        if self.USE_MATLAB_REPR:
+            return self.matlab_sequence_string()
+        return self.python_sequence_string()
 
     def __eq__(self, other):
         return self.msequence == other.msequence
@@ -202,15 +222,18 @@ def _segregate_mss(varnames, values):
 def py2matstr(pyval):
     """Returns a string representation of the python value suitable for a call in matlab.
     If pyval is a EngineVar, returns the name in matlab-land.
-    Things like [MatlabSequence, 2] shoulg also get proper matlab representations
+    Things like [MatlabSequence('1:3'), 2] should also get proper matlab representations ('[1:3, 2]')
     """
-    if isinstance(pyval, EngineVar):
-        return pyval.name
-    if isinstance(pyval, MatlabSequence):
-        return pyval.matlab_sequence_string()
-    if isinstance(pyval, bool):
-        return '1' if pyval else '0'
-    return pyval.__repr__()
+    old_msequence_config = MatlabSequence.USE_MATLAB_REPR  # mmm global state, not thread safe... fix if ever a problem
+    try:
+        MatlabSequence.USE_MATLAB_REPR = True
+        if isinstance(pyval, EngineVar):
+            return pyval.name
+        if isinstance(pyval, bool):
+            return '1' if pyval else '0'
+        return pyval.__repr__()
+    finally:
+        MatlabSequence.USE_MATLAB_REPR = old_msequence_config
 
 
 def python_val_to_matlab_val(pythonval):
@@ -275,11 +298,10 @@ class EngineException(Exception):
 # --- Data transfer between python and matlab
 
 
-class MatlabTransplanter(object):
-    # FIXME: document and write base test cases
+class PyopyTransplanter(object):
 
     def __init__(self, engine=None, int2float=True):
-        super(MatlabTransplanter, self).__init__()
+        super(PyopyTransplanter, self).__init__()
         self._engine = engine
         self._int2float = int2float
 
@@ -375,7 +397,7 @@ class MatlabTransplanter(object):
 
 # --- Engines: one-stop shop for manage matlab <-> python bridges
 
-class MatlabEngine(object):
+class PyopyEngine(object):
     """Simple unifying API to wrap different python->(octave|matlab)->python integration tools.
 
     This API should allow also to:
@@ -391,10 +413,10 @@ class MatlabEngine(object):
         (use directly oct2py, pymatbridge and the like for that)
     """
 
-    def __init__(self, transplanter=None, engine_location=None, warmup=False):
-        super(MatlabEngine, self).__init__()
+    def __init__(self, transplanter=None, engine_location=None, warmup=False, num_threads=1):
+        super(PyopyEngine, self).__init__()
         if transplanter is None:
-            from pyopy.pyopy_oct2py_backend import Oct2PyTransplanter
+            from pyopy.backend_oct2py import Oct2PyTransplanter
             self.transplanter = Oct2PyTransplanter(engine=self, tmp_prefix=self.__class__.__name__)
         else:
             self.transplanter = transplanter
@@ -402,6 +424,8 @@ class MatlabEngine(object):
         self._num_results = 0
         self._num_variable_contexts = 0
         self._engine_location = engine_location
+        self._num_threads = num_threads
+        self._session = None
         if warmup:
             self.session()
             self.warmup()
@@ -525,10 +549,23 @@ class MatlabEngine(object):
 
     def session(self):
         """Returns the backend session, opening it if necessary."""
+        if self._session is None:
+            self._session = self._session_hook()
+            if not self.is_octave() and self._num_threads is not None and self._num_threads > 0:
+                set_max_matlab_threads(self, self._num_threads)
+        return self._session
+
+    def _session_hook(self):
         raise NotImplementedError()
 
     def close_session(self):
         """Closes the backend session, if it is opened, shuttind down the engine."""
+        try:
+            self._close_session_hook()
+        finally:
+            self._session = None
+
+    def _close_session_hook(self):
         raise NotImplementedError()
 
     def clear(self, varnames):
@@ -536,7 +573,8 @@ class MatlabEngine(object):
         if isinstance(varnames, (unicode, basestring, EngineVar)):
             varnames = [varnames]
         varnames = [var.name if isinstance(var, EngineVar) else var for var in varnames]
-        self.run_command('clear %s' % ' '.join(varnames), outs2py=False)
+        if len(varnames) > 0:
+            self.run_command('clear %s' % ' '.join(varnames), outs2py=False)
 
     def who(self, in_global=False):
         """Returns a list with the variable names in the current matlab/octave workspace."""
@@ -546,10 +584,13 @@ class MatlabEngine(object):
         return self.run_command('ans=who();', outs2py=True)[1][0]  # run with ()
 
     def list_variables(self, in_global=False):
-        """mwho() synonym."""
+        """who() synonym."""
         return self.who(in_global)
 
-    def matlab_class(self, name):
+    def max_comp_threads(self):
+        return get_max_matlab_threads(self)
+
+    def engine_class(self, name):
         """Returns the class of a variable in matlab-land."""
         name = name.name if isinstance(name, EngineVar) else name
         return self.run_command('class(%s)' % name, outs2py=True)[1][0]
@@ -656,6 +697,39 @@ class MatlabEngine(object):
         #
 
 
+def set_max_matlab_threads(eng, n_threads=1):
+    """Sets the maximum number of computational threads to use by a matlab engine.
+
+    Note that we use the long-time deprecated but never disaapearing maxNumCompThreads,
+    which can still lead to underlying libraries to keep using more than one computational thread. See:
+      - http://www.mathworks.com/help/matlab/ref/maxnumcompthreads.html
+      - http://www.mathworks.com/matlabcentral/answers/158192-maxnumcompthreads-hyperthreading-and-parpool
+      - http://www.mathworks.com/matlabcentral/answers/
+      83696-inconsistent-answers-from-different-computers-using-eig-function
+      - http://www.mathworks.com/matlabcentral/answers/
+      80129-definitive-answer-for-hyperthreading-and-the-parallel-computing-toolbox-pct
+
+    We should prefer -singleCompThread when possible, but the Mathworks python engine does not support
+    tweaking the command line arguments until the 2015a release. Probably by using that command line
+    matlab can tweak too the number of threads of third party library (mkl & co?)
+
+    As a side note, beyond the usual differences that happen with blas-calling soft,
+    the differences in results between machines with different numbers of cores can
+    sometimes be quite funny. See the initial benchmarks between machines with 4 cores
+    (strall, str22, noisy) and strz (with 12 cores). Probably this is because of different order of
+    rounding errors...
+    """
+    if eng.is_octave():
+        raise ValueError('Engine should be over Matlab, not Octave')
+    if n_threads is None or n_threads < 1:
+        eng.run_command("maxNumCompThreads('auto')")
+    eng.run_command("maxNumCompThreads(%d)" % n_threads)
+
+
+def get_max_matlab_threads(eng):
+    return 1 if eng.is_octave() else eng.run_function(1, 'maxNumCompThreads')
+
+
 # --- Registry engines and default implementations
 
 class PyopyEngines(object):
@@ -671,7 +745,9 @@ class PyopyEngines(object):
 
     @staticmethod
     def engine_or_matlab_or_octave(engine='octave'):
-        if isinstance(engine, MatlabEngine):  # should just quack like...
+        if engine is None:
+            engine = 'octave'
+        if isinstance(engine, PyopyEngine):  # should just quack like...
             return engine
         if isinstance(engine, basestring):
             if engine not in ('octave', 'matlab'):
@@ -681,12 +757,12 @@ class PyopyEngines(object):
 
     @staticmethod
     def matlab():
-        from pyopy.pyopy_mathworks_backend import MathworksEngine
+        from pyopy.backend_mathworks import MathworksEngine
         return PyopyEngines.engine('matlab', thunk=MathworksEngine)
 
     @staticmethod
     def octave():
-        from pyopy.pyopy_oct2py_backend import Oct2PyEngine
+        from pyopy.backend_oct2py import Oct2PyEngine
         return PyopyEngines.engine('octave', thunk=Oct2PyEngine)
 
     @staticmethod

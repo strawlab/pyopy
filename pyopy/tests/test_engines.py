@@ -3,13 +3,13 @@ from functools import partial
 
 import numpy as np
 import pytest
+from pyopy.backend_mathworks import MathworksEngine, MathworksTransplanter
+from pyopy.backend_matlab_wrapper import MatlabWrapperEngine, MatlabWrapperTransplanter
+from pyopy.backend_oct2py import Oct2PyEngine
+from pyopy.backend_pymatbridge import PyMatBridgeEngine, PyMatBridgeTransplanter
 
 from pyopy.base import MatlabSequence
 from pyopy.hctsa.hctsa_data import hctsa_sine
-from pyopy.pyopy_mathworks_backend import MathworksEngine, MathworksTransplanter
-from pyopy.pyopy_oct2py_backend import Oct2PyEngine
-from pyopy.pyopy_pymatbridge_backend import PyMatBridgeEngine, PyMatBridgeTransplanter
-from pyopy.pyopy_matlab_wrapper_backend import MatlabWrapperEngine, MatlabWrapperTransplanter
 
 
 @pytest.yield_fixture(scope='module', params=['oct2py',
@@ -47,7 +47,7 @@ def test_roundtrip_scalar(eng):
     assert val.name == 'a'
     assert val.get() == 12
     assert eng.get('a') == 12
-    assert val.matlab_class() == u'double'
+    assert val.engine_class() == u'double'
     assert val.exists()
     val.clear()
     assert not val.exists()
@@ -57,7 +57,7 @@ def test_roundtrip_scalar(eng):
     assert val.name == 'a'
     assert val.get() == 12
     assert eng.get('a') == 12
-    assert val.matlab_class() == u'int64'
+    assert val.engine_class() == u'int64'
     assert val.exists()
     val.clear()
     assert not val.exists()
@@ -66,7 +66,7 @@ def test_roundtrip_scalar(eng):
     assert val.name == 'b'
     assert val.get() == 14.
     assert eng.get('b') == 14.
-    assert val.matlab_class() == u'double'
+    assert val.engine_class() == u'double'
     assert val.exists()
     val.clear()
     assert not val.exists()
@@ -75,7 +75,7 @@ def test_roundtrip_scalar(eng):
     assert val.name == 'c'
     assert val.get() == 'lala'
     assert eng.get('c') == 'lala'
-    assert val.matlab_class() == u'char'
+    assert val.engine_class() == u'char'
     assert val.exists()
     val.clear()
     assert not val.exists()
@@ -88,13 +88,13 @@ def test_put_get_clear_many(eng):
     assert x1.name == 'x1'
     assert x1.get() == 100
     assert eng.get('x1') == 100
-    assert x1.matlab_class() == u'double'  # magic autoconversion
+    assert x1.engine_class() == u'double'  # magic autoconversion
     assert x1.exists()
 
     assert x2.name == 'x2'
     assert x2.get().shape == (1, 20)
     assert np.all(eng.get('x2') == MatlabSequence('1:20').as_array())
-    assert x2.matlab_class() == u'double'
+    assert x2.engine_class() == u'double'
 
     x1, x2 = eng.get(('x1', 'x2'))
     assert x1 == 100
@@ -113,7 +113,7 @@ def test_roundtrip_sequence(eng):
     assert d.shape == (1, 80)
     assert np.all(np.arange(1, 81) == d)
     assert val.exists()
-    assert val.matlab_class() == u'double'
+    assert val.engine_class() == u'double'
     val.clear()
     assert not val.exists()
 

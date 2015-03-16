@@ -4,17 +4,26 @@
 # Authors: Santi Villalba <sdvillal@gmail.com>
 # Licence: BSD 3 clause
 
-from setuptools import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
+import pyopy
 
 
 setup(
     name='pyopy',
     license='BSD 3 clause',
-    description='Tools to talk to matlab/octave libraries, using a hopefully simple model',
-    version='0.1-dev',
+    description='PYthon->Octave->PYthon: Tools to pythonize matlab/octave libraries',
+    version=pyopy.__version__,
     url='https://github.com/strawlab/pyopy',
     author='Santi Villalba',
     author_email='sdvillal@gmail.com',
+    packages=['pyopy',
+              'pyopy.tests',
+              'pyopy.hctsa',
+              'pyopy.hctsa.tests'],
     classifiers=[
         'Intended Audience :: Science/Research',
         'Intended Audience :: Developers',
@@ -23,24 +32,22 @@ setup(
         'Topic :: Software Development',
         'Topic :: Scientific/Engineering',
         'Operating System :: Unix',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
     ],
     requires=['numpy',
               'scipy',
-              'matplotlib',
-              'oct2py',
-              'pymatbridge',
+              'pandas',
+              'joblib',
+              'oct2py',  # FIXME == 3.1
               'argh',
               'whatami',
-              'pytest'],
-    #
-    # extras_require={
-    #     'matlab': ['pymatbridge']
-    # },
-    #
-    # test_require=['pytest'],
-    #
-    # And of course, HCTSA and other pimped matlab libraries
-    #
+              'lockfile'],
+
+    extras_require={
+        'pymatbridge': ['pymatbridge'],
+        'matlab_wrapper': ['matlab_wrapper'],
+    },
+    tests_require=['pytest'],
+
+    platforms=['linux'],
 )

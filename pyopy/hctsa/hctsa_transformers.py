@@ -13,7 +13,7 @@ def matlab_standardize(x):
     return (x - x.mean()) / (x.std(ddof=1))
 
 
-def check_prepare_hctsa_input(x, z_scored=False):
+def hctsa_prepare_input(x, z_scored=False):
     """
     Given a 1D array x, prepare it to be transferred to hctsa land.
       - HCTSA expects floating point numbers.
@@ -28,12 +28,13 @@ def check_prepare_hctsa_input(x, z_scored=False):
         raise Exception('Only one dimensional column vectors for HCTSA, please')
     elif x.shape[1] != 1:
         raise Exception('Only column vectors for HCTSA, please')
+    x = x.astype(np.float)
     if z_scored:
-        return matlab_standardize(x.astype(np.float))
-    return x.astype(np.float)
+        return matlab_standardize(x)
+    return x
 
 
-# ----- Transformers, bare minimum until we get the final abstractions from oscail
+# ----- Transformers, bare minimum until we get the final abstractions from chronotons
 
 @whatable
 class Chain(object):

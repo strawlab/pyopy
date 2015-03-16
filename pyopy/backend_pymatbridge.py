@@ -1,10 +1,10 @@
 # coding=utf-8
 import uuid
 
-from pyopy.base import MatlabEngine, EngineResponse, MatlabTransplanter
+from pyopy.base import PyopyEngine, EngineResponse, PyopyTransplanter
 
 
-class PyMatBridgeTransplanter(MatlabTransplanter):
+class PyMatBridgeTransplanter(PyopyTransplanter):
 
     def _get_hook(self, varnames, eng):
         if len(varnames) == 1:
@@ -18,7 +18,7 @@ class PyMatBridgeTransplanter(MatlabTransplanter):
                 eng.run_command('%s=int64(%s)' % (name, name))  # FIXME: or int32, if we are in a 32 bit system
 
 
-class PyMatBridgeEngine(MatlabEngine):
+class PyMatBridgeEngine(PyopyEngine):
 
     def __init__(self,
                  engine_location=None,
@@ -27,16 +27,13 @@ class PyMatBridgeEngine(MatlabEngine):
                  log=False,
                  octave=False,
                  warmup=False,
-                 single_threaded=True):
-        # session control
-        self._session = None
+                 num_threads=1):
         self._id = 'pymatbridge-' + str(uuid.uuid1()) if sid is None else sid
         self._octave = octave
-        self._single_threaded = single_threaded
+        self._num_threads = num_threads
         self._log = log
         if engine_location is None:
             engine_location = 'octave' if octave else 'matlab'
-        # we transfer data using matfiles and oct2py conversion rules
         super(PyMatBridgeEngine, self).__init__(transplanter=transplanter,
                                                 engine_location=engine_location,
                                                 warmup=warmup)
@@ -51,26 +48,25 @@ class PyMatBridgeEngine(MatlabEngine):
 
     # --- Session management
 
-    def session(self):
-        if self._session is None:
-            import pymatbridge
-            # N.B. capture_stdout=True in John's branch
-            # N.B. Octave requires version > 0.3 (git when writing this)
-            eng = pymatbridge.Octave if self._octave else pymatbridge.Matlab
-            if self._octave:
-                startup_ops = None
-            else:
-                startup_ops = ' -nodesktop -nodisplay' if not self._single_threaded else \
-                    ' -nodesktop -nodisplay -singleCompThread'
-            self._session = eng(executable=self._engine_location,
-                                id=self._id,
-                                socket_addr='ipc:///tmp/%s' % self._id,
-                                log=self._log,
-                                startup_options=startup_ops)
-            self._session.start()
-        return self._session
+    def _session_hook(self):
+        import pymatbridge
+        # N.B. capture_stdout=True in John's branch
+        # N.B. Octave requires version > 0.3 (git when writing this)
+        eng = pymatbridge.Octave if self._octave else pymatbridge.Matlab
+        if self._octave:
+            startup_ops = None
+        else:
+            startup_ops = ' -nodesktop -nodisplay' if self._num_threads != 1 else \
+                ' -nodesktop -nodisplay -singleCompThread'
+        session = eng(executable=self._engine_location,
+                      id=self._id,
+                      socket_addr='ipc:///tmp/%s' % self._id,
+                      log=self._log,
+                      startup_options=startup_ops)
+        session.start()
+        return session
 
-    def close_session(self):
+    def _close_session_hook(self):
         try:
             self._session.stop()
         finally:

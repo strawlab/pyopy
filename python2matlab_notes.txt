@@ -1,0 +1,90 @@
+Python <-> Octave/Matlab bridges notes
+======================================
+
+There are many options to pimp matlab/octave to do the computational work:
+  http://stackoverflow.com/questions/9845292/a-tool-to-convert-matlab-code-to-python
+At the moment all these solutions are kinda slow (call and data transfer overhead)
+when compared with analogous "official" solutions for other languages
+(e.g. Matlab Builder / Matlab Builder Ja).Perhaps this an inherent problem with CPython.
+
+Notes on the different solutions I found most promising (as of 2015/03):
+
+  - oct2py:
+    - it can be used as a backend, see backend_oct2py.py
+    - octave only
+    - it has great roundtrip abilities, shared with its brother project sci2py
+    - it has quite an overhead on calls.
+      oct2py used to be based on expect, where some of the performance penalty comes from
+    - also it has a lot of reflection and disassembling magic, which surely makes each call costly
+      probably this is the biggest bottleneck for programs based on many calls
+      this complexity could be tamed by providing explicitly the number of desired outputs
+      and then disabling introspection + dissassembling magic in this kind of calls
+    - it is based on files; it is quite efficient, specially if using ramdisk (in my case, tmpfs)
+      and if compared with other serialisation stuff based on jsonish serializers.
+      Because no in-memory tunnel is ever used, no special connection with octave or matlab is required,
+      which makes the library pure-python (neat), much easier to use and interoperable with both
+      matlab and octave. It has broad type support (it even supports sparse matrices).
+      For our use cases, file roundtrip works fast enough (faster than custom
+      solutions like hdf5storage). As of 2015/03 this is our data transfer mechanism of choice
+      not only for octave, but also for matlab (with the added advantage of using the same
+      mechanism for both backends).
+    - I wonder how much cruft is left on the octave side per call
+
+  - matlab engine for python
+    http://www.mathworks.com/help/matlab/matlab-engine-for-python.html
+    can be used as a backend, see backend_mathworks.py
+    Official so fast and not hanging, but data transfer and lack of support of numpy
+    (strategic decision?) are killers. As per 2015/03 we use it also as command dispatcher
+    in combination with file-based data transfer. See also:
+    https://github.com/strawlab/pyopy/issues/9
+
+  - pymatbridge is most promising
+    - https://github.com/arokem/python-matlab-bridge
+    - can be used as a backend, see backend_pymatbridge.py
+    - Supports both octave and matlab under a common API, better user base and most active
+    - See also John's branches:
+      https://github.com/nzjrs/python-matlab-bridge
+      (based on the promising)
+      https://github.com/arokem/python-matlab-bridge/pull/63
+    - Caveat: it is really slow transferring not so big matrices (it all boils down to json via zmq)...
+      could be circunvented using files (ala Oct2py/John/hdfstorage...)
+      or maybe a better encoding (ala transplant / new base64 encoding)
+    - pymatbridge uses java for json in the matlab side, so octave needs to be compiled with java support
+      for using it. This is the case for ubuntu builds, but it is not for arch (look at my modified PKGBUILD
+      that makes the trick).
+    - At the time of writing, pymatbridge messenger is not very reliable
+      (a pity, it used to work well before moving to 0.4.3+)
+        from pyopy.pyopy_pymatbridge_backend import PyMatBridgeEngine
+        install_hctsa(engine=PyMatBridgeEngine(octave=True), download=True)
+        install_hctsa(engine=PyMatBridgeEngine(octave=False), download=True)
+        *FAILS, we do not receive the whole message*
+        {"content":{"stdout":"fastdfa...Building with 'gcc'.\n ... "success":tru}
+      Also trying something like matlab.run_code(ones(10000, 10)) fails to complete/hangs
+
+  - matlab_wrapper shows promise at the moment: hassle-free installation because it uses ctypes
+    to wrap matlab's libeng, and so data transfers are in memory
+    - matlab only
+    - https://github.com/mrkrd/matlab_wrapper
+    - can be used as a backend, see backend_matlab_wrapper.py.
+    - does support numpy, but not sparse matrices ATM
+    - command dispatch is really slow
+    - data transfer times are decent
+    - it is picky with startup and does not infer correctly paths
+      (should look for libeng instead, probably run matlab)
+      it does not fail graciously
+    - it requires csh installed (tcsh in arch)
+      see: http://www.mathworks.com/help/matlab/matlab_external/introducing-matlab-engine.html
+
+  - transplant is an spin-off of python-matlab-bridge
+    - matlab only
+    - it also uses an base64 for encoding arrays into json, so it should be as fast as python-matlab-bridge
+    - base64 implementation happened before python-matlab-bridge's, so it is independent
+    - it does not seem to have any hard-limit on transfers, as python-matlab-bridge has at the moment
+    - the json encoder is pure matlab, which should be good
+    - in my tests it tends to hang with not so large arrays
+    - https://github.com/bastibe/transplant
+
+  - tried the other many other options, none was very convincing
+
+  - out of desperation, manual command line should prove easy!
+    matlab -nojvm -nodisplay -r "commands;quit"

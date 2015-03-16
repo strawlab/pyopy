@@ -4,7 +4,7 @@ from itertools import chain
 
 from whatami import whatable
 
-from pyopy.hctsa import HCTSA_BINDINGS_FILE, HCTSA_BINDINGS_DIR
+from pyopy.hctsa.hctsa_config import HCTSA_BINDINGS_FILE, HCTSA_BINDINGS_DIR
 from pyopy.hctsa.hctsa_catalog import HCTSACatalog
 from pyopy.hctsa.hctsa_data import hctsa_sine
 from pyopy.base import PyopyEngines
@@ -25,13 +25,15 @@ class HCTSASuper(object):
             eng = self._eng if self._eng is not None else PyopyEngines.default()
         return eng
 
-    def output_names(self, eng=None, x=hctsa_sine()[:40], force=False):
+    def output_names(self, eng=None, x=None, force=False):
         """
         Returns
         -------
         A string list of the outputs in HCTSA order
         """
         eng = self._infer_eng(eng)
+        if x is None:
+            x = hctsa_sine()[:40]
         if force or self._outnames is None:
             # N.B. this is not deterministic inference, as sometimes the number of outputs depend on the T.S.
             # Is there an "upper bound on the amount of outputs"?
@@ -58,7 +60,7 @@ class HCTSASuper(object):
         self._eng = eng
 
 
-def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
+def gen_bindings(hctsa_catalog=None, write_function_too=False):
     """Generates the python bindings to the library operators."""
 
     def gen_function(funcname, parameters, doc, defaults=None, prefix='HCTSA'):
@@ -185,26 +187,26 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
             catalog = HCTSACatalog()
         lines = []
         for fname, func in sorted(catalog.functions_dict.items()):
-            for category in func.categories:
-                if not add_commented_out and category.is_commented:
+            for operation in func.operations:
+                if not add_commented_out and operation.is_commented:
                     continue
                 # generate the call string
                 # avoid shadowing buitins with parameters...
                 params = [{'ord': 'ordd'}.get(param, param) for param in func.params]
-                values = category.param_values
+                values = operation.param_values
                 params_string = '' if not values else \
                     ', '.join('%s=%r' % (name, value) for name, value in zip(params, values))
 
                 def chunks(l, n):
                     for i in xrange(0, len(l), n):
                         yield l[i:i+n]
-                for outs in chunks(category.known_outputs(), 5):
+                for outs in chunks(operation.known_outputs(), 5):
                     lines.append('# outs: %s' %
-                                 ','.join(map(str, outs) if category.known_outputs() else ''))
+                                 ','.join(map(str, outs) if operation.known_outputs() else ''))
                 lines.append('# tags: %s' %
-                             ','.join(map(str, category.tags()) if category.tags() else ''))
-                lines.append('%s = (' % category.catname)
-                lines.append('    \'%s\',' % category.catname)
+                             ','.join(map(str, operation.tags()) if operation.tags() else ''))
+                lines.append('%s = (' % operation.opname)
+                lines.append('    \'%s\',' % operation.opname)
                 instline = '    %s(%s))\n' % (fname, params_string)
                 if len(instline) < 110:
                     lines.append(instline)
@@ -214,7 +216,7 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
                     lines.append(' ' * len('    %s(' % fname) + instline[first_comma+2:])
         lines.append('@staticmethod')
         lines.append('def all():')
-        lines.append('    return sorted((name, comp) for name, comp in HCTSAOperations.__dict__.iteritems()')
+        lines.append('    return sorted((name, comp[1]) for name, comp in HCTSAOperations.__dict__.iteritems()')
         lines.append('                  if not name.startswith(\'_\') and not name == \'all\')')
         lines = ['    %s' % line for line in lines]
         return 'class HCTSAOperations(object):\n' \
@@ -265,4 +267,4 @@ def gen_python_bindings(hctsa_catalog=None, write_function_too=False):
         writer.write(gen_operations_class())
 
 if __name__ == '__main__':
-    gen_python_bindings()
+    gen_bindings()

@@ -208,9 +208,7 @@ def outputs_from_command(command):
 
 
 #####################################################################
-#
 # Old parameter-line parsing machinery (pre OMPC reimplementation)
-#
 #####################################################################
 #
 #
@@ -332,3 +330,12 @@ def outputs_from_command(command):
 #     return parameter_values
 #
 #####################################################################
+# Other full blown python matlab parsers and translators
+#####################################################################
+#
+# - OMPC (we use it here for robust parsing of matlab statements)
+# - libermate
+# - Mat2py
+#
+#####################################################################
+

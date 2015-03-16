@@ -98,3 +98,9 @@ def some_strings(n, as_list=False, prefix='', suffix=''):
     if as_list:
         return list(islice(strings_generator(prefix=prefix, suffix=suffix), n))
     return islice(strings_generator(), n)
+
+
+# --- Find type of file-system (for linux only, might work in MAC)
+#    http://stackoverflow.com/questions/908188/is-there-any-way-of-detecting-if-a-drive-is-a-ssd
+#    for ramdisk and network file systems, parse maybe filesystem outputed by mount
+

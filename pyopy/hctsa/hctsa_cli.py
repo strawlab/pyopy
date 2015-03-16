@@ -2,19 +2,19 @@
 """Command-line access to some tools to manage HCTSA."""
 import argh
 
-from pyopy.hctsa.hctsa_bindings_gen import gen_python_bindings
-from pyopy.hctsa.hctsa_setup import install_hctsa
-from pyopy.hctsa.hctsa_catalog import hctsa_summary
+from pyopy.hctsa.hctsa_bindings_gen import gen_bindings
+from pyopy.hctsa.hctsa_install import install
+from pyopy.hctsa.hctsa_catalog import summary
 
 
 if __name__ == '__main__':
     parser = argh.ArghParser()
     parser.add_commands([
         # matlab world installation
-        install_hctsa,
+        install,
         # python-land binding generation
-        gen_python_bindings,
-        # catalog
-        hctsa_summary,
+        gen_bindings,
+        # catalog summary
+        summary,
     ])
     parser.dispatch()

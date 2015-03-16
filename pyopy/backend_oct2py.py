@@ -1,15 +1,33 @@
 # coding=utf-8
 """Octave Oct2Py adaptor and hacks"""
+import atexit
 import os
-from oct2py import Oct2PyError, Oct2Py
-from oct2py.matwrite import MatWrite, putvals, putval
-from scipy.io import savemat
 import shutil
 import tempfile
-from oct2py import Struct
+
+from scipy.io import savemat
+
+import oct2py
+from oct2py import Oct2PyError, Oct2Py, Struct
+from oct2py.matwrite import MatWrite, putvals, putval
 from oct2py.matread import MatRead
-from pyopy.base import MatlabTransplanter, MatlabEngine, EngineResponse, EngineVar, MatlabSequence
+
+from pyopy.base import PyopyTransplanter, PyopyEngine, EngineResponse, EngineVar, MatlabSequence
 from pyopy.code import outputs_from_command
+
+# --- manage oct2py opened octave instance
+# oct2py is ATM always opening an octave instance (see oct2py.__init__)
+# as we cannot assume it won't be used, we at least make sure it is closed when exiting
+# it would be possible to make this lazy without breaking oct2py interface:
+# http://stackoverflow.com/questions/1462986/lazy-module-variables-can-it-be-done
+
+
+@atexit.register
+def close_oct2py_octave():
+    try:
+        oct2py.octave.close()
+    except:
+        pass
 
 
 # --- Copy & paste & hack stuff from oct2py
@@ -103,7 +121,7 @@ class Oct2PyNotAll(Oct2Py):
 
 # --- Transplanter
 
-class Oct2PyTransplanter(MatlabTransplanter):
+class Oct2PyTransplanter(PyopyTransplanter):
     """File based data transit using the great oct2py type conversion machinery.
 
     Recommened is to use this with SSDs or, for flying speeds, use a RAM-based fs
@@ -173,7 +191,7 @@ class Oct2PyTransplanter(MatlabTransplanter):
 
 # --- Engine
 
-class Oct2PyEngine(MatlabEngine):
+class Oct2PyEngine(PyopyEngine):
 
     def __init__(self,
                  engine_location='octave',
@@ -182,13 +200,13 @@ class Oct2PyEngine(MatlabEngine):
                  timeout=None,
                  log=True,
                  warmup=False):
-        self._session = None
         self._verbose = verbose
         self._timeout = timeout
         self._log = log
         super(Oct2PyEngine, self).__init__(transplanter=transplanter,
                                            engine_location=engine_location,
-                                           warmup=warmup)
+                                           warmup=warmup,
+                                           num_threads=1)
 
     def is_octave(self):
         return True
@@ -220,13 +238,8 @@ class Oct2PyEngine(MatlabEngine):
 
     # --- Session management
 
-    def session(self):
-        if self._session is None:
-            self._session = Oct2PyNotAll(executable=self._engine_location)
-        return self._session
+    def _session_hook(self):
+        return Oct2PyNotAll(executable=self._engine_location)
 
-    def close_session(self):
-        try:
-            self._session.close()
-        finally:
-            self._session = None
+    def _close_session_hook(self):
+        self._session.close()

@@ -7,8 +7,9 @@ from subprocess import check_call
 import urllib
 import tarfile
 from pyopy.base import PyopyEngines
+from pyopy.hctsa.hctsa_bindings_gen import gen_bindings
 
-from pyopy.hctsa import HCTSA_DIR, HCTSA_TOOLBOXES_DIR
+from pyopy.hctsa.hctsa_config import HCTSA_DIR, HCTSA_TOOLBOXES_DIR
 from pyopy.code import rename_matlab_func
 from pyopy.misc import ensure_dir, cd
 
@@ -17,8 +18,9 @@ def _download_hctsa(force=False, release_or_branch='OperationChanges', use_git=T
     """Downloads HCTSA from github."""
     if op.isdir(HCTSA_DIR) and not force:
         return
-    print 'Removing current installation...'
-    shutil.rmtree(HCTSA_DIR, ignore_errors=True)
+    if op.isdir(HCTSA_DIR):
+        print 'Removing current installation...'
+        shutil.rmtree(HCTSA_DIR, ignore_errors=False)
     if not use_git:
         url = 'https://github.com/SystemsAndSignalsGroup/hctsa/archive/%s.tar.gz' % release_or_branch
         tar = op.join(op.dirname(HCTSA_DIR), 'hctsa-%s.tar.gz' % release_or_branch)
@@ -133,10 +135,24 @@ def _mex_hctsa(engine=None):
     response, _ = engine.run_command('compile_mex')
     # feedback if available...
     print 'Compilation feedback:\n\t', response.stdout
+    #
     # We also need to compile TISEAN and put it in the PATH (see my PKGBUILD for arch)
+    # For ubuntu, not big deal either (just make sure gfortran is there):
+    #   http://ubuntuforums.org/archive/index.php/t-2233905.html?s=f8da67a291ad38e4c2a533d35b9f8a80
+    # What I do is not even to create a package (checkinstall would make it easy), but:
+    #   sudo apt-get install gfortran
+    #   export FC=gfortran  # in case there are others, like ifort
+    #   cd $PYOPY_HOME/pyopy/externals/toolboxes/hctsa/Toolboxes/Tisean_3.0.1
+    #   ./configure --prefix /usr/lib/tisean  # /usr/lib/tisean so it is similar to arch
+    #   make clean
+    #   make
+    #   sudo mkdir -p /usr/lib/tisean/bin
+    #   sudo make install
+    #   # --- then add /usr/lib/tisean/bin to the PATH --- #
+    #
 
 
-def prepare_engine_for_hctsa(engine):
+def hctsa_prepare_engine(engine):
     """Loads HCTSA and octave dependencies in the engine."""
     # Adds HCTSA to the engine path, so it can be used
     engine.add_path(op.join(HCTSA_DIR, 'Operations'))
@@ -153,7 +169,7 @@ def prepare_engine_for_hctsa(engine):
         engine.run_command('pkg load econometrics')
 
 
-def install_hctsa(engine='octave', force_download=False):
+def install(engine='octave', force_download=False, generate_bindings=True):
     """Fixes problems with the HCTSA codebase and mexes extensions.
 
     Parameters
@@ -173,12 +189,16 @@ def install_hctsa(engine='octave', force_download=False):
     # Fix some problems with the codebase to allow compilation with octave and get rid of shadowing
     _fix_hctsa()
     # Add HCTSA to the engine path
-    prepare_engine_for_hctsa(engine)
+    hctsa_prepare_engine(engine)
     # Build the mex files
     _mex_hctsa(engine)
+    # Generate the bindings
+    if generate_bindings:
+        print 'Generating python bindings...'
+        gen_bindings()
 
 
 if __name__ == '__main__':
-    install_hctsa(engine='matlab', force_download=True)  # make this true to run from anew
-    install_hctsa(engine='octave', force_download=False)
+    install(engine='matlab', force_download=True, generate_bindings=True)
+    install(engine='octave', force_download=False, generate_bindings=False)
     print 'Done'

@@ -2,7 +2,7 @@
 """HCTSA test time series."""
 import os.path as op
 import numpy as np
-from pyopy.hctsa import HCTSA_TESTTS_DIR
+from pyopy.hctsa.hctsa_config import HCTSA_TESTTS_DIR
 
 
 def hctsa_sine():
@@ -15,3 +15,10 @@ def hctsa_noise():
 
 def hctsa_noisysinusoid():
     return np.loadtxt(op.join(HCTSA_TESTTS_DIR, 'SY_noisysinusoid.dat'))
+
+
+HCTSA_TEST_TIME_SERIES = (
+    ('sine', hctsa_sine),
+    ('noise', hctsa_noise),
+    ('noisysinusoid', hctsa_noisysinusoid),
+)

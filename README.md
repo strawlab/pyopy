@@ -1,10 +1,49 @@
-# Installation
+PYOPY: PYthon -> Octave/matlab -> PYthon
+========================================
 
-## Requirements
+Pyopy helps using matlab/octave libraries from python.
+It provides functionality to parse matlab code and express calls to matlab functions
+as calls to python functions. It also provides a generic mechanism to transfer data to
+and run code in octave/matlab instances. Pyopy was born to provide python bindings to the 
+[HCTSA time-series feature extraction library](http://www.comp-engine.org/timeseries/).
 
-### Octave and the requirements or matlab and the requirements
-### As for python: oct2py, numpy, scipy
-### HCTSA: symlink or copy to blah
+
+Features
+--------
+
+Installation
+------------
+
+Pyopy is only tested on linux. It requires python 2.7 and the following python dependencies:
+ 
+ - numpy
+ - scipy
+ - pandas
+ - joblib
+ - argh
+ - whatami
+ - lockfile
+
+If you use conda/anaconda 
+
+```sh
+pip install oct2py
+pip install pymatbridge
+pip install matlab_wrapper
+```
+
+Pyopy design decouples command dispatching and data transfer.
+Pyopy relies upon the excellent [oct2py](http://blink1073.github.io/oct2py/) 
+(of which a [slightly modified version](https://github.com/sdvillal/oct2py) is provided with pyopy).
+for generic data transfers. For communicating to octave 
+
+#
+# To compile the pymatbridge octave messenger:
+#   mkoctfile --mex -lzmq messenger.c
+# Put somewhere in the octave path
+# And for matlab:
+#   /home/santi/Utils/Science/matlab/bin/mex -lzmq messenger.c
+#
 
 # Setup the matlab<->python bridges
 
@@ -43,7 +82,6 @@ Installation in linux 64 and Matlab/Octave compatibility state:
 
 # Licenses
 
+ - OMPC: GPL
+ - OCT2PY: BSD
  - HCTSA: GPL
-
-
-# Usage examples

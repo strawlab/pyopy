@@ -3,39 +3,39 @@
 
 HCTSA is a big library of "Operations" together with some extra code to create a database of time-series features
 Each "Operation" maps a time-series to some outputs, and each output ("Feature") is a scalar.
-A "Category" represents a call to an "Operator" with certain parameters, producing one or more "Features".
+An "Operation" represents a call to an "Operator" with certain parameters, producing one or more "Features".
 """
 from glob import glob
 from itertools import chain
 import os.path as op
 
-from pyopy.hctsa import HCTSA_OPS_FILE, HCTSA_MOPS_FILE, HCTSA_OPERATIONS_DIR
+from pyopy.hctsa.hctsa_config import HCTSA_OPS_FILE, HCTSA_MOPS_FILE, HCTSA_OPERATIONS_DIR
 from pyopy.code import matlab_funcname_from_filename, parse_matlab_params, parse_matlab_funcdef
 
 
 class HCTSAFunction(object):
-    """A main function in an mfile, parsed to its main components, from the HCTSA library.
+    """A main function (aka "operator") in an mfile, parsed to its main components, from the HCTSA library.
 
     Parameters
     ----------
     mfile : string
-        The path to the mfile that contains the function
+      The path to the mfile that contains the function
 
     outstring : string
-        The output on the function definition (for example "out" or "[a,b]")
+      The output on the function definition (for example "out" or "[a,b]")
 
     params : string list
-        The list of parameter names for the function
+      The list of parameter names for the function
 
     doc : string
-        The documentation of the mfile (everything before the function definition)
+      The documentation of the mfile (everything before the function definition)
 
     code : string
-        The body of the function (everything after the function definition,
-        possibly including other auxiliary functions).
+      The body of the function (everything after the function definition,
+      possibly including other auxiliary functions).
 
-    categories : list-like of HCTSACategory objects
-        The different fixed parameters used in the HCTSA code base to call this function.
+    operations : list-like of HCTSAOperation objects
+      The different fixed parameters used in the HCTSA code base to call this function.
     """
     def __init__(self,
                  mfile,
@@ -43,7 +43,7 @@ class HCTSAFunction(object):
                  params,
                  doc,
                  code,
-                 categories):
+                 operations):
         super(HCTSAFunction, self).__init__()
         self.mfile = op.abspath(mfile)
         self.funcname = matlab_funcname_from_filename(self.mfile)
@@ -51,19 +51,19 @@ class HCTSAFunction(object):
         self.params = params
         self.doc = doc
         self.code = code
-        self.categories = categories
+        self.operations = operations
 
-    def add_category(self, category):
-        """Adds a new category (call to this function with specific parameter values) to this function."""
-        self.categories.append(category)
+    def add_operation(self, operation):
+        """Adds a new operation (call to this function with specific parameter values) to this function."""
+        self.operations.append(operation)
 
     def tags(self):
-        """Returns a sorted list with the tags on all categories which arise from this function."""
-        return sorted(set(chain.from_iterable(cat.tags() for cat in self.categories)))
+        """Returns a sorted list with the tags on all operations which arise from this function."""
+        return sorted(set(chain.from_iterable(operation.tags() for operation in self.operations)))
 
     def known_outputs(self):
         """Returns a sorted tuple with the outputs declared in HCTSA metadata for this function."""
-        return tuple(sorted(set(cat.known_outputs() for cat in self.categories)))
+        return tuple(sorted(set(operation.known_outputs() for operation in self.operations)))
 
 
 class HCTSAFeature(object):
@@ -74,69 +74,65 @@ class HCTSAFeature(object):
 
     Parameters
     ----------
-    featname : string
-        The feature name in the HCTSA database (e.g. "CO_HistogramAMI_1_std1_2.min")
+    featname: string
+      The feature name in the HCTSA database (e.g. "CO_HistogramAMI_1_std1_2.min")
 
-    category : HCTSAFeatureCategory
-        The category of this parameter (holds function and parameter values information)
+    operation: HCTSAOperation
+      The operation used to compute this feature (holds function and parameter values information)
 
-    outname : string
-        The name of the field in the matlab struct that is outputted by the matlab function
-        or None if the function returns already a single scalar (e.g. "min")
+    outname: string
+      The name of the field in the matlab struct that is outputted by the matlab function
+      or None if the function returns already a single scalar (e.g. "min")
 
-    tags : string list
-        The tags given to the feature in HCTSA, useful for categorization
+    tags: string list
+      The tags given to the feature in HCTSA, useful for categorization
     """
     def __init__(self,
                  featname,
-                 category,
+                 operation,
                  outname,
                  tags):
         super(HCTSAFeature, self).__init__()
         self.featname = featname
-        self.category = category
+        self.operation = operation
         self.outname = outname
         self.tags = tags
 
 
-class HCTSAFeatureCategory(object):
+class HCTSAOperation(object):
     """
-    A feature category in HCTSA parlance is the combination of
+    An Operation in HCTSA parlance is the combination of
     and Operator (function) and concrete parameter values.
-
-    This is a "category" because, given that an operator can
-    return several values, this application can potentially
-    give rise to many different features.
 
     Parameters
     ----------
-    catname : string
-        The category name (e.g. "CO_CompareMinAMI_even_2_80")
+    opname : string
+      The operation name (e.g. "CO_CompareMinAMI_even_2_80")
 
     funcname : string
-        The function name associated to this category (e.g. "CO_CompareMinAMI")
+      The function name associated to this operation (e.g. "CO_CompareMinAMI")
 
     param_values : list
-        A list with the values for the function that define this category (as objects in python land)
+      A list with the values for the function that define this operation (as objects in python land)
 
     is_commented : bool
-        Whether the category is commented in the HCTSA code
+      Whether the operation is commented in the HCTSA code
 
     function : HCTSAFunction
-        The function used to generate this category of features
+      The function used by this operation
 
     standardize : bool, default False
-        Many categories require the input time series to be standardized (marked by "y" instead of "x" as input)
+      Many operations require the input time series to be standardized (marked by "y" instead of "x" as input)
     """
     def __init__(self,
-                 catname,
+                 opname,
                  funcname,
                  param_values,
                  is_commented,
                  function=None,
                  standardize=False):
-        super(HCTSAFeatureCategory, self).__init__()
-        self.catname = catname
+        super(HCTSAOperation, self).__init__()
+        self.opname = opname
         self.funcname = funcname
         self.param_values = param_values
         self.is_commented = is_commented
@@ -145,21 +141,21 @@ class HCTSAFeatureCategory(object):
         self.standardize = standardize
 
     def add_feature(self, hctsa_feature):
-        """Adds a feature to this category "known features".
+        """Adds a feature to this operation "known features".
 
         Parameters
         ----------
         hctsa_feature : HCTSAFeature
-            A feature to add to this category (note that at the moment we allow duplicates)
+            A feature to add to this operation (note that at the moment we allow duplicates)
         """
         self.features.append(hctsa_feature)
 
     def known_outputs(self):
-        """Returns the names of the known outputs for this category as a tuple."""
+        """Returns the names of the known outputs for this operation as a tuple."""
         return tuple(sorted(feat.outname for feat in self.features))
 
     def tags(self):
-        """Returns a sorted list with the tags on all features which arise from this category."""
+        """Returns a sorted list with the tags on all features which arise from this operation."""
         return sorted(set(chain.from_iterable(feat.tags for feat in self.features)))
 
     def has_tag(self, tag):
@@ -172,25 +168,25 @@ class HCTSACatalog(object):
 
     Parameters
     ----------
-    mfiles_dir : path
-        The directory where the matlab m files for the HCTSA operations reside.
+    mfiles_dir: path
+      The directory where the matlab m files for the HCTSA operations reside.
 
-    mops_file : path
-        The path to the file where we find the map {category -> (function, param_values)}
+    mops_file: path
+      The path to the file where we find the map {operation -> (function, param_values)}
 
-    ops_file : path
-        The path to the file where we find the map {feature_name -> (category, output_name)}
+    ops_file: path
+      The path to the file where we find the map {feature_name -> (operation, output_name)}
 
     Useful Members
     --------------
     functions_dict : dictionary
-        A map {function_name -> HCTSAFunction}
+      A map {function_name -> HCTSAFunction}
 
-    categories_dict : dictionary
-        A map {category_name -> HCTSAFeatureCategory}
+    operations_dict : dictionary
+      A map {operation_name -> HCTSAOperation}
 
     features_dict : dictionary
-        A map {feature_name -> HCTSAFeature}
+      A map {feature_name -> HCTSAFeature}
     """
 
     _catalog = None
@@ -206,7 +202,7 @@ class HCTSACatalog(object):
         self.ops_file = ops_file
 
         self.functions_dict = None
-        self.categories_dict = None
+        self.operations_dict = None
         self.features_dict = None
 
         self._build_hctsa_catalog()
@@ -227,13 +223,12 @@ class HCTSACatalog(object):
             return line, False
 
         #
-        # 1) Get all the categories defined in the MOPS (metaoperations?) file
+        # 1) Get all the operations defined in the MOPS file
         #
-        # A category is a concrete call to an operator with concrete parameters, and can be "commented"
+        # An operation is a concrete call to an operator with concrete parameters, and can be "commented"
         # (meaning is ignored by the HCTSA code).
         #
-        # Because each call can return several many named features after the same computation,
-        # these calls are grouped in FeatureCategories...
+        # Each call can return several many named features after the same computation,
         #
 
         def parse_mops_line(line):
@@ -243,7 +238,7 @@ class HCTSACatalog(object):
               'CO_CompareMinAMI(y,'even',[2:80])	CO_CompareMinAMI_even_2_80'
 
             Gets splitted as:
-              category = 'CO_CompareMinAMI_even_2_80'
+              operation = 'CO_CompareMinAMI_even_2_80'
               funcname = 'CO_CompareMinAMI'
               params = ['even', '2:80']
               is_commented = False
@@ -252,31 +247,31 @@ class HCTSACatalog(object):
             line, is_commented = manage_comments(line)
             if line is None:  # Ignore commented lines
                 return None, None, None, None, None
-            callspec, category = line.split()
+            callspec, operation = line.split()
             funcname, _, params = callspec.partition('(')
             funcname = funcname.strip()
             params = params.rpartition(')')[0].strip()
             series, _, params = params.partition(',')  # The first parameter is always the time series
             params = parse_matlab_params(params)
             is_standardized = series == 'y'
-            return category, funcname, params, is_commented, is_standardized
+            return operation, funcname, params, is_commented, is_standardized
 
-        self.categories_dict = {}
+        self.operations_dict = {}
         with open(self.mops_file) as reader:
             for line in reader:
                 if not line.strip():
                     continue
-                categoryname, funcname, params, is_commented, is_standardized = parse_mops_line(line)
-                if categoryname is None:
+                operationname, funcname, params, is_commented, is_standardized = parse_mops_line(line)
+                if operationname is None:
                     continue  # Ignore commented lines
-                if categoryname in self.categories_dict:
-                    raise Exception('Repeated category: %s' % categoryname)
-                self.categories_dict[categoryname] = \
-                    HCTSAFeatureCategory(categoryname, funcname, params, is_commented, standardize=is_standardized)
+                if operationname in self.operations_dict:
+                    raise Exception('Repeated operation: %s' % operationname)
+                self.operations_dict[operationname] = \
+                    HCTSAOperation(operationname, funcname, params, is_commented, standardize=is_standardized)
 
         #
-        # 2) Get all the features defined in the OPS (operations) file
-        # A feature maps a category with the concrete scalar that needs to be taken out of the function call.
+        # 2) Get all the features defined in the OPS file
+        # A feature maps an operation to the concrete scalar that needs to be taken out of the function call.
         #
 
         def parse_ops_line(line):
@@ -286,7 +281,7 @@ class HCTSACatalog(object):
               CO_CompareMinAMI_even_2_80.min	CO_CompareMinAMI_even_2_80_min	correlation,AMI
 
             Gets splitted as:
-              category = 'CO_CompareMinAMI_even_2_80'
+              operation = 'CO_CompareMinAMI_even_2_80'
               outname = 'min'
               featname = 'CO_CompareMinAMI_even_2_80_min'
               tags = ['correlation', 'ami']
@@ -297,30 +292,30 @@ class HCTSACatalog(object):
             parts = line.split()
             outname, featname, tags = parts if 3 == len(parts) else (parts[0], parts[1], None)
             if '.' in outname:
-                categoryname, outname = outname.split('.')  # Operator returns a struct
+                operationname, outname = outname.split('.')  # Operator returns a struct
             else:
-                categoryname, outname = outname, None  # Operator returns a scalar
+                operationname, outname = outname, None  # Operator returns a scalar
             tags = tags.split(',') if tags is not None else None
-            return categoryname, outname, featname, tags
+            return operationname, outname, featname, tags
 
         self.features_dict = {}
         with open(self.ops_file) as reader:
             for line in reader:
                 if not len(line.strip()):
                     continue
-                categoryname, outname, featname, tags = parse_ops_line(line)
-                if categoryname is None:
+                operationname, outname, featname, tags = parse_ops_line(line)
+                if operationname is None:
                     continue  # Ignore commented lines
-                category = self.categories_dict.get(categoryname,
-                                                    HCTSAFeatureCategory(categoryname, None, None, None))
-                feature = HCTSAFeature(featname, category, outname, tags)
+                operation = self.operations_dict.get(operationname,
+                                                     HCTSAOperation(operationname, None, None, None))
+                feature = HCTSAFeature(featname, operation, outname, tags)
                 if featname in self.features_dict:
                     msg = 'Warning: the feature %s is defined more than once, ignoring...' % featname
                     print msg
                     continue  # But actually keep these that are not commented
                     # raise Exception(msg)
                 self.features_dict[featname] = feature
-                category.add_feature(feature)  # Other way round
+                operation.add_feature(feature)  # Other way round
 
         #
         # 3) Get all the operations defined in m-files.
@@ -339,31 +334,33 @@ class HCTSACatalog(object):
             doc, outstring, funcname, parameters, code = parse_matlab_funcdef(mfile)
             parameters = parameters[1:]  # The first parameter is always the time series
             doc = doc.split('% -------------------------------------')[2]  # Remove header and license
-            categories = [cat for cat in self.categories_dict.values() if cat.funcname == funcname]
-            self.functions_dict[funcname] = HCTSAFunction(mfile, outstring, parameters, doc, code, categories)
+            operations = [operation for operation in self.operations_dict.values() if operation.funcname == funcname]
+            self.functions_dict[funcname] = HCTSAFunction(mfile, outstring, parameters, doc, code, operations)
 
         #
         # 4) Make easy the link:
-        #    function -> {category -> {features}}
+        #    function -> {operation -> {features}}
         #
 
     def summary(self):
         report = [
             'Number of operators (functions in mfiles):    %d' % len(self.functions_dict),
 
-            'Number of categories (function + parameters): %d' % len(self.categories_dict),
+            'Number of operations (function + parameters): %d' % len(self.operations_dict),
 
-            'Number of features (category + outvalue):     %d' % len(self.features_dict),
+            'Number of features (operation + outvalue):     %d' % len(self.features_dict),
 
-            'Functions without categories: %s' % sorted(set(self.functions_dict.keys()) -
-                                                        set(cat.funcname for cat in self.categories_dict.values())),
+            'Functions without operation: %s' % sorted(
+                set(self.functions_dict.keys()) - set(oper.funcname for oper in self.operations_dict.values())),
 
-            'Categories without functions: %s' % sorted(cat.catname for cat in self.categories_dict.values() if
-                                                        cat.funcname not in self.functions_dict),
+            'Operations without functions: %s' % sorted(
+                oper.opname for oper in self.operations_dict.values() if
+                oper.funcname not in self.functions_dict),
             '    (these are probably calls into other toolboxes)',
 
-            'Features without categories: %s' % sorted(fea.featname for fea in self.features_dict.values() if
-                                                       fea.category.catname not in self.categories_dict),
+            'Features without operations: %s' % sorted(
+                fea.featname for fea in self.features_dict.values() if
+                fea.operation.opname not in self.operations_dict),
             '    (usually this should be empty)',
         ]
         return '\n'.join(report)
@@ -372,14 +369,14 @@ class HCTSACatalog(object):
         """Returns default parameter values for a function as one (random)
         of the calls to generate features using such function.
         """
-        for cat in self.categories_dict.values():
-            if cat.funcname == funcname:
-                return cat.param_values
+        for operation in self.operations_dict.values():
+            if operation.funcname == funcname:
+                return operation.param_values
         return []
 
     def function_parameter_values(self, funcname):
-        """Returns all the values that a function takes to span a HTCSA category."""
-        return [cat.param_values for cat in self.functions_dict[funcname].categories()]
+        """Returns all the values that a function takes to span a HTCSA operation."""
+        return [oper.param_values for oper in self.functions_dict[funcname].operations()]
 
     def function_outnames(self, funcname):
         """Returns all the outnames used in HCTSA to extract scalars
@@ -390,14 +387,19 @@ class HCTSACatalog(object):
           - [] means the operation is not used at all in HCTSA
         """
         outnames = set()
-        for category in self.categories_dict.itervalues():
-            if category.funcname == funcname:
-                for feature in category.features:
+        for operation in self.operations_dict.itervalues():
+            if operation.funcname == funcname:
+                for feature in operation.features:
                     outnames.add(feature.outname)
         return sorted(outnames)
 
+    def operation(self, opname):
+        """:rtype: HCTSAOperation"""
+        return self.operations_dict.get(opname, None)
+
     @staticmethod
     def catalog():
+        """:rtype: HCTSACatalog"""
         if HCTSACatalog._catalog is None:
             HCTSACatalog._catalog = HCTSACatalog()
         return HCTSACatalog._catalog
@@ -416,14 +418,15 @@ class HCTSACatalog(object):
         return HCTSACatalog._whatami2hctsa.get(whatid, None)
 
     @staticmethod
-    def must_standardize(category):
-        # Copes with Ben's inconvenient (x -> normal | y -> standardised) convention
-        cat = HCTSACatalog.catalog().categories_dict.get(category, None)
-        return cat is not None and cat.standardize
+    def must_standardize(operation):
+        # Copes with Ben's (x -> normal | y -> standardised) convention
+        if isinstance(operation, basestring):
+            operation = HCTSACatalog.catalog().operations_dict.get(operation, None)
+        return operation is not None and operation.standardize
 
 
-def hctsa_summary():
-    HCTSACatalog().summary()
+def summary():
+    return HCTSACatalog().summary()
 
 if __name__ == '__main__':
-    hctsa_summary()
+    print summary()

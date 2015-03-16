@@ -8,14 +8,12 @@ import time
 import numpy as np
 
 from pyopy.hctsa.hctsa_bindings import CO_AddNoise, DN_Cumulants, WL_fBM, WL_scal2frq
-from pyopy.hctsa.hctsa_setup import prepare_engine_for_hctsa
-from pyopy.hctsa.transformers import check_prepare_hctsa_input
-from pyopy.base import py2matstr
+from pyopy.hctsa.hctsa_install import hctsa_prepare_engine
+from pyopy.hctsa.hctsa_transformers import hctsa_prepare_input
+from pyopy.base import py2matstr, PyopyEngines
 
 
 # ----- Octave code generation
-from pyopy.pyopy_matlab_wrapper_backend import MatlabWrapperEngine
-
 
 def as_partial_call(hctsa_feat):
     """
@@ -54,7 +52,7 @@ def flatten_hctsa_result(result, name=''):
 
 # ----- High-level usage of the library
 
-def hctsa_partials_poc(eng_thunk=MatlabWrapperEngine,
+def hctsa_partials_poc(eng_thunk=PyopyEngines.matlab,
                        data=None,
                        # A few hctsa features chosen for no reason
                        features=(CO_AddNoise(),
@@ -69,7 +67,7 @@ def hctsa_partials_poc(eng_thunk=MatlabWrapperEngine,
     with eng_thunk() as eng:
 
         # Prepare for HCTSA
-        prepare_engine_for_hctsa(eng)
+        hctsa_prepare_engine(eng)
 
         # If data is None, test on fake data
         if data is None:
@@ -81,11 +79,11 @@ def hctsa_partials_poc(eng_thunk=MatlabWrapperEngine,
             ne = len(data)
 
         # Make sure each series is suitable for analysis with HCTSA
-        data = map(check_prepare_hctsa_input, data)
+        data = map(hctsa_prepare_input, data)
 
         # To matlab-land
         eng.put(u'data', [data])
-        print 'type of data in matlab-land:', eng.matlab_class(u'data')
+        print 'type of data in matlab-land:', eng.engine_class(u'data')
 
         # Compute features
         start = time.time()
@@ -147,10 +145,6 @@ def hctsa_partials_poc(eng_thunk=MatlabWrapperEngine,
 # TODO: create tests with outputs from matlab
 #
 ######################################
-
-
-#
-# pyopy.matlab_utils.EngineException: Engine failed to run: load /tmp/pymatbridge_engine_HkbHNM/tmp0ABTER.mat 'pyopy_context_59571_1' 'pyopy_context_59571_2';
-# 	Engine Reason: The current workspace already has too many variables; there is no room for "pyopy_context_59571_1".
-# caused by Exception(u'The current workspace already has too many variables; there is no room for "pyopy_context_59571_1".',)
-#
+# try...catch works in both octave and matlab
+# memmaps are only supported in matlab
+######################################

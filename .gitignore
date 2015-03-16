@@ -1,3 +1,4 @@
-*.py[c|o]
+*.py[c|o|d]
+--github
 .cache
 .coverage
