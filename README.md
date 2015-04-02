@@ -23,13 +23,18 @@ Pyopy is only tested on linux. It requires python 2.7 and the following python d
  - argh
  - whatami
  - lockfile
+ 
+Optionally, some libraries can be used for data transfer and command pimping:
+
+  - oct2py
+  - python matlab bridge
+  - matlab_wrapper
 
 If you use conda/anaconda 
 
 ```sh
-pip install oct2py
-pip install pymatbridge
-pip install matlab_wrapper
+conda install numpy scipy pandas
+pip install joblib argh whatami lockfile
 ```
 
 Pyopy design decouples command dispatching and data transfer.

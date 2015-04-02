@@ -49,8 +49,8 @@ def arrays2cells_and_partial(eng='octave'):
 
     # cellfun passing lambda (can be useful for partial application and to aggregate operators)
     start = time.time()
-    eng.run_command('f1=@(x) SY_SpreadRandomLocal(x, \'ac5\')')
-    response, result = eng.run_command('ans=cellfun(f1, x, \'UniformOutput\', 0)', outs2py=True)
+    eng.eval('f1=@(x) SY_SpreadRandomLocal(x, \'ac5\')')
+    response, result = eng.eval('ans=cellfun(f1, x, \'UniformOutput\', 0)', outs2py=True)
     print response.success, response.stdout
     print result
     print 'cellfun with partial took %.2f seconds' % (time.time() - start)

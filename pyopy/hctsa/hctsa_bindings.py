@@ -12,44 +12,62 @@ class CO_AddNoise(HCTSASuper):
     % noise to the input time series.
     % Adds Gaussian-distributed noise to the time series with increasing standard
     % deviation, eta, across the range eta = 0, 0.1, ..., 2, and measures the
-    % mutual information at each point using histograms with
-    % nbins bins (implemented using CO_HistogramAMI).
+    % mutual information at each point
+    % Can be measured using histograms with extraParam bins (implemented using
+    % CO_HistogramAMI), or using the Information Dynamics Toolkit.
     % 
     % The output is a set of statistics on the resulting set of automutual
     % information estimates, including a fit to an exponential decay, since the
     % automutual information decreases with the added white noise.
     % 
-    % Can calculate these statistics for time delays 'tau', and for a number 'nbins'
+    % Can calculate these statistics for time delays 'tau', and for a number 'extraParam'
     % bins.
     % 
     % This algorithm is quite different, but was based on the idea of 'noise
     % titration' presented in: "Titration of chaos with added noise", Chi-Sang Poon
     % and Mauricio Barahona P. Natl. Acad. Sci. USA, 98(13) 7107 (2001)
     % 
+    %---INPUTS:
+    %
+    % y, the input time series
+    % 
+    % tau, the time delay for computing AMI (using CO_HistogramAMI)
+    % 
+    % amiMethod, the method for computing AMI (using CO_HistogramAMI)
+    % 
+    % extraParam, e.g., the number of bins input to CO_HistogramAMI
+    % 
+    % randomSeed: settings for resetting the random seed for reproducible results
+    %               (using BF_ResetSeed)
+    %
     %---HISTORY:
     % Ben Fulcher, September 2009
+    % Ben Fulcher, 2015-03-19 added random seed input for reproducibility
     % 
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (13,)
+    KNOWN_OUTPUTS_SIZES = (22,)
 
-    TAGS = ('AMI', 'correlation', 'entropy', 'stochastic')
+    TAGS = ('AMI', 'correlation', 'entropy')
 
-    def __init__(self, tau=1.0, meth='quantiles', nbins=20.0):
+    def __init__(self, tau=1.0, amiMethod='quantiles', extraParam=10.0, randomSeed='default'):
         super(CO_AddNoise, self).__init__()
         self.tau = tau
-        self.meth = meth
-        self.nbins = nbins
+        self.amiMethod = amiMethod
+        self.extraParam = extraParam
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.tau is None:
             return eng.run_function(1, 'CO_AddNoise', x, )
-        elif self.meth is None:
+        elif self.amiMethod is None:
             return eng.run_function(1, 'CO_AddNoise', x, self.tau)
-        elif self.nbins is None:
-            return eng.run_function(1, 'CO_AddNoise', x, self.tau, self.meth)
-        return eng.run_function(1, 'CO_AddNoise', x, self.tau, self.meth, self.nbins)
+        elif self.extraParam is None:
+            return eng.run_function(1, 'CO_AddNoise', x, self.tau, self.amiMethod)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'CO_AddNoise', x, self.tau, self.amiMethod, self.extraParam)
+        return eng.run_function(1, 'CO_AddNoise', x, self.tau, self.amiMethod, self.extraParam, self.randomSeed)
 
 
 class CO_AutoCorr(HCTSASuper):
@@ -371,7 +389,7 @@ class CO_FirstMin(HCTSASuper):
     % 
     %---INPUTS:
     % y, the input time series
-    % MinWhat, the type of correlation to minimize: either 'ac' for autocorrelation,
+    % minWhat, the type of correlation to minimize: either 'ac' for autocorrelation,
     %           or 'mi' for automutual information
     % 
     % Note that selecting 'ac' is unusual operation: standard operations are the
@@ -382,23 +400,27 @@ class CO_FirstMin(HCTSASuper):
     % not be great...
     % 
     %---HISTORY
+    % Ben Fulcher, 2015-03-27 updated to using Information Dynamics Toolkit by default
     % Ben Fulcher, 2008
     % 
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (1,)
+    KNOWN_OUTPUTS_SIZES = (0, 1)
 
-    TAGS = ('AMI', 'autocorrelation', 'correlation', 'tau')
+    TAGS = ('autocorrelation', 'correlation', 'tau')
 
-    def __init__(self, MinWhat='mi'):
+    def __init__(self, minWhat='mi-kraskov2', extraParam='3'):
         super(CO_FirstMin, self).__init__()
-        self.MinWhat = MinWhat
+        self.minWhat = minWhat
+        self.extraParam = extraParam
 
     def _eval_hook(self, eng, x):
-        if self.MinWhat is None:
+        if self.minWhat is None:
             return eng.run_function(1, 'CO_FirstMin', x, )
-        return eng.run_function(1, 'CO_FirstMin', x, self.MinWhat)
+        elif self.extraParam is None:
+            return eng.run_function(1, 'CO_FirstMin', x, self.minWhat)
+        return eng.run_function(1, 'CO_FirstMin', x, self.minWhat, self.extraParam)
 
 
 class CO_FirstZero(HCTSASuper):
@@ -408,11 +430,13 @@ class CO_FirstZero(HCTSASuper):
     % 
     % Returns the first zero-crossing of a given autocorrelation function.
     % 
+    %---INPUTS:
+    %
     % y, the input time series
-    % corrfn, the self-correlation function to measure:
+    % corrFun, the self-correlation function to measure:
     %         (i) 'ac': normal linear autocorrelation function. Uses CO_AutoCorr to
     %                   calculate autocorrelations.
-    % maxtau, a maximum time-delay to search up to
+    % maxTau, a maximum time-delay to search up to
     % 
     % In future, could add an option to return the point at which the function
     % crosses the axis, rather than the first integer lag at which it has already
@@ -428,17 +452,17 @@ class CO_FirstZero(HCTSASuper):
 
     TAGS = ('autocorrelation', 'correlation', 'tau')
 
-    def __init__(self, corrfn='ac', maxtau=None):
+    def __init__(self, corrFun='ac', maxTau=None):
         super(CO_FirstZero, self).__init__()
-        self.corrfn = corrfn
-        self.maxtau = maxtau
+        self.corrFun = corrFun
+        self.maxTau = maxTau
 
     def _eval_hook(self, eng, x):
-        if self.corrfn is None:
+        if self.corrFun is None:
             return eng.run_function(1, 'CO_FirstZero', x, )
-        elif self.maxtau is None:
-            return eng.run_function(1, 'CO_FirstZero', x, self.corrfn)
-        return eng.run_function(1, 'CO_FirstZero', x, self.corrfn, self.maxtau)
+        elif self.maxTau is None:
+            return eng.run_function(1, 'CO_FirstZero', x, self.corrFun)
+        return eng.run_function(1, 'CO_FirstZero', x, self.corrFun, self.maxTau)
 
 
 class CO_HistogramAMI(HCTSASuper):
@@ -467,7 +491,7 @@ class CO_HistogramAMI(HCTSASuper):
     %                                series to exclude outliers,
     %           (iii) 'quantiles': equiprobable bins chosen using quantiles.
     % 
-    % nbins, the number of bins, required by some methods, meth (see above)
+    % numBins, the number of bins, required by some methods, meth (see above)
     % 
     %---OUTPUT: the automutual information calculated in this way.
     %
@@ -477,24 +501,24 @@ class CO_HistogramAMI(HCTSASuper):
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (1,)
+    KNOWN_OUTPUTS_SIZES = (5,)
 
     TAGS = ('AMI', 'correlation', 'information')
 
-    def __init__(self, tau=2.0, meth='std2', nbins=10.0):
+    def __init__(self, tau=MatlabSequence('1:5'), meth='even', numBins=10.0):
         super(CO_HistogramAMI, self).__init__()
         self.tau = tau
         self.meth = meth
-        self.nbins = nbins
+        self.numBins = numBins
 
     def _eval_hook(self, eng, x):
         if self.tau is None:
             return eng.run_function(1, 'CO_HistogramAMI', x, )
         elif self.meth is None:
             return eng.run_function(1, 'CO_HistogramAMI', x, self.tau)
-        elif self.nbins is None:
+        elif self.numBins is None:
             return eng.run_function(1, 'CO_HistogramAMI', x, self.tau, self.meth)
-        return eng.run_function(1, 'CO_HistogramAMI', x, self.tau, self.meth, self.nbins)
+        return eng.run_function(1, 'CO_HistogramAMI', x, self.tau, self.meth, self.numBins)
 
 
 class CO_NonlinearAutocorr(HCTSASuper):
@@ -679,7 +703,7 @@ class CO_TSTL_amutual(HCTSASuper):
     % 
     % maxtau, the maximum lag for which to calculate the auto mutual information
     % 
-    % nbins, the number of bins for histogram calculation
+    % numBins, the number of bins for histogram calculation
     % 
     %---OUTPUTS:
     % A number of statistics of the function over the range of tau, including the
@@ -692,21 +716,21 @@ class CO_TSTL_amutual(HCTSASuper):
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (28,)
+    KNOWN_OUTPUTS_SIZES = ()
 
-    TAGS = ('AMI', 'entropy', 'lengthdep', 'tstool')
+    TAGS = ()
 
-    def __init__(self, maxtau=20.0, nbins=10.0):
+    def __init__(self, maxtau=None, numBins=None):
         super(CO_TSTL_amutual, self).__init__()
         self.maxtau = maxtau
-        self.nbins = nbins
+        self.numBins = numBins
 
     def _eval_hook(self, eng, x):
         if self.maxtau is None:
             return eng.run_function(1, 'CO_TSTL_amutual', x, )
-        elif self.nbins is None:
+        elif self.numBins is None:
             return eng.run_function(1, 'CO_TSTL_amutual', x, self.maxtau)
-        return eng.run_function(1, 'CO_TSTL_amutual', x, self.maxtau, self.nbins)
+        return eng.run_function(1, 'CO_TSTL_amutual', x, self.maxtau, self.numBins)
 
 
 class CO_TSTL_amutual2(HCTSASuper):
@@ -731,11 +755,11 @@ class CO_TSTL_amutual2(HCTSASuper):
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (65,)
+    KNOWN_OUTPUTS_SIZES = ()
 
-    TAGS = ('AMI', 'entropy', 'tstool')
+    TAGS = ()
 
-    def __init__(self, maxtau=50.0):
+    def __init__(self, maxtau=None):
         super(CO_TSTL_amutual2, self).__init__()
         self.maxtau = maxtau
 
@@ -1369,6 +1393,9 @@ class DN_FitKernelSmooth(HCTSASuper):
     % probability thresholds, the arc length, and the symmetry of probability
     % density above and below the mean.
     % 
+    %---HISTORY:
+    % Ben Fulcher, 2009
+    % 
     ----------------------------------------
     """
 
@@ -1384,7 +1411,8 @@ class DN_FitKernelSmooth(HCTSASuper):
     def _eval_hook(self, eng, x):
         if self.varargin is None:
             return eng.run_function(1, 'DN_FitKernelSmooth', x, )
-        return eng.run_function(1, 'DN_FitKernelSmooth', x, self.varargin)
+        return eng.run_function(1, 'DN_FitKernelSmooth', x, self.varargin + ('_celltrick_',) if isinstance(self.varargin,
+                                tuple) else (self.varargin, '_celltrick_'))
 
 
 class DN_Fit_mle(HCTSASuper):
@@ -1562,7 +1590,7 @@ class DN_Moments(HCTSASuper):
 
     TAGS = ('distribution', 'moment', 'raw', 'shape', 'spreaddep')
 
-    def __init__(self, n=3.0):
+    def __init__(self, n=10.0):
         super(DN_Moments, self).__init__()
         self.n = n
 
@@ -1608,13 +1636,16 @@ class DN_OutlierInclude(HCTSASuper):
     % 
     % [future: could compare differences in outputs obtained with 'p', 'n', and
     %               'abs' -- could give an idea as to asymmetries/nonstationarities??]
-    %               
+    % 
+    %---HISTORY:
+    % Ben Fulcher, June 2009
+    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (36,)
 
-    TAGS = ('distribution', 'outliers', 'stochastic')
+    TAGS = ('distribution', 'outliers')
 
     def __init__(self, howth='abs', inc=None):
         super(DN_OutlierInclude, self).__init__()
@@ -1693,7 +1724,7 @@ class DN_ProportionValues(HCTSASuper):
 
     TAGS = ('locdep', 'raw')
 
-    def __init__(self, propwhat='positive'):
+    def __init__(self, propwhat='geq0'):
         super(DN_ProportionValues, self).__init__()
         self.propwhat = propwhat
 
@@ -2177,7 +2208,7 @@ class EN_MS_shannon(HCTSASuper):
 
     TAGS = ('MichaelSmall', 'entropy', 'mex', 'shannon')
 
-    def __init__(self, nbin=2.0, depth=2.0):
+    def __init__(self, nbin=3.0, depth=2.0):
         super(EN_MS_shannon, self).__init__()
         self.nbin = nbin
         self.depth = depth
@@ -2274,6 +2305,7 @@ class EN_Randomize(HCTSASuper):
     % 
     %---INPUTS:
     % y, the input (z-scored) time series
+    % 
     % randomizeHow, specifies the randomization scheme for each iteration:
     %      (i) 'statdist' -- substitutes a random element of the time series with
     %                           one from the original time-series distribution
@@ -2281,6 +2313,8 @@ class EN_Randomize(HCTSASuper):
     %                       series with another random element
     %      (iii) 'permute' -- permutes pairs of elements of the time
     %                       series randomly
+    % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     % 
     %---OUTPUTS: summarize how the properties change as one of these
     % randomization procedures is iterated, including the cross correlation with the
@@ -2295,22 +2329,26 @@ class EN_Randomize(HCTSASuper):
     % 
     %---HISTORY:
     % Ben Fulcher, October 2009
+    % Ben Fulcher, 2015-03-19 added random seed for reproducibility
     % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (73,)
 
-    TAGS = ('entropy', 'lengthdep', 'slow', 'stochastic')
+    TAGS = ('entropy', 'lengthdep', 'slow')
 
-    def __init__(self, randomizeHow='statdist'):
+    def __init__(self, randomizeHow='statdist', randomSeed='default'):
         super(EN_Randomize, self).__init__()
         self.randomizeHow = randomizeHow
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.randomizeHow is None:
             return eng.run_function(1, 'EN_Randomize', x, )
-        return eng.run_function(1, 'EN_Randomize', x, self.randomizeHow)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'EN_Randomize', x, self.randomizeHow)
+        return eng.run_function(1, 'EN_Randomize', x, self.randomizeHow, self.randomSeed)
 
 
 class EN_SampEn(HCTSASuper):
@@ -2340,7 +2378,7 @@ class EN_SampEn(HCTSASuper):
     % y, the input time series
     % M, the embedding dimension
     % r, the threshold
-    % preprocess [opt], (i) 'diff1', incremental difference preprocessing.
+    % preProcessHow [opt], (i) 'diff1', incremental difference preProcessingHow.
     % 
     %---HISTORY:
     % Ben Fulcher, November 2009
@@ -2352,20 +2390,20 @@ class EN_SampEn(HCTSASuper):
 
     TAGS = ('controlen', 'entropy', 'sampen')
 
-    def __init__(self, M=4.0, r=0.1, preprocess=None):
+    def __init__(self, M=4.0, r=0.2, preProcessHow='diff1'):
         super(EN_SampEn, self).__init__()
         self.M = M
         self.r = r
-        self.preprocess = preprocess
+        self.preProcessHow = preProcessHow
 
     def _eval_hook(self, eng, x):
         if self.M is None:
             return eng.run_function(1, 'EN_SampEn', x, )
         elif self.r is None:
             return eng.run_function(1, 'EN_SampEn', x, self.M)
-        elif self.preprocess is None:
+        elif self.preProcessHow is None:
             return eng.run_function(1, 'EN_SampEn', x, self.M, self.r)
-        return eng.run_function(1, 'EN_SampEn', x, self.M, self.r, self.preprocess)
+        return eng.run_function(1, 'EN_SampEn', x, self.M, self.r, self.preProcessHow)
 
 
 class EN_Shannonpdf(HCTSASuper):
@@ -2424,7 +2462,7 @@ class EN_wentropy(HCTSASuper):
 
     TAGS = ('entropy', 'logenergy', 'shannon', 'sure', 'threshold')
 
-    def __init__(self, whaten='threshold', p=1.0):
+    def __init__(self, whaten='threshold', p=0.1):
         super(EN_wentropy, self).__init__()
         self.whaten = whaten
         self.p = p
@@ -2583,7 +2621,7 @@ class FC_Surprise(HCTSASuper):
     % recorded in recent memory.
     % 
     % Coarse-grains the time series, turning it into a sequence of symbols of a
-    % given alphabet size, ng, and quantifies measures of surprise of a
+    % given alphabet size, numGroups, and quantifies measures of surprise of a
     % process with local memory of the past memory values of the symbolic string.
     % 
     % We then consider a memory length, memory, of the time series, and
@@ -2596,7 +2634,7 @@ class FC_Surprise(HCTSASuper):
     %---INPUTS:
     % y, the input time series
     % 
-    % whatinf, the type of information to store in memory:
+    % whatPrior, the type of information to store in memory:
     %           (i) 'dist': the values of the time series in the previous memory
     %                       samples,
     %           (ii) 'T1': the one-point transition probabilities in the previous
@@ -2607,7 +2645,7 @@ class FC_Surprise(HCTSASuper):
     % memory, the memory length (either number of samples, or a proportion of the
     %           time-series length, if between 0 and 1)
     %           
-    % ng, the number of groups to coarse-grain the time series into
+    % numGroups, the number of groups to coarse-grain the time series into
     % 
     % cgmeth, the coarse-graining, or symbolization method:
     %          (i) 'quantile': an equiprobable alphabet by the value of each
@@ -2617,7 +2655,9 @@ class FC_Surprise(HCTSASuper):
     %          (iii) 'embed2quadrants': by the quadrant each data point resides in
     %                          in a two-dimensional embedding space.
     % 
-    % nits, the number of iterations to repeat the procedure for.
+    % numIters, the number of iterations to repeat the procedure for.
+    % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     % 
     %---OUTPUTS: summaries of this series of information gains, including the
     %            minimum, maximum, mean, median, lower and upper quartiles, and
@@ -2625,34 +2665,41 @@ class FC_Surprise(HCTSASuper):
     % 
     %---HISTORY:
     % Ben Fulcher, September 2009
+    % Ben Fulcher, 2015-03-19 Added random seed input
     % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (8, 7)
 
-    TAGS = ('information', 'stochastic', 'symbolic')
+    TAGS = ('information', 'symbolic')
 
-    def __init__(self, whatinf='dist', memory=50.0, ng=3.0, cgmeth='quantile', nits=None):
+    def __init__(self, whatPrior='dist', memory=100.0, numGroups=4.0, cgmeth='quantile',
+                 numIters=500.0, randomSeed='default'):
         super(FC_Surprise, self).__init__()
-        self.whatinf = whatinf
+        self.whatPrior = whatPrior
         self.memory = memory
-        self.ng = ng
+        self.numGroups = numGroups
         self.cgmeth = cgmeth
-        self.nits = nits
+        self.numIters = numIters
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
-        if self.whatinf is None:
+        if self.whatPrior is None:
             return eng.run_function(1, 'FC_Surprise', x, )
         elif self.memory is None:
-            return eng.run_function(1, 'FC_Surprise', x, self.whatinf)
-        elif self.ng is None:
-            return eng.run_function(1, 'FC_Surprise', x, self.whatinf, self.memory)
+            return eng.run_function(1, 'FC_Surprise', x, self.whatPrior)
+        elif self.numGroups is None:
+            return eng.run_function(1, 'FC_Surprise', x, self.whatPrior, self.memory)
         elif self.cgmeth is None:
-            return eng.run_function(1, 'FC_Surprise', x, self.whatinf, self.memory, self.ng)
-        elif self.nits is None:
-            return eng.run_function(1, 'FC_Surprise', x, self.whatinf, self.memory, self.ng, self.cgmeth)
-        return eng.run_function(1, 'FC_Surprise', x, self.whatinf, self.memory, self.ng, self.cgmeth, self.nits)
+            return eng.run_function(1, 'FC_Surprise', x, self.whatPrior, self.memory, self.numGroups)
+        elif self.numIters is None:
+            return eng.run_function(1, 'FC_Surprise', x, self.whatPrior, self.memory, self.numGroups, self.cgmeth)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'FC_Surprise', x, self.whatPrior, self.memory, self.numGroups,
+                                    self.cgmeth, self.numIters)
+        return eng.run_function(1, 'FC_Surprise', x, self.whatPrior, self.memory, self.numGroups,
+                                self.cgmeth, self.numIters, self.randomSeed)
 
 
 class HT_DistributionTest(HCTSASuper):
@@ -2696,7 +2743,7 @@ class HT_DistributionTest(HCTSASuper):
 
     TAGS = ('chi2gof', 'distribution', 'hypothesistest', 'ks', 'lillie', 'locdep', 'raw')
 
-    def __init__(self, thetest='ks', thedistn='beta', nbins=None):
+    def __init__(self, thetest='chi2gof', thedistn='rayleigh', nbins=50.0):
         super(HT_DistributionTest, self).__init__()
         self.thetest = thetest
         self.thedistn = thedistn
@@ -2759,6 +2806,185 @@ class HT_HypothesisTest(HCTSASuper):
         return eng.run_function(1, 'HT_HypothesisTest', x, self.theTest)
 
 
+class IN_AutoMutualInfo(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    % 
+    % Decided to implement some more rigorous mutual information estimators
+    % from the information dynamics toolkit.
+    % 
+    %---INPUTS:
+    %
+    % y: input time series
+    % 
+    % timeDelay: time lag for automutual information calculation
+    % 
+    % estMethod: the estimation method used to compute the mutual information:
+    %           (*) 'gaussian'
+    %           (*) 'kernel'
+    %           (*) 'kraskov1'
+    %           (*) 'kraskov2'
+    % 
+    % cf. Kraskov, A., Stoegbauer, H., Grassberger, P., Estimating mutual
+    % information: http://dx.doi.org/10.1103/PhysRevE.69.066138
+    % 
+    %---HISTORY
+    % Ben Fulcher, 2015-03-27
+    % 
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = ()
+
+    TAGS = ()
+
+    def __init__(self, timeDelay=None, estMethod=None, extraParam=None):
+        super(IN_AutoMutualInfo, self).__init__()
+        self.timeDelay = timeDelay
+        self.estMethod = estMethod
+        self.extraParam = extraParam
+
+    def _eval_hook(self, eng, x):
+        if self.timeDelay is None:
+            return eng.run_function(1, 'IN_AutoMutualInfo', x, )
+        elif self.estMethod is None:
+            return eng.run_function(1, 'IN_AutoMutualInfo', x, self.timeDelay)
+        elif self.extraParam is None:
+            return eng.run_function(1, 'IN_AutoMutualInfo', x, self.timeDelay, self.estMethod)
+        return eng.run_function(1, 'IN_AutoMutualInfo', x, self.timeDelay, self.estMethod, self.extraParam)
+
+
+class IN_AutoMutualInfoStats(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    % 
+    % Returns statistics on the automutual information function computed on the time
+    % series
+    % 
+    %---INPUTS:
+    % y, column vector of time series data
+    % 
+    % maxTau, maximal time delay
+    % 
+    % estMethod, extraParam -- cf. inputs to IN_AutoMutualInfo.m
+    % 
+    %---OUTPUTS:
+    % Statistics on the AMIs and their pattern across the range of specified time
+    % delays
+    % 
+    %---HISTORY:
+    % Ben Fulcher, 2009
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = (55, 35)
+
+    TAGS = ('AMI', 'correlation', 'information')
+
+    def __init__(self, maxTau=20.0, estMethod='gaussian', extraParam=None):
+        super(IN_AutoMutualInfoStats, self).__init__()
+        self.maxTau = maxTau
+        self.estMethod = estMethod
+        self.extraParam = extraParam
+
+    def _eval_hook(self, eng, x):
+        if self.maxTau is None:
+            return eng.run_function(1, 'IN_AutoMutualInfoStats', x, )
+        elif self.estMethod is None:
+            return eng.run_function(1, 'IN_AutoMutualInfoStats', x, self.maxTau)
+        elif self.extraParam is None:
+            return eng.run_function(1, 'IN_AutoMutualInfoStats', x, self.maxTau, self.estMethod)
+        return eng.run_function(1, 'IN_AutoMutualInfoStats', x, self.maxTau, self.estMethod, self.extraParam)
+
+
+class IN_Initialize_MI(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    % 
+    % Initializes Information Dynamics Toolkit object for MI computation.
+    % 
+    %---INPUTS:
+    % 
+    % estMethod: the estimation method used to compute the mutual information:
+    %           (*) 'gaussian'
+    %           (*) 'kernel'
+    %           (*) 'kraskov1'
+    %           (*) 'kraskov2'
+    % 
+    % cf. Kraskov, A., Stoegbauer, H., Grassberger, P., Estimating mutual
+    % information: http://dx.doi.org/10.1103/PhysRevE.69.066138
+    % 
+    %---HISTORY
+    % Ben Fulcher, 2015-03-28
+    % 
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = ()
+
+    TAGS = ()
+
+    def __init__(self, extraParam=None):
+        super(IN_Initialize_MI, self).__init__()
+        self.extraParam = extraParam
+
+    def _eval_hook(self, eng, x):
+        if self.extraParam is None:
+            return eng.run_function(1, 'IN_Initialize_MI', x, )
+        return eng.run_function(1, 'IN_Initialize_MI', x, self.extraParam)
+
+
+class IN_MutualInfo(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    % 
+    % Decided to implement some more rigorous mutual information estimators
+    % from the information dynamics toolkit.
+    % 
+    %---INPUTS:
+    %
+    % y1: input time series 1
+    % y2: input time series 2
+    % 
+    % estMethod: the estimation method used to compute the mutual information:
+    %           (*) 'gaussian'
+    %           (*) 'kernel'
+    %           (*) 'kraskov1'
+    %           (*) 'kraskov2'
+    % 
+    % cf. Kraskov, A., Stoegbauer, H., Grassberger, P., Estimating mutual
+    % information: http://dx.doi.org/10.1103/PhysRevE.69.066138
+    % 
+    %---HISTORY
+    % Ben Fulcher, 2015-03-28
+    % 
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = ()
+
+    TAGS = ()
+
+    def __init__(self, y2=None, estMethod=None, extraParam=None):
+        super(IN_MutualInfo, self).__init__()
+        self.y2 = y2
+        self.estMethod = estMethod
+        self.extraParam = extraParam
+
+    def _eval_hook(self, eng, x):
+        if self.y2 is None:
+            return eng.run_function(1, 'IN_MutualInfo', x, )
+        elif self.estMethod is None:
+            return eng.run_function(1, 'IN_MutualInfo', x, self.y2)
+        elif self.extraParam is None:
+            return eng.run_function(1, 'IN_MutualInfo', x, self.y2, self.estMethod)
+        return eng.run_function(1, 'IN_MutualInfo', x, self.y2, self.estMethod, self.extraParam)
+
+
 class MD_hrv_classic(HCTSASuper):
     """
     Matlab doc:
@@ -2797,7 +3023,7 @@ class MD_hrv_classic(HCTSASuper):
 
     KNOWN_OUTPUTS_SIZES = (12,)
 
-    TAGS = ('maxlittle', 'medical')
+    TAGS = ('medical',)
 
     def __init__(self):
         super(MD_hrv_classic, self).__init__()
@@ -2828,12 +3054,15 @@ class MD_pNN(HCTSASuper):
     % Code is heavily derived from that provided by Max A. Little:
     % http://www.maxlittle.net/
     %
+    %---HISTORY:
+    % Ben Fulcher 24/2/2011
+    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (11,)
 
-    TAGS = ('maxlittle', 'medical', 'raw', 'spreaddep')
+    TAGS = ('medical', 'raw', 'spreaddep')
 
     def __init__(self):
         super(MD_pNN, self).__init__()
@@ -2878,7 +3107,7 @@ class MD_polvar(HCTSASuper):
 
     KNOWN_OUTPUTS_SIZES = (1,)
 
-    TAGS = ('maxlittle', 'medical', 'symbolic')
+    TAGS = ('medical', 'symbolic')
 
     def __init__(self, d=0.1, D=3.0):
         super(MD_polvar, self).__init__()
@@ -2916,7 +3145,7 @@ class MD_rawHRVmeas(HCTSASuper):
 
     KNOWN_OUTPUTS_SIZES = (5,)
 
-    TAGS = ('maxlittle', 'medical', 'raw', 'spreaddep')
+    TAGS = ('medical', 'raw', 'spreaddep')
 
     def __init__(self):
         super(MD_rawHRVmeas, self).__init__()
@@ -2988,6 +3217,9 @@ class MF_AR_arcov(HCTSASuper):
     % white noise input to the AR model, the root-mean-square (RMS) error of a
     % reconstructed time series, and the autocorrelation of residuals.
     % 
+    %---HISTORY:
+    % Ben Fulcher, 2009
+    % 
     ----------------------------------------
     """
 
@@ -3031,7 +3263,7 @@ class MF_CompareAR(HCTSASuper):
 
     TAGS = ('ar', 'model', 'systemidentificationtoolbox')
 
-    def __init__(self, orders=MatlabSequence('1:10'), howtotest='all'):
+    def __init__(self, orders=MatlabSequence('1:10'), howtotest=0.5):
         super(MF_CompareAR, self).__init__()
         self.orders = orders
         self.howtotest = howtotest
@@ -3066,14 +3298,14 @@ class MF_CompareTestSets(HCTSASuper):
     %---INPUTS:
     % y, the input time series
     % 
-    % model, the type of time-series model to fit:
+    % theModel, the type of time-series model to fit:
     %           (i) 'ar', fits an AR model
     %           (ii) 'ss', first a state-space model
     %           (iii) 'arma', first an ARMA model
     %
     % ord, the order of the specified model to fit
     %
-    % howtosubset, how to select random subsets of the time series to fit:
+    % subsetHow, how to select random subsets of the time series to fit:
     %           (i) 'rand', select at random
     %           (ii) 'uniform', uniformly distributed segments throughout the time
     %                   series
@@ -3084,35 +3316,45 @@ class MF_CompareTestSets(HCTSASuper):
     % 
     % steps, the number of steps ahead to do the predictions.
     % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
+    %               (when 'rand' specified for subsetHow)
+    % 
+    %---HISTORY:
+    % Ben Fulcher, 12/2/2010
+    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (20,)
 
-    TAGS = ('ar', 'arfit', 'model', 'prediction', 'statespace', 'stochastic', 'systemidentificationtoolbox')
+    TAGS = ('ar', 'arfit', 'model', 'prediction', 'statespace', 'systemidentificationtoolbox')
 
-    def __init__(self, model='ar', ordd='best', howtosubset='uniform',
-                 samplep=(25.0, 0.10000000000000001), steps=1.0):
+    def __init__(self, theModel='ar', ordd='best', subsetHow='uniform',
+                 samplep=(25.0, 0.10000000000000001), steps=1.0, randomSeed=None):
         super(MF_CompareTestSets, self).__init__()
-        self.model = model
+        self.theModel = theModel
         self.ordd = ordd
-        self.howtosubset = howtosubset
+        self.subsetHow = subsetHow
         self.samplep = samplep
         self.steps = steps
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
-        if self.model is None:
+        if self.theModel is None:
             return eng.run_function(1, 'MF_CompareTestSets', x, )
         elif self.ordd is None:
-            return eng.run_function(1, 'MF_CompareTestSets', x, self.model)
-        elif self.howtosubset is None:
-            return eng.run_function(1, 'MF_CompareTestSets', x, self.model, self.ordd)
+            return eng.run_function(1, 'MF_CompareTestSets', x, self.theModel)
+        elif self.subsetHow is None:
+            return eng.run_function(1, 'MF_CompareTestSets', x, self.theModel, self.ordd)
         elif self.samplep is None:
-            return eng.run_function(1, 'MF_CompareTestSets', x, self.model, self.ordd, self.howtosubset)
+            return eng.run_function(1, 'MF_CompareTestSets', x, self.theModel, self.ordd, self.subsetHow)
         elif self.steps is None:
-            return eng.run_function(1, 'MF_CompareTestSets', x, self.model, self.ordd, self.howtosubset, self.samplep)
-        return eng.run_function(1, 'MF_CompareTestSets', x, self.model, self.ordd, self.howtosubset,
-                                self.samplep, self.steps)
+            return eng.run_function(1, 'MF_CompareTestSets', x, self.theModel, self.ordd, self.subsetHow, self.samplep)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'MF_CompareTestSets', x, self.theModel, self.ordd, self.subsetHow,
+                                    self.samplep, self.steps)
+        return eng.run_function(1, 'MF_CompareTestSets', x, self.theModel, self.ordd, self.subsetHow,
+                                self.samplep, self.steps, self.randomSeed)
 
 
 class MF_ExpSmoothing(HCTSASuper):
@@ -3199,7 +3441,7 @@ class MF_FitSubsegments(HCTSASuper):
     %                   Identification Toolbox. Outputs are statistics on the FPE,
     %                   and fitted AR and MA parameters.
     %                   
-    % howtosubset, how to choose segments from the time series, either 'uniform'
+    % subsetHow, how to choose segments from the time series, either 'uniform'
     %               (uniformly) or 'rand' (at random).
     %               
     % samplep, a two-vector specifying how many segments to take and of what length.
@@ -3207,34 +3449,43 @@ class MF_FitSubsegments(HCTSASuper):
     %           the time-series length. e.g., [20,0.1] takes 20 segments of 10% the
     %           time-series length.
     % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
+    %               (for when subsetHow is 'rand')
+    % 
     %---OUTPUTS: depend on the model, as described above.
     % 
-    %---HISTORY: Ben Fulcher, 12/2/2010
+    %---HISTORY:
+    % Ben Fulcher, 12/2/2010
     %
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (13, 5, 21, 11)
 
-    TAGS = ('ar', 'arfit', 'arma', 'model', 'prediction', 'statespace', 'stochastic', 'systemidentificationtoolbox')
+    TAGS = ('ar', 'arfit', 'arma', 'model', 'prediction', 'statespace', 'systemidentificationtoolbox')
 
-    def __init__(self, model='ar', order=2.0, howtosubset='uniform', samplep=(25.0, 0.10000000000000001)):
+    def __init__(self, model='ar', order=2.0, subsetHow='uniform', samplep=(25.0,
+                 0.10000000000000001), randomSeed=None):
         super(MF_FitSubsegments, self).__init__()
         self.model = model
         self.order = order
-        self.howtosubset = howtosubset
+        self.subsetHow = subsetHow
         self.samplep = samplep
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.model is None:
             return eng.run_function(1, 'MF_FitSubsegments', x, )
         elif self.order is None:
             return eng.run_function(1, 'MF_FitSubsegments', x, self.model)
-        elif self.howtosubset is None:
+        elif self.subsetHow is None:
             return eng.run_function(1, 'MF_FitSubsegments', x, self.model, self.order)
         elif self.samplep is None:
-            return eng.run_function(1, 'MF_FitSubsegments', x, self.model, self.order, self.howtosubset)
-        return eng.run_function(1, 'MF_FitSubsegments', x, self.model, self.order, self.howtosubset, self.samplep)
+            return eng.run_function(1, 'MF_FitSubsegments', x, self.model, self.order, self.subsetHow)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'MF_FitSubsegments', x, self.model, self.order, self.subsetHow, self.samplep)
+        return eng.run_function(1, 'MF_FitSubsegments', x, self.model, self.order, self.subsetHow,
+                                self.samplep, self.randomSeed)
 
 
 class MF_GARCHcompare(HCTSASuper):
@@ -3249,6 +3500,13 @@ class MF_GARCHcompare(HCTSASuper):
     % Uses the following functions from Matlab's Econometrics Toolbox: archtest,
     % lbqtest, autocorr, parcorr, garchset, garchfit, garchcount, aicbic
     % 
+    % Compares all combinations of p and q and output statistics are on the models
+    % with the best fit.
+    % 
+    % This operation focuses on the GARCH/variance component, and therefore
+    % attempts to pre-whiten and assumes a constant mean process (applies a linear
+    % detrending).
+    % 
     %---INPUTS:
     % y, the input time series
     % preproc, a preprocessing to apply:
@@ -3259,11 +3517,8 @@ class MF_GARCHcompare(HCTSASuper):
     % 
     % qr, a vector of model orders, q, to compare
     % 
-    % Compares all combinations of p and q and output statistics are on the models
-    % with the best fit.
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     % 
-    % This operation focuses on the GARCH/variance component, and therefore
-    % attempts to pre-whiten and assumes a constant mean process.
     % 
     %---OUTPUTS: include log-likelihoods, Bayesian Information  Criteria (BIC),
     % Akaike's Information Criteria (AIC), outputs from Engle's ARCH test and the
@@ -3271,6 +3526,7 @@ class MF_GARCHcompare(HCTSASuper):
     % 
     %---HISTORY:
     % Ben Fulcher 26/2/2010
+    % 
     ----------------------------------------
     """
 
@@ -3278,11 +3534,12 @@ class MF_GARCHcompare(HCTSASuper):
 
     TAGS = ('aic', 'bic', 'econometricstoolbox', 'garch', 'model')
 
-    def __init__(self, preproc='ar', pr=MatlabSequence('1:3'), qr=MatlabSequence('1:3')):
+    def __init__(self, preproc='ar', pr=MatlabSequence('1:3'), qr=MatlabSequence('1:3'), randomSeed=None):
         super(MF_GARCHcompare, self).__init__()
         self.preproc = preproc
         self.pr = pr
         self.qr = qr
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.preproc is None:
@@ -3291,7 +3548,9 @@ class MF_GARCHcompare(HCTSASuper):
             return eng.run_function(1, 'MF_GARCHcompare', x, self.preproc)
         elif self.qr is None:
             return eng.run_function(1, 'MF_GARCHcompare', x, self.preproc, self.pr)
-        return eng.run_function(1, 'MF_GARCHcompare', x, self.preproc, self.pr, self.qr)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'MF_GARCHcompare', x, self.preproc, self.pr, self.qr)
+        return eng.run_function(1, 'MF_GARCHcompare', x, self.preproc, self.pr, self.qr, self.randomSeed)
 
 
 class MF_GARCHfit(HCTSASuper):
@@ -3336,15 +3595,15 @@ class MF_GARCHfit(HCTSASuper):
     % 
     %---INPUTS:
     % y, the input time series
+    % 
     % preproc, the preprocessing to apply, can be 'ar' or 'none'
-    % params, the parameters of the GARCH model to fit, can be:
-    %           (i) 'default', fits the default model
-    %           (ii) 'auto', automated routine to select parameters for this time series
-    %           (iii) e.g., params = '''R'',2,''M'',1,''P'',2,''Q'',1', sets r = 2,
-    %                                   m = 1, p = 2, q = 1
     % 
+    % P, the GARCH model order
     % 
-    % ***In future this code should be revised by an expert in GARCH model fitting.***
+    % Q, the ARCH model order
+    % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
+    %               (for pre-processing: PP_PreProcess)
     % 
     %---HISTORY:
     % Ben Fulcher, 25/2/2010
@@ -3354,13 +3613,14 @@ class MF_GARCHfit(HCTSASuper):
 
     KNOWN_OUTPUTS_SIZES = (62, 60)
 
-    TAGS = ('aic', 'bic', 'econometricstoolbox', 'garch', 'model', 'stochastic')
+    TAGS = ('aic', 'bic', 'econometricstoolbox', 'garch', 'model')
 
-    def __init__(self, preproc='ar', P=1.0, Q=1.0):
+    def __init__(self, preproc='ar', P=1.0, Q=1.0, randomSeed=None):
         super(MF_GARCHfit, self).__init__()
         self.preproc = preproc
         self.P = P
         self.Q = Q
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.preproc is None:
@@ -3369,7 +3629,9 @@ class MF_GARCHfit(HCTSASuper):
             return eng.run_function(1, 'MF_GARCHfit', x, self.preproc)
         elif self.Q is None:
             return eng.run_function(1, 'MF_GARCHfit', x, self.preproc, self.P)
-        return eng.run_function(1, 'MF_GARCHfit', x, self.preproc, self.P, self.Q)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'MF_GARCHfit', x, self.preproc, self.P, self.Q)
+        return eng.run_function(1, 'MF_GARCHfit', x, self.preproc, self.P, self.Q, self.randomSeed)
 
 
 class MF_GP_FitAcross(HCTSASuper):
@@ -3496,11 +3758,11 @@ class MF_GP_LocalPrediction(HCTSASuper):
     %           E.g., covFunc = {'covSum', {'covSEiso','covNoise'}} combines squared 
     %           exponential and noise terms
     %           
-    % ntrain, the number of training samples (for each iteration)
+    % numTrain, the number of training samples (for each iteration)
     % 
-    % ntest, the number of testing samples (for each interation)
+    % numTest, the number of testing samples (for each interation)
     % 
-    % npreds, the number of predictions to make
+    % numPreds, the number of predictions to make
     % 
     % pmode, the prediction mode:
     %       (i) 'beforeafter': predicts the preceding time series values by training
@@ -3510,41 +3772,50 @@ class MF_GP_LocalPrediction(HCTSASuper):
     %       (iii) 'randomgap': predicts random values within a segment of time
     %                    series by training on the other values in that segment.
     % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
+    %               (for 'randomgap' prediction)
     % 
     %---OUTPUTS: summaries of the quality of predictions made, the mean and
     % spread of obtained hyperparameter values, and marginal likelihoods.
     % 
-    % ---HISTORY
+    % ---HISTORY:
     % Ben Fulcher, 20/1/2010
+    % Ben Fulcher, 2015-03-20 added random seed input
+    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (24,)
 
-    TAGS = ('gaussianprocess', 'stochastic')
+    TAGS = ('gaussianprocess',)
 
     def __init__(self, covFunc=('covSum', ('covSEiso', 'covNoise')),
-                 ntrain=10.0, ntest=3.0, npreds=20.0, pmode='frombefore'):
+                 numTrain=5.0, numTest=3.0, numPreds=10.0, pmode='beforeafter', randomSeed=None):
         super(MF_GP_LocalPrediction, self).__init__()
         self.covFunc = covFunc
-        self.ntrain = ntrain
-        self.ntest = ntest
-        self.npreds = npreds
+        self.numTrain = numTrain
+        self.numTest = numTest
+        self.numPreds = numPreds
         self.pmode = pmode
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.covFunc is None:
             return eng.run_function(1, 'MF_GP_LocalPrediction', x, )
-        elif self.ntrain is None:
+        elif self.numTrain is None:
             return eng.run_function(1, 'MF_GP_LocalPrediction', x, self.covFunc)
-        elif self.ntest is None:
-            return eng.run_function(1, 'MF_GP_LocalPrediction', x, self.covFunc, self.ntrain)
-        elif self.npreds is None:
-            return eng.run_function(1, 'MF_GP_LocalPrediction', x, self.covFunc, self.ntrain, self.ntest)
+        elif self.numTest is None:
+            return eng.run_function(1, 'MF_GP_LocalPrediction', x, self.covFunc, self.numTrain)
+        elif self.numPreds is None:
+            return eng.run_function(1, 'MF_GP_LocalPrediction', x, self.covFunc, self.numTrain, self.numTest)
         elif self.pmode is None:
-            return eng.run_function(1, 'MF_GP_LocalPrediction', x, self.covFunc, self.ntrain, self.ntest, self.npreds)
-        return eng.run_function(1, 'MF_GP_LocalPrediction', x, self.covFunc, self.ntrain, self.ntest,
-                                self.npreds, self.pmode)
+            return eng.run_function(1, 'MF_GP_LocalPrediction', x, self.covFunc, self.numTrain,
+                                    self.numTest, self.numPreds)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'MF_GP_LocalPrediction', x, self.covFunc, self.numTrain,
+                                    self.numTest, self.numPreds, self.pmode)
+        return eng.run_function(1, 'MF_GP_LocalPrediction', x, self.covFunc, self.numTrain,
+                                self.numTest, self.numPreds, self.pmode, self.randomSeed)
 
 
 class MF_GP_hyperparameters(HCTSASuper):
@@ -3579,25 +3850,30 @@ class MF_GP_hyperparameters(HCTSASuper):
     % maxN, the maximum length of time series to consider -- inputs greater than
     %           this length are resampled down to maxN
     %           
-    % methds, specifies the method of how to resample time series longer than maxN
+    % resampleHow, specifies the method of how to resample time series longer than maxN
+    % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed,
+    %             for settings of resampleHow that involve random number generation
     % 
     %---HISTORY:
     % Ben Fulcher, 19/1/2010
+    % Ben Fulcher, 2015-03-20 Added randomSeed input
     % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (18, 14)
 
-    TAGS = ('gaussianprocess', 'stochastic')
+    TAGS = ('gaussianprocess',)
 
     def __init__(self, covFunc=('covSum', ('covSEiso', 'covNoise')),
-                 squishorsquash=1.0, maxN=200.0, methds='first'):
+                 squishorsquash=1.0, maxN=200.0, resampleHow='first', randomSeed=None):
         super(MF_GP_hyperparameters, self).__init__()
         self.covFunc = covFunc
         self.squishorsquash = squishorsquash
         self.maxN = maxN
-        self.methds = methds
+        self.resampleHow = resampleHow
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.covFunc is None:
@@ -3606,10 +3882,13 @@ class MF_GP_hyperparameters(HCTSASuper):
             return eng.run_function(1, 'MF_GP_hyperparameters', x, self.covFunc)
         elif self.maxN is None:
             return eng.run_function(1, 'MF_GP_hyperparameters', x, self.covFunc, self.squishorsquash)
-        elif self.methds is None:
+        elif self.resampleHow is None:
             return eng.run_function(1, 'MF_GP_hyperparameters', x, self.covFunc, self.squishorsquash, self.maxN)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'MF_GP_hyperparameters', x, self.covFunc, self.squishorsquash,
+                                    self.maxN, self.resampleHow)
         return eng.run_function(1, 'MF_GP_hyperparameters', x, self.covFunc, self.squishorsquash,
-                                self.maxN, self.methds)
+                                self.maxN, self.resampleHow, self.randomSeed)
 
 
 class MF_ResidualAnalysis(HCTSASuper):
@@ -3936,7 +4215,7 @@ class MF_steps_ahead(HCTSASuper):
     % 
     % Given a model, characterizes the variation in goodness of model predictions
     % across a range of prediction lengths, l, which is made to vary from
-    % 1-step ahead to maxsteps steps-ahead predictions.
+    % 1-step ahead to maxSteps steps-ahead predictions.
     % 
     % Models are fit using code from Matlab's System Identification Toolbox:
     % (i) AR models using the ar function,
@@ -3953,14 +4232,14 @@ class MF_steps_ahead(HCTSASuper):
     % 
     % order, the order of the model to fit
     % 
-    % maxsteps, the maximum number of steps ahead to predict
+    % maxSteps, the maximum number of steps ahead to predict
     % 
-    %---OUTPUTS: include the errors, for prediction lengths l = 1, 2, ..., maxsteps,
+    %---OUTPUTS: include the errors, for prediction lengths l = 1, 2, ..., maxSteps,
     % returned for each model relative to the best performance from basic null
     % predictors, including sliding 1- and 2-sample mean predictors and simply
     % predicting each point as the mean of the full time series. Additional outputs
     % quantify how the errors change as the prediction length increases from l = 1,
-    % ..., maxsteps (relative to a simple predictor).
+    % ..., maxSteps (relative to a simple predictor).
     %
     ----------------------------------------
     """
@@ -3969,20 +4248,20 @@ class MF_steps_ahead(HCTSASuper):
 
     TAGS = ('ar', 'arfit', 'arma', 'model', 'prediction', 'statespace', 'systemidentificationtoolbox')
 
-    def __init__(self, model='ar', order='best', maxsteps=6.0):
+    def __init__(self, model='ar', order='best', maxSteps=6.0):
         super(MF_steps_ahead, self).__init__()
         self.model = model
         self.order = order
-        self.maxsteps = maxsteps
+        self.maxSteps = maxSteps
 
     def _eval_hook(self, eng, x):
         if self.model is None:
             return eng.run_function(1, 'MF_steps_ahead', x, )
         elif self.order is None:
             return eng.run_function(1, 'MF_steps_ahead', x, self.model)
-        elif self.maxsteps is None:
+        elif self.maxSteps is None:
             return eng.run_function(1, 'MF_steps_ahead', x, self.model, self.order)
-        return eng.run_function(1, 'MF_steps_ahead', x, self.model, self.order, self.maxsteps)
+        return eng.run_function(1, 'MF_steps_ahead', x, self.model, self.order, self.maxSteps)
 
 
 class NL_BoxCorrDim(HCTSASuper):
@@ -4074,6 +4353,7 @@ class NL_CaosMethod(HCTSASuper):
     % 
     %---HISTORY:
     % Ben Fulcher, October 2009
+    % 
     ----------------------------------------
     """
 
@@ -4172,13 +4452,19 @@ class NL_MS_fnn(HCTSASuper):
     % 
     %---INPUTS:
     % y, the input time series
+    % 
     % de, the embedding dimensions to compare across (a vector)
+    % 
     % tau, the time-delay (can be 'ac' or 'mi' to be the first zero-crossing of ACF,
     %                       or first minimum of AMI, respectively)
+    %                       
     % th, the distance threshold for neighbours
+    % 
     % kth, the the distance to next points
-    % [opt] justbest, can be set to 1 to just return the best embedding dimension, m_{best}
-    % [opt] bestp, if justbest = 1, can set bestp as the proportion of false nearest
+    % 
+    % [opt] justBest, can be set to 1 to just return the best embedding dimension, m_{best}
+    % 
+    % [opt] bestp, if justBest = 1, can set bestp as the proportion of false nearest
     %              neighbours at which the optimal embedding dimension is selected.
     % 
     % This function returns statistics on the proportion of false nearest neighbors
@@ -4189,6 +4475,9 @@ class NL_MS_fnn(HCTSASuper):
     % and spread, and the smallest m at which the proportion of false nearest
     % neighbors drops below each of a set of fixed thresholds.
     % 
+    %---HISTORY:
+    % Ben Fulcher, 19/2/2010
+    % 
     ----------------------------------------
     """
 
@@ -4196,13 +4485,13 @@ class NL_MS_fnn(HCTSASuper):
 
     TAGS = ('MichaelSmall', 'fnn', 'nonlinear', 'slow')
 
-    def __init__(self, de=MatlabSequence('1:10'), tau='mi', th=5.0, kth=1.0, justbest=None, bestp=None):
+    def __init__(self, de=MatlabSequence('1:10'), tau='mi', th=5.0, kth=1.0, justBest=None, bestp=None):
         super(NL_MS_fnn, self).__init__()
         self.de = de
         self.tau = tau
         self.th = th
         self.kth = kth
-        self.justbest = justbest
+        self.justBest = justBest
         self.bestp = bestp
 
     def _eval_hook(self, eng, x):
@@ -4214,11 +4503,11 @@ class NL_MS_fnn(HCTSASuper):
             return eng.run_function(1, 'NL_MS_fnn', x, self.de, self.tau)
         elif self.kth is None:
             return eng.run_function(1, 'NL_MS_fnn', x, self.de, self.tau, self.th)
-        elif self.justbest is None:
+        elif self.justBest is None:
             return eng.run_function(1, 'NL_MS_fnn', x, self.de, self.tau, self.th, self.kth)
         elif self.bestp is None:
-            return eng.run_function(1, 'NL_MS_fnn', x, self.de, self.tau, self.th, self.kth, self.justbest)
-        return eng.run_function(1, 'NL_MS_fnn', x, self.de, self.tau, self.th, self.kth, self.justbest, self.bestp)
+            return eng.run_function(1, 'NL_MS_fnn', x, self.de, self.tau, self.th, self.kth, self.justBest)
+        return eng.run_function(1, 'NL_MS_fnn', x, self.de, self.tau, self.th, self.kth, self.justBest, self.bestp)
 
 
 class NL_MS_nlpe(HCTSASuper):
@@ -4315,6 +4604,9 @@ class NL_TISEAN_c1(HCTSASuper):
     % tau, embedding dimensions, m, ranging from m_{min} to m_{max}, a time
     % separation, tsep, and a number of reference points, Nref.
     % 
+    %---HISTORY:
+    % Ben Fulcher, 20/11/2009
+    % 
     ----------------------------------------
     """
 
@@ -4373,7 +4665,7 @@ class NL_TISEAN_d2(HCTSASuper):
     %       
     % maxm, the maximum embedding dimension
     % 
-    % theilerwin, the Theiler window
+    % theilerWin, the Theiler window
     % 
     % cf. "Spurious dimension from correlation algorithms applied to limited
     % time-series data", J. Theiler, Phys. Rev. A, 34(3) 2427 (1986)
@@ -4391,6 +4683,9 @@ class NL_TISEAN_d2(HCTSASuper):
     % range of scales and shows the best fit to the data, and return the range, a
     % goodness of fit statistic, and a dimension estimate.
     % 
+    %---HISTORY:
+    % Ben Fulcher, 18/11/2009
+    % 
     ----------------------------------------
     """
 
@@ -4398,20 +4693,92 @@ class NL_TISEAN_d2(HCTSASuper):
 
     TAGS = ('dimension', 'nonlinear', 'tisean')
 
-    def __init__(self, tau=1.0, maxm=10.0, theilerwin=0.0):
+    def __init__(self, tau=1.0, maxm=10.0, theilerWin=0.0):
         super(NL_TISEAN_d2, self).__init__()
         self.tau = tau
         self.maxm = maxm
-        self.theilerwin = theilerwin
+        self.theilerWin = theilerWin
 
     def _eval_hook(self, eng, x):
         if self.tau is None:
             return eng.run_function(1, 'NL_TISEAN_d2', x, )
         elif self.maxm is None:
             return eng.run_function(1, 'NL_TISEAN_d2', x, self.tau)
-        elif self.theilerwin is None:
+        elif self.theilerWin is None:
             return eng.run_function(1, 'NL_TISEAN_d2', x, self.tau, self.maxm)
-        return eng.run_function(1, 'NL_TISEAN_d2', x, self.tau, self.maxm, self.theilerwin)
+        return eng.run_function(1, 'NL_TISEAN_d2', x, self.tau, self.maxm, self.theilerWin)
+
+
+class NL_TISEAN_fnn(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    % 
+    % Uses the false_nearest routine from the TISEAN package for nonlinear time-series
+    % analysis.
+    % 
+    % cf. "Practical implementation of nonlinear time series methods: The TISEAN
+    % package", R. Hegger, H. Kantz, and T. Schreiber, Chaos 9(2) 413 (1999)
+    % 
+    % Available here:
+    % http://www.mpipks-dresden.mpg.de/~tisean/Tisean_3.0.1/index.html
+    % 
+    % Documentation here:
+    % http://www.mpipks-dresden.mpg.de/~tisean/TISEAN_2.1/docs/docs_c/false_nearest.html
+    % 
+    % The TISEAN routines are performed in the command line using 'system' commands
+    % in Matlab, and require that TISEAN is installed and compiled, and able to be
+    % executed in the command line.
+    % 
+    %---INPUTS:
+    % 
+    % y, the input time series
+    % 
+    % tau, the time delay
+    % 
+    % maxm, the maximum embedding dimension
+    % 
+    % theilerWin, the Theiler window
+    % 
+    % justBest, if 1 just outputs a scalar estimate of embedding dimension
+    % 
+    % bestp, only used if justBest==1 -- the fnn threshold for picking an embedding
+    %                dimension
+    % 
+    %---OUTPUTS: individual false nearest neighbors proportions, as well as
+    % summaries of neighborhood size, and embedding dimensions at which the
+    % proportion of nearest neighbours falls below a range of thresholds
+    % 
+    %---HISTORY:
+    % Ben Fulcher, 2015-03-20
+    % 
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = (36, 26)
+
+    TAGS = ('dimension', 'nonlinear', 'tisean')
+
+    def __init__(self, tau='mi', maxm=10.0, theilerWin=0.05, justBest=0.0, bestp=None):
+        super(NL_TISEAN_fnn, self).__init__()
+        self.tau = tau
+        self.maxm = maxm
+        self.theilerWin = theilerWin
+        self.justBest = justBest
+        self.bestp = bestp
+
+    def _eval_hook(self, eng, x):
+        if self.tau is None:
+            return eng.run_function(1, 'NL_TISEAN_fnn', x, )
+        elif self.maxm is None:
+            return eng.run_function(1, 'NL_TISEAN_fnn', x, self.tau)
+        elif self.theilerWin is None:
+            return eng.run_function(1, 'NL_TISEAN_fnn', x, self.tau, self.maxm)
+        elif self.justBest is None:
+            return eng.run_function(1, 'NL_TISEAN_fnn', x, self.tau, self.maxm, self.theilerWin)
+        elif self.bestp is None:
+            return eng.run_function(1, 'NL_TISEAN_fnn', x, self.tau, self.maxm, self.theilerWin, self.justBest)
+        return eng.run_function(1, 'NL_TISEAN_fnn', x, self.tau, self.maxm, self.theilerWin, self.justBest, self.bestp)
 
 
 class NL_TSTL_FractalDimensions(HCTSASuper):
@@ -4461,7 +4828,7 @@ class NL_TSTL_FractalDimensions(HCTSASuper):
     TAGS = ('correlation', 'dimension', 'nonlinear', 'stochastic', 'tstool')
 
     def __init__(self, kmin=2.0, kmax=100.0, Nref=0.2, gstart=1.0,
-                 gend=5.0, past=10.0, steps=32.0, embedparams=(1.0, 5.0)):
+                 gend=5.0, past=10.0, steps=32.0, embedparams=(1, 5, '_celltrick_')):
         super(NL_TSTL_FractalDimensions, self).__init__()
         self.kmin = kmin
         self.kmax = kmax
@@ -4526,7 +4893,7 @@ class NL_TSTL_GPCorrSum(HCTSASuper):
     % embedparams, embedding parameters to feed BF_embed.m for embedding the
     %               signal in the form {tau,m}
     % 
-    % dotwo, if this is set to 1, will use corrsum, if set to 2, will use corrsum2.
+    % doTwo, if this is set to 1, will use corrsum, if set to 2, will use corrsum2.
     %           For corrsum2, n specifies the number of pairs per bin. Default is 1,
     %           to use corrsum.
     % 
@@ -4545,14 +4912,14 @@ class NL_TSTL_GPCorrSum(HCTSASuper):
 
     TAGS = ('correlation', 'corrsum', 'corrsum2', 'nonlinear', 'stochastic', 'tstool')
 
-    def __init__(self, Nref=-1.0, r=0.1, thwin=40.0, nbins=20.0, embedparams=('ac', 'cao'), dotwo=2.0):
+    def __init__(self, Nref=-1.0, r=0.1, thwin=40.0, nbins=20.0, embedparams=('ac', 'cao'), doTwo=2.0):
         super(NL_TSTL_GPCorrSum, self).__init__()
         self.Nref = Nref
         self.r = r
         self.thwin = thwin
         self.nbins = nbins
         self.embedparams = embedparams
-        self.dotwo = dotwo
+        self.doTwo = doTwo
 
     def _eval_hook(self, eng, x):
         if self.Nref is None:
@@ -4565,11 +4932,11 @@ class NL_TSTL_GPCorrSum(HCTSASuper):
             return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin)
         elif self.embedparams is None:
             return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin, self.nbins)
-        elif self.dotwo is None:
+        elif self.doTwo is None:
             return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin,
                                     self.nbins, self.embedparams)
         return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin, self.nbins,
-                                self.embedparams, self.dotwo)
+                                self.embedparams, self.doTwo)
 
 
 class NL_TSTL_LargestLyap(HCTSASuper):
@@ -4730,7 +5097,7 @@ class NL_TSTL_ReturnTime(HCTSASuper):
 
     TAGS = ('nonlinear', 'returntime', 'tstool')
 
-    def __init__(self, NNR=0.05, maxT=1.0, past=0.05, Nref=-1.0, embedparams=(1.0, 3.0)):
+    def __init__(self, NNR=0.05, maxT=1.0, past=0.05, Nref=-1.0, embedparams=(1, 3, '_celltrick_')):
         super(NL_TSTL_ReturnTime, self).__init__()
         self.NNR = NNR
         self.maxT = maxT
@@ -4771,7 +5138,7 @@ class NL_TSTL_TakensEstimator(HCTSASuper):
     % Nref, the number of reference points (can be -1 to use all points)
     % rad, the maximum search radius (as a proportion of the attractor size)
     % past, the Theiler window
-    % embedparams, the embedding parameters for BF_embed, in the form {tau,m}
+    % embedParams, the embedding parameters for BF_embed, in the form {tau,m}
     % 
     %---OUTPUT: the Taken's estimator of the correlation dimension, d2.
     % 
@@ -4785,12 +5152,13 @@ class NL_TSTL_TakensEstimator(HCTSASuper):
 
     TAGS = ('crptool', 'dimension', 'nonlinear', 'scaling', 'stochastic', 'takens', 'tstool')
 
-    def __init__(self, Nref=-1.0, rad=0.05, past=0.05, embedparams=('ac', 3)):
+    def __init__(self, Nref=-1.0, rad=0.05, past=0.05, embedParams=('ac', 3), randomSeed=None):
         super(NL_TSTL_TakensEstimator, self).__init__()
         self.Nref = Nref
         self.rad = rad
         self.past = past
-        self.embedparams = embedparams
+        self.embedParams = embedParams
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.Nref is None:
@@ -4799,9 +5167,12 @@ class NL_TSTL_TakensEstimator(HCTSASuper):
             return eng.run_function(1, 'NL_TSTL_TakensEstimator', x, self.Nref)
         elif self.past is None:
             return eng.run_function(1, 'NL_TSTL_TakensEstimator', x, self.Nref, self.rad)
-        elif self.embedparams is None:
+        elif self.embedParams is None:
             return eng.run_function(1, 'NL_TSTL_TakensEstimator', x, self.Nref, self.rad, self.past)
-        return eng.run_function(1, 'NL_TSTL_TakensEstimator', x, self.Nref, self.rad, self.past, self.embedparams)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'NL_TSTL_TakensEstimator', x, self.Nref, self.rad, self.past, self.embedParams)
+        return eng.run_function(1, 'NL_TSTL_TakensEstimator', x, self.Nref, self.rad, self.past,
+                                self.embedParams, self.randomSeed)
 
 
 class NL_TSTL_acp(HCTSASuper):
@@ -4810,7 +5181,7 @@ class NL_TSTL_acp(HCTSASuper):
     ----------------------------------------
     % 
     % Implements the TSTOOL routine acp using a time lag, tau, a Theiler window,
-    % past, maximum delay, maxdelay, maximum embedding dimension, maxdim, and number
+    % past, maximum delay, maxDelay, maximum embedding dimension, maxDim, and number
     % of reference points, Nref.
     % 
     % The documentation isn't crystal clear, but I think this function has to do
@@ -4827,11 +5198,13 @@ class NL_TSTL_acp(HCTSASuper):
     % past, number of samples to exclude before and after each index (to avoid
     %               correlation effects ~ Theiler window)
     % 
-    % maxdelay, maximal delay (<< length(y))
+    % maxDelay, maximal delay (<< length(y))
     % 
-    % maxdim, maximal dimension to use
+    % maxDim, maximal dimension to use
     % 
     % Nref, number of reference points
+    % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     % 
     %---OUTPUTS: statistics summarizing the output of the routine.
     % 
@@ -4839,33 +5212,41 @@ class NL_TSTL_acp(HCTSASuper):
     % metrics on both absolute values at each dimension but also some
     % indication of the shape
     % 
+    %---HISTORY:
+    % Ben Fulcher, October 2009
+    % Ben Fulcher, 2015-03-19 added randomSeed for reproducibility
+    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (52,)
 
-    TAGS = ('acp', 'correlation', 'nonlinear', 'slow', 'stochastic', 'tstool')
+    TAGS = ('acp', 'correlation', 'nonlinear', 'slow')
 
-    def __init__(self, tau='mi', past=1.0, maxdelay=(), maxdim=10.0, Nref=()):
+    def __init__(self, tau='mi', past=1.0, maxDelay=(), maxDim=10.0, Nref=(), randomSeed=None):
         super(NL_TSTL_acp, self).__init__()
         self.tau = tau
         self.past = past
-        self.maxdelay = maxdelay
-        self.maxdim = maxdim
+        self.maxDelay = maxDelay
+        self.maxDim = maxDim
         self.Nref = Nref
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.tau is None:
             return eng.run_function(1, 'NL_TSTL_acp', x, )
         elif self.past is None:
             return eng.run_function(1, 'NL_TSTL_acp', x, self.tau)
-        elif self.maxdelay is None:
+        elif self.maxDelay is None:
             return eng.run_function(1, 'NL_TSTL_acp', x, self.tau, self.past)
-        elif self.maxdim is None:
-            return eng.run_function(1, 'NL_TSTL_acp', x, self.tau, self.past, self.maxdelay)
+        elif self.maxDim is None:
+            return eng.run_function(1, 'NL_TSTL_acp', x, self.tau, self.past, self.maxDelay)
         elif self.Nref is None:
-            return eng.run_function(1, 'NL_TSTL_acp', x, self.tau, self.past, self.maxdelay, self.maxdim)
-        return eng.run_function(1, 'NL_TSTL_acp', x, self.tau, self.past, self.maxdelay, self.maxdim, self.Nref)
+            return eng.run_function(1, 'NL_TSTL_acp', x, self.tau, self.past, self.maxDelay, self.maxDim)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'NL_TSTL_acp', x, self.tau, self.past, self.maxDelay, self.maxDim, self.Nref)
+        return eng.run_function(1, 'NL_TSTL_acp', x, self.tau, self.past, self.maxDelay, self.maxDim,
+                                self.Nref, self.randomSeed)
 
 
 class NL_TSTL_dimensions(HCTSASuper):
@@ -4897,6 +5278,7 @@ class NL_TSTL_dimensions(HCTSASuper):
     % 
     %---HISTORY:
     % Ben Fulcher, November 2009
+    % 
     ----------------------------------------
     """
 
@@ -4938,19 +5320,26 @@ class NL_crptool_fnn(HCTSASuper):
     % th [opt], returns the first time the number of false nearest neighbours drops
     %           under this threshold
     % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
+    % 
+    %---HISTORY:
+    % Ben Fulcher, October 2009
+    % Ben Fulcher, 2015-03-19 added random seed input
+    % 
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (15,)
+    KNOWN_OUTPUTS_SIZES = (17,)
 
-    TAGS = ('crptool', 'dimension', 'nonlinear', 'stochastic')
+    TAGS = ('crptool', 'dimension', 'nonlinear')
 
-    def __init__(self, maxm=10.0, r=2.0, taum='ac', th=None):
+    def __init__(self, maxm=10.0, r=2.0, taum='ac', th=(), randomSeed='default'):
         super(NL_crptool_fnn, self).__init__()
         self.maxm = maxm
         self.r = r
         self.taum = taum
         self.th = th
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.maxm is None:
@@ -4961,7 +5350,9 @@ class NL_crptool_fnn(HCTSASuper):
             return eng.run_function(1, 'NL_crptool_fnn', x, self.maxm, self.r)
         elif self.th is None:
             return eng.run_function(1, 'NL_crptool_fnn', x, self.maxm, self.r, self.taum)
-        return eng.run_function(1, 'NL_crptool_fnn', x, self.maxm, self.r, self.taum, self.th)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'NL_crptool_fnn', x, self.maxm, self.r, self.taum, self.th)
+        return eng.run_function(1, 'NL_crptool_fnn', x, self.maxm, self.r, self.taum, self.th, self.randomSeed)
 
 
 class NL_embed_PCA(HCTSASuper):
@@ -5360,7 +5751,7 @@ class PP_Iterate(HCTSASuper):
 
     KNOWN_OUTPUTS_SIZES = (40,)
 
-    TAGS = ('locdep', 'preprocessing', 'raw')
+    TAGS = ('preprocessing', 'raw')
 
     def __init__(self, dtMeth='diff'):
         super(PP_Iterate, self).__init__()
@@ -5404,24 +5795,32 @@ class PP_ModelFit(HCTSASuper):
     %           
     % order, the order of the AR model to fit to the data
     % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
+    % 
+    %---HISTORY:
+    % Ben Fulcher, 18/2/2010
+    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (16,)
 
-    TAGS = ('preprocessing', 'stochastic', 'trend')
+    TAGS = ('preprocessing', 'trend')
 
-    def __init__(self, model='ar', order=2.0):
+    def __init__(self, model='ar', order=2.0, randomSeed='default'):
         super(PP_ModelFit, self).__init__()
         self.model = model
         self.order = order
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.model is None:
             return eng.run_function(1, 'PP_ModelFit', x, )
         elif self.order is None:
             return eng.run_function(1, 'PP_ModelFit', x, self.model)
-        return eng.run_function(1, 'PP_ModelFit', x, self.model, self.order)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'PP_ModelFit', x, self.model, self.order)
+        return eng.run_function(1, 'PP_ModelFit', x, self.model, self.order, self.randomSeed)
 
 
 class SB_BinaryStats(HCTSASuper):
@@ -5565,7 +5964,7 @@ class SB_MotifThree(HCTSASuper):
 
     TAGS = ('motifs',)
 
-    def __init__(self, trit='diffquant'):
+    def __init__(self, trit='quantile'):
         super(SB_MotifThree, self).__init__()
         self.trit = trit
 
@@ -5656,7 +6055,7 @@ class SB_TransitionMatrix(HCTSASuper):
 
     TAGS = ('transitionmat',)
 
-    def __init__(self, howtocg='quantile', numGroups=2.0, tau=1.0):
+    def __init__(self, howtocg='quantile', numGroups=3.0, tau='ac'):
         super(SB_TransitionMatrix, self).__init__()
         self.howtocg = howtocg
         self.numGroups = numGroups
@@ -5866,7 +6265,7 @@ class SD_MakeSurrogates(HCTSASuper):
     ----------------------------------------
     % 
     % Generates surrogate time series given a method (surrogates), number of
-    % surrogates (nsurrs), and any extra parameters (extrap)
+    % surrogates (numSurrs), and any extra parameters (extrap)
     % 
     % Method described relatively clearly in Guarin Lopez et al. (arXiv, 2010)
     % Used bits of aaft code that references (and presumably was obtained from)
@@ -5880,14 +6279,19 @@ class SD_MakeSurrogates(HCTSASuper):
     %---INPUTS:
     % x, the input time series
     % 
-    % surrmethod, the method for generating surrogates:
+    % surrMethod, the method for generating surrogates:
     %             (i) 'RP' -- random phase surrogates
     %             (ii) 'AAFT' -- amplitude adjusted Fourier transform
     %             (iii) 'TFT' -- truncated Fourier transform
     % 
-    % nsurrs, the number of surrogates to generate
+    % numSurrs, the number of surrogates to generate
     % 
     % extrap, extra parameters required by the selected surrogate generation method
+    %
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
+    %
+    %---HISTORY: 
+    % Ben Fulcher, 27/1/2011
     % 
     ----------------------------------------
     """
@@ -5896,20 +6300,24 @@ class SD_MakeSurrogates(HCTSASuper):
 
     TAGS = ()
 
-    def __init__(self, surrmethod=None, nsurrs=None, extrap=None):
+    def __init__(self, surrMethod=None, numSurrs=None, extrap=None, randomSeed=None):
         super(SD_MakeSurrogates, self).__init__()
-        self.surrmethod = surrmethod
-        self.nsurrs = nsurrs
+        self.surrMethod = surrMethod
+        self.numSurrs = numSurrs
         self.extrap = extrap
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
-        if self.surrmethod is None:
+        if self.surrMethod is None:
             return eng.run_function(1, 'SD_MakeSurrogates', x, )
-        elif self.nsurrs is None:
-            return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrmethod)
+        elif self.numSurrs is None:
+            return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrMethod)
         elif self.extrap is None:
-            return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrmethod, self.nsurrs)
-        return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrmethod, self.nsurrs, self.extrap)
+            return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrMethod, self.numSurrs)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrMethod, self.numSurrs, self.extrap)
+        return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrMethod, self.numSurrs, self.extrap,
+                                self.randomSeed)
 
 
 class SD_SurrogateTest(HCTSASuper):
@@ -5927,11 +6335,10 @@ class SD_SurrogateTest(HCTSASuper):
     % The generation of surrogates is done by the periphery function,
     % SD_MakeSurrogates
     % 
-    % 
     %---INPUTS:
     % x, the input time series
     % 
-    % surrmeth, the method for generating surrogate time series:
+    % surrMeth, the method for generating surrogate time series:
     %       (i) 'RP': random phase surrogates that maintain linear correlations in
     %                 the data but destroy any nonlinear structure through phase
     %                 randomization
@@ -5944,12 +6351,12 @@ class SD_SurrogateTest(HCTSASuper):
     %               "A new surrogate data method for nonstationary time series",
     %                   D. L. Guarin Lopez et al., arXiv 1008.1804 (2010)
     % 
-    % nsurrs, the number of surrogates to compute (default is 99 for a 0.01
+    % numSurrs, the number of surrogates to compute (default is 99 for a 0.01
     %         significance level 1-sided test)
     % 
     % extrap, extra parameter, the cut-off frequency for 'TFT'
     % 
-    % teststat, the test statistic to evalute on all surrogates and the original
+    % theTestStat, the test statistic to evalute on all surrogates and the original
     %           time series. Can specify multiple options in a cell and will return
     %           output for each specified test statistic:
     %           (i) 'ami': the automutual information at lag 1, cf.
@@ -5965,6 +6372,8 @@ class SD_SurrogateTest(HCTSASuper):
     %                 function include a z-test between the two distributions, and
     %                 some comparative rank-based statistics.
     % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
+    % 
     %---HISTORY:
     % Ben Fulcher, 28/1/2011
     % 
@@ -5973,25 +6382,31 @@ class SD_SurrogateTest(HCTSASuper):
 
     KNOWN_OUTPUTS_SIZES = (20,)
 
-    TAGS = ('nonlinearity', 'stochastic', 'surrogatedata')
+    TAGS = ('nonlinearity', 'surrogatedata')
 
-    def __init__(self, surrmeth='RP', nsurrs=99.0, extrap=(), teststat=('ami1', 'fmmi', 'o3', 'tc3')):
+    def __init__(self, surrMeth='RP', numSurrs=99.0, extrap=(), theTestStat=('ami1',
+                 'fmmi', 'o3', 'tc3'), randomSeed='default'):
         super(SD_SurrogateTest, self).__init__()
-        self.surrmeth = surrmeth
-        self.nsurrs = nsurrs
+        self.surrMeth = surrMeth
+        self.numSurrs = numSurrs
         self.extrap = extrap
-        self.teststat = teststat
+        self.theTestStat = theTestStat
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
-        if self.surrmeth is None:
+        if self.surrMeth is None:
             return eng.run_function(1, 'SD_SurrogateTest', x, )
-        elif self.nsurrs is None:
-            return eng.run_function(1, 'SD_SurrogateTest', x, self.surrmeth)
+        elif self.numSurrs is None:
+            return eng.run_function(1, 'SD_SurrogateTest', x, self.surrMeth)
         elif self.extrap is None:
-            return eng.run_function(1, 'SD_SurrogateTest', x, self.surrmeth, self.nsurrs)
-        elif self.teststat is None:
-            return eng.run_function(1, 'SD_SurrogateTest', x, self.surrmeth, self.nsurrs, self.extrap)
-        return eng.run_function(1, 'SD_SurrogateTest', x, self.surrmeth, self.nsurrs, self.extrap, self.teststat)
+            return eng.run_function(1, 'SD_SurrogateTest', x, self.surrMeth, self.numSurrs)
+        elif self.theTestStat is None:
+            return eng.run_function(1, 'SD_SurrogateTest', x, self.surrMeth, self.numSurrs, self.extrap)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'SD_SurrogateTest', x, self.surrMeth, self.numSurrs,
+                                    self.extrap, self.theTestStat)
+        return eng.run_function(1, 'SD_SurrogateTest', x, self.surrMeth, self.numSurrs, self.extrap,
+                                self.theTestStat, self.randomSeed)
 
 
 class SD_TSTL_surrogates(HCTSASuper):
@@ -6000,8 +6415,8 @@ class SD_TSTL_surrogates(HCTSASuper):
     ----------------------------------------
     % 
     % Generates surrogate time series and tests them against the original time
-    % series according to some test statistics: T_{C3}, using the
-    % TSTOOL code tc3 or T_{rev}, using TSTOOL code trev.
+    % series according to some test statistics: T_{C3}, using the TSTOOL code tc3 or
+    % T_{rev}, using TSTOOL code trev.
     % 
     % TSTOOL: http://www.physik3.gwdg.de/tstool/
     % 
@@ -6022,36 +6437,43 @@ class SD_TSTL_surrogates(HCTSASuper):
     % surrfn, the surrogate statistic to evaluate on all surrogates, either 'tc3' or
     %           'trev'
     % 
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
+    % 
     %---OUTPUTS: include the Gaussianity of the test statistics, a z-test, and
     % various tests based on fitted kernel densities.
     % 
     %---HISTORY:
     % Ben Fulcher, 15/11/2009
+    % Ben Fulcher, 2015-03-19 added random seed
     % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (9,)
 
-    TAGS = ('correlation', 'nonlinear', 'stochastic', 'surrogate', 'tstool')
+    TAGS = ('correlation', 'nonlinear', 'surrogate', 'tstool')
 
-    def __init__(self, tau='mi', nsurr=100.0, surrmethod=1.0, surrfn='tc3'):
+    def __init__(self, tau=1.0, nsurr=100.0, surrMethod=2.0, surrfn='tc3', randomSeed='default'):
         super(SD_TSTL_surrogates, self).__init__()
         self.tau = tau
         self.nsurr = nsurr
-        self.surrmethod = surrmethod
+        self.surrMethod = surrMethod
         self.surrfn = surrfn
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.tau is None:
             return eng.run_function(1, 'SD_TSTL_surrogates', x, )
         elif self.nsurr is None:
             return eng.run_function(1, 'SD_TSTL_surrogates', x, self.tau)
-        elif self.surrmethod is None:
+        elif self.surrMethod is None:
             return eng.run_function(1, 'SD_TSTL_surrogates', x, self.tau, self.nsurr)
         elif self.surrfn is None:
-            return eng.run_function(1, 'SD_TSTL_surrogates', x, self.tau, self.nsurr, self.surrmethod)
-        return eng.run_function(1, 'SD_TSTL_surrogates', x, self.tau, self.nsurr, self.surrmethod, self.surrfn)
+            return eng.run_function(1, 'SD_TSTL_surrogates', x, self.tau, self.nsurr, self.surrMethod)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'SD_TSTL_surrogates', x, self.tau, self.nsurr, self.surrMethod, self.surrfn)
+        return eng.run_function(1, 'SD_TSTL_surrogates', x, self.tau, self.nsurr, self.surrMethod,
+                                self.surrfn, self.randomSeed)
 
 
 class SP_Summaries(HCTSASuper):
@@ -6101,7 +6523,7 @@ class SP_Summaries(HCTSASuper):
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (151,)
+    KNOWN_OUTPUTS_SIZES = (147,)
 
     TAGS = ('powerspectrum',)
 
@@ -6246,10 +6668,10 @@ class ST_MomentCorr(HCTSASuper):
     %---INPUTS:
     % x, the input time series
     % 
-    % wl, the sliding window length (can be a fraction to specify a proportion of
+    % windowLength, the sliding window length (can be a fraction to specify a proportion of
     %       the time-series length)
     %       
-    % olap, the overlap between consecutive windows as a fraction of the window
+    % wOverlap, the overlap between consecutive windows as a fraction of the window
     %       length,
     % 
     % mom1, mom2: the statistics to investigate correlations between (in each window):
@@ -6258,14 +6680,17 @@ class ST_MomentCorr(HCTSASuper):
     %               (iii) 'std': standard deviation (about the local mean)
     %               (iv) 'mean': mean
     % 
-    % transf: the pre-processing transformation to apply to the time series before
+    % whatTransform: the pre-processing whatTransformormation to apply to the time series before
     %         analyzing it:
     %               (i) 'abs': takes absolute values of all data points
     %               (ii) 'sqrt': takes the square root of absolute values of all
     %                            data points
     %               (iii) 'sq': takes the square of every data point
-    %               (iv) 'none': does no transformation
+    %               (iv) 'none': does no whatTransformormation
     %           
+    %---HISTORY:
+    % Ben Fulcher, 5 July 2010
+    % 
     ----------------------------------------
     """
 
@@ -6273,26 +6698,27 @@ class ST_MomentCorr(HCTSASuper):
 
     TAGS = ('statistics',)
 
-    def __init__(self, wl=0.02, olap=0.2, mom1='median', mom2='iqr', transf='abs'):
+    def __init__(self, windowLength=0.02, wOverlap=0.2, mom1='mean', mom2='std', whatTransform='none'):
         super(ST_MomentCorr, self).__init__()
-        self.wl = wl
-        self.olap = olap
+        self.windowLength = windowLength
+        self.wOverlap = wOverlap
         self.mom1 = mom1
         self.mom2 = mom2
-        self.transf = transf
+        self.whatTransform = whatTransform
 
     def _eval_hook(self, eng, x):
-        if self.wl is None:
+        if self.windowLength is None:
             return eng.run_function(1, 'ST_MomentCorr', x, )
-        elif self.olap is None:
-            return eng.run_function(1, 'ST_MomentCorr', x, self.wl)
+        elif self.wOverlap is None:
+            return eng.run_function(1, 'ST_MomentCorr', x, self.windowLength)
         elif self.mom1 is None:
-            return eng.run_function(1, 'ST_MomentCorr', x, self.wl, self.olap)
+            return eng.run_function(1, 'ST_MomentCorr', x, self.windowLength, self.wOverlap)
         elif self.mom2 is None:
-            return eng.run_function(1, 'ST_MomentCorr', x, self.wl, self.olap, self.mom1)
-        elif self.transf is None:
-            return eng.run_function(1, 'ST_MomentCorr', x, self.wl, self.olap, self.mom1, self.mom2)
-        return eng.run_function(1, 'ST_MomentCorr', x, self.wl, self.olap, self.mom1, self.mom2, self.transf)
+            return eng.run_function(1, 'ST_MomentCorr', x, self.windowLength, self.wOverlap, self.mom1)
+        elif self.whatTransform is None:
+            return eng.run_function(1, 'ST_MomentCorr', x, self.windowLength, self.wOverlap, self.mom1, self.mom2)
+        return eng.run_function(1, 'ST_MomentCorr', x, self.windowLength, self.wOverlap, self.mom1,
+                                self.mom2, self.whatTransform)
 
 
 class ST_SimpleStats(HCTSASuper):
@@ -6572,10 +6998,13 @@ class SY_LocalGlobal(HCTSASuper):
     %             (i) 'l': the first n points in a time series,
     %             (ii) 'p': an initial proportion of the full time series, n
     %             (iii) 'unicg': n evenly-spaced points throughout the time series
-    %             (iv) 'randcg': n randomly-chosen points from the time series (chosen with replacement)
+    %             (iv) 'randcg': n randomly-chosen points from the time series
+    %                               (chosen with replacement)
     % 
     % n, the parameter for the method specified above
     % 
+    % randomSeed, an option for whether (and how) to reset the random seed, for the
+    % 'randcg' input
     % 
     %---OUTPUTS: the mean, standard deviation, median, interquartile range,
     % skewness, kurtosis, AC(1), and SampEn(1,0.1).
@@ -6588,25 +7017,29 @@ class SY_LocalGlobal(HCTSASuper):
     % 
     %---HISTORY:
     % Ben Fulcher, September 2009
+    % Ben Fulcher, 2015-03-19 added randomSeed input
     % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (7,)
 
-    TAGS = ('stationarity', 'stochastic')
+    TAGS = ('stationarity',)
 
-    def __init__(self, lorp='l', n=50.0):
+    def __init__(self, lorp='l', n=50.0, randomSeed=None):
         super(SY_LocalGlobal, self).__init__()
         self.lorp = lorp
         self.n = n
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.lorp is None:
             return eng.run_function(1, 'SY_LocalGlobal', x, )
         elif self.n is None:
             return eng.run_function(1, 'SY_LocalGlobal', x, self.lorp)
-        return eng.run_function(1, 'SY_LocalGlobal', x, self.lorp, self.n)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'SY_LocalGlobal', x, self.lorp, self.n)
+        return eng.run_function(1, 'SY_LocalGlobal', x, self.lorp, self.n, self.randomSeed)
 
 
 class SY_PPtest(HCTSASuper):
@@ -6761,7 +7194,7 @@ class SY_SpreadRandomLocal(HCTSASuper):
     Matlab doc:
     ----------------------------------------
     % 
-    % Implements a bootstrap-based stationarity measure: nseg time-series segments
+    % Implements a bootstrap-based stationarity measure: numSegs time-series segments
     % of length l are selected at random from the time series and in each
     % segment some statistic is calculated: mean, standard deviation, skewness,
     % kurtosis, ApEn(1,0.2), SampEn(1,0.2), AC(1), AC(2), and the first
@@ -6777,7 +7210,9 @@ class SY_SpreadRandomLocal(HCTSASuper):
     %       (i) 'ac2': twice the first zero-crossing of the autocorrelation function
     %       (ii) 'ac5': five times the first zero-crossing of the autocorrelation function
     % 
-    % nseg, the number of randomly-selected local segments to analyze
+    % numSegs, the number of randomly-selected local segments to analyze
+    % 
+    % randomSeed, the input to BF_ResetSeed to control reproducibility
     % 
     %---OUTPUTS: the mean and also the standard deviation of this set of 100 local
     % estimates.
@@ -6790,19 +7225,22 @@ class SY_SpreadRandomLocal(HCTSASuper):
 
     KNOWN_OUTPUTS_SIZES = (18,)
 
-    TAGS = ('correlation', 'stationarity', 'stochastic')
+    TAGS = ('stationarity',)
 
-    def __init__(self, l=50.0, nseg=100.0):
+    def __init__(self, l=50.0, numSegs=100.0, randomSeed='default'):
         super(SY_SpreadRandomLocal, self).__init__()
         self.l = l
-        self.nseg = nseg
+        self.numSegs = numSegs
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
         if self.l is None:
             return eng.run_function(1, 'SY_SpreadRandomLocal', x, )
-        elif self.nseg is None:
+        elif self.numSegs is None:
             return eng.run_function(1, 'SY_SpreadRandomLocal', x, self.l)
-        return eng.run_function(1, 'SY_SpreadRandomLocal', x, self.l, self.nseg)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'SY_SpreadRandomLocal', x, self.l, self.numSegs)
+        return eng.run_function(1, 'SY_SpreadRandomLocal', x, self.l, self.numSegs, self.randomSeed)
 
 
 class SY_StatAv(HCTSASuper):
@@ -6880,7 +7318,7 @@ class SY_StdNthDer(HCTSASuper):
 
     TAGS = ('entropy',)
 
-    def __init__(self, n=6.0):
+    def __init__(self, n=9.0):
         super(SY_StdNthDer, self).__init__()
         self.n = n
 
@@ -6981,7 +7419,7 @@ class SY_TISEAN_nstat_z(HCTSASuper):
 
     TAGS = ('model', 'nonlinear', 'stationarity', 'tisean')
 
-    def __init__(self, nseg=5.0, embedparams=(1.0, 3.0)):
+    def __init__(self, nseg=5.0, embedparams=(1, 3, '_celltrick_')):
         super(SY_TISEAN_nstat_z, self).__init__()
         self.nseg = nseg
         self.embedparams = embedparams
@@ -7051,16 +7489,13 @@ class TSTL_delaytime(HCTSASuper):
     %---INPUTS:
     % y, column vector of time series data
     % 
-    % maxdelay, maximum value of the delay to consider (can also specify a
+    % maxDelay, maximum value of the delay to consider (can also specify a
     %           proportion of time series length)
     %           
     % past, the TSTOOL documentation describes this parameter as "?", which is
     %       relatively uninformative.
     % 
-    % 
-    % It's a stochastic algorithm, so it must rely on some random sampling of the
-    % input time series... A bit of a strange one, but I'll return some statistics
-    % and see what they do.
+    % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     % 
     %---HISTORY:
     % Ben Fulcher, November 2009
@@ -7070,19 +7505,22 @@ class TSTL_delaytime(HCTSASuper):
 
     KNOWN_OUTPUTS_SIZES = (9,)
 
-    TAGS = ('correlation', 'nonlinear', 'stochastic', 'tau', 'tstool')
+    TAGS = ('correlation', 'nonlinear', 'tau', 'tstool')
 
-    def __init__(self, maxdelay=0.1, past=1.0):
+    def __init__(self, maxDelay=0.1, past=1.0, randomSeed='default'):
         super(TSTL_delaytime, self).__init__()
-        self.maxdelay = maxdelay
+        self.maxDelay = maxDelay
         self.past = past
+        self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
-        if self.maxdelay is None:
+        if self.maxDelay is None:
             return eng.run_function(1, 'TSTL_delaytime', x, )
         elif self.past is None:
-            return eng.run_function(1, 'TSTL_delaytime', x, self.maxdelay)
-        return eng.run_function(1, 'TSTL_delaytime', x, self.maxdelay, self.past)
+            return eng.run_function(1, 'TSTL_delaytime', x, self.maxDelay)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'TSTL_delaytime', x, self.maxDelay, self.past)
+        return eng.run_function(1, 'TSTL_delaytime', x, self.maxDelay, self.past, self.randomSeed)
 
 
 class TSTL_localdensity(HCTSASuper):
@@ -7104,7 +7542,7 @@ class TSTL_localdensity(HCTSASuper):
     % 
     % past, number of time-correlated points to discard (samples)
     % 
-    % embedparams, the embedding parameters, inputs to BF_embed as {tau,m}, where
+    % embedParams, the embedding parameters, inputs to BF_embed as {tau,m}, where
     %               tau and m can be characters specifying a given automatic method
     %               of determining tau and/or m (see BF_embed).
     % 
@@ -7122,20 +7560,20 @@ class TSTL_localdensity(HCTSASuper):
 
     TAGS = ('localdensity', 'nonlinear', 'stochastic', 'tstool')
 
-    def __init__(self, NNR=5.0, past=40.0, embedparams=('ac', 'cao')):
+    def __init__(self, NNR=5.0, past=40.0, embedParams=('ac', 'cao')):
         super(TSTL_localdensity, self).__init__()
         self.NNR = NNR
         self.past = past
-        self.embedparams = embedparams
+        self.embedParams = embedParams
 
     def _eval_hook(self, eng, x):
         if self.NNR is None:
             return eng.run_function(1, 'TSTL_localdensity', x, )
         elif self.past is None:
             return eng.run_function(1, 'TSTL_localdensity', x, self.NNR)
-        elif self.embedparams is None:
+        elif self.embedParams is None:
             return eng.run_function(1, 'TSTL_localdensity', x, self.NNR, self.past)
-        return eng.run_function(1, 'TSTL_localdensity', x, self.NNR, self.past, self.embedparams)
+        return eng.run_function(1, 'TSTL_localdensity', x, self.NNR, self.past, self.embedParams)
 
 
 class TSTL_predict(HCTSASuper):
@@ -7271,7 +7709,7 @@ class WL_coeffs(HCTSASuper):
 
     TAGS = ('lengthdep', 'wavelet', 'waveletTB')
 
-    def __init__(self, wname='db3', level=5.0):
+    def __init__(self, wname='db3', level=2.0):
         super(WL_coeffs, self).__init__()
         self.wname = wname
         self.level = level
@@ -7518,6 +7956,10 @@ HCTSA_ALL_CLASSES = (
     FC_Surprise,
     HT_DistributionTest,
     HT_HypothesisTest,
+    IN_AutoMutualInfo,
+    IN_AutoMutualInfoStats,
+    IN_Initialize_MI,
+    IN_MutualInfo,
     MD_hrv_classic,
     MD_pNN,
     MD_polvar,
@@ -7549,6 +7991,7 @@ HCTSA_ALL_CLASSES = (
     NL_MS_nlpe,
     NL_TISEAN_c1,
     NL_TISEAN_d2,
+    NL_TISEAN_fnn,
     NL_TSTL_FractalDimensions,
     NL_TSTL_GPCorrSum,
     NL_TSTL_LargestLyap,
@@ -7614,524 +8057,674 @@ HCTSA_ALL_CLASSES = (
 class HCTSAOperations(object):
     """Namespace for HCTSA selected operations."""
 
-    # outs: ac1,ac2,fitexpa,fitexpadjr2,fitexpb
-    # outs: fitexpr2,fitexprmse,fitlina,fitlinb,meanch
-    # outs: mse,pcrossmean,pdec
-    # tags: AMI,correlation,entropy,stochastic
-    CO_AddNoise_1_quantiles_20 = (
-        'CO_AddNoise_1_quantiles_20',
-        CO_AddNoise(tau=1, meth='quantiles', nbins=20))
-
-    # outs: ac1,ac2,fitexpa,fitexpadjr2,fitexpb
-    # outs: fitexpr2,fitexprmse,fitlina,fitlinb,meanch
-    # outs: mse,pcrossmean,pdec
-    # tags: AMI,correlation,entropy,stochastic
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
     CO_AddNoise_1_quantiles_10 = (
         'CO_AddNoise_1_quantiles_10',
-        CO_AddNoise(tau=1, meth='quantiles', nbins=10))
+        "CO_AddNoise(y,1,'quantiles',10,'default')",
+        CO_AddNoise(tau=1, amiMethod='quantiles', extraParam=10, randomSeed='default'))
 
-    # outs: ac1,ac2,fitexpa,fitexpadjr2,fitexpb
-    # outs: fitexpr2,fitexprmse,fitlina,fitlinb,meanch
-    # outs: mse,pcrossmean,pdec
-    # tags: AMI,correlation,entropy,stochastic
-    CO_AddNoise_2_quantiles_20 = (
-        'CO_AddNoise_2_quantiles_20',
-        CO_AddNoise(tau=2, meth='quantiles', nbins=20))
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
+    CO_AddNoise_ac_kraskov1 = (
+        'CO_AddNoise_ac_kraskov1',
+        "CO_AddNoise(y,'ac','kraskov1',[],'default')",
+        CO_AddNoise(tau='ac', amiMethod='kraskov1', extraParam=(), randomSeed='default'))
 
-    # outs: ac1,ac2,fitexpa,fitexpadjr2,fitexpb
-    # outs: fitexpr2,fitexprmse,fitlina,fitlinb,meanch
-    # outs: mse,pcrossmean,pdec
-    # tags: AMI,correlation,entropy,stochastic
-    CO_AddNoise_2_quantiles_10 = (
-        'CO_AddNoise_2_quantiles_10',
-        CO_AddNoise(tau=2, meth='quantiles', nbins=10))
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
+    CO_AddNoise_1_kraskov1 = (
+        'CO_AddNoise_1_kraskov1',
+        "CO_AddNoise(y,1,'kraskov1',[],'default')",
+        CO_AddNoise(tau=1, amiMethod='kraskov1', extraParam=(), randomSeed='default'))
 
-    # outs: ac1,ac2,fitexpa,fitexpadjr2,fitexpb
-    # outs: fitexpr2,fitexprmse,fitlina,fitlinb,meanch
-    # outs: mse,pcrossmean,pdec
-    # tags: AMI,correlation,entropy,stochastic
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
+    CO_AddNoise_ac_even_10 = (
+        'CO_AddNoise_ac_even_10',
+        "CO_AddNoise(y,'ac','even',10,'default')",
+        CO_AddNoise(tau='ac', amiMethod='even', extraParam=10, randomSeed='default'))
+
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
+    CO_AddNoise_1_even_10 = (
+        'CO_AddNoise_1_even_10',
+        "CO_AddNoise(y,1,'even',10,'default')",
+        CO_AddNoise(tau=1, amiMethod='even', extraParam=10, randomSeed='default'))
+
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
+    CO_AddNoise_ac_gaussian = (
+        'CO_AddNoise_ac_gaussian',
+        "CO_AddNoise(y,'ac','gaussian',[],'default')",
+        CO_AddNoise(tau='ac', amiMethod='gaussian', extraParam=(), randomSeed='default'))
+
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
+    CO_AddNoise_ac_quantiles_10 = (
+        'CO_AddNoise_ac_quantiles_10',
+        "CO_AddNoise(y,'ac','quantiles',10,'default')",
+        CO_AddNoise(tau='ac', amiMethod='quantiles', extraParam=10, randomSeed='default'))
+
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
     CO_AddNoise_1_std1_10 = (
         'CO_AddNoise_1_std1_10',
-        CO_AddNoise(tau=1, meth='std1', nbins=10))
+        "CO_AddNoise(y,1,'std1',10,'default')",
+        CO_AddNoise(tau=1, amiMethod='std1', extraParam=10, randomSeed='default'))
+
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
+    CO_AddNoise_1_gaussian = (
+        'CO_AddNoise_1_gaussian',
+        "CO_AddNoise(y,1,'gaussian',[],'default')",
+        CO_AddNoise(tau=1, amiMethod='gaussian', extraParam=(), randomSeed='default'))
+
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
+    CO_AddNoise_ac_std1_10 = (
+        'CO_AddNoise_ac_std1_10',
+        "CO_AddNoise(y,'ac','std1',10,'default')",
+        CO_AddNoise(tau='ac', amiMethod='std1', extraParam=10, randomSeed='default'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_32_Fourier = (
         'AC_32_Fourier',
+        "CO_AutoCorr(y,32,'Fourier')",
         CO_AutoCorr(tau=32, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_35_Fourier = (
         'AC_35_Fourier',
+        "CO_AutoCorr(y,35,'Fourier')",
         CO_AutoCorr(tau=35, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_7_Fourier = (
         'AC_7_Fourier',
+        "CO_AutoCorr(y,7,'Fourier')",
         CO_AutoCorr(tau=7, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_19_Fourier = (
         'AC_19_Fourier',
+        "CO_AutoCorr(y,19,'Fourier')",
         CO_AutoCorr(tau=19, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_30_Fourier = (
         'AC_30_Fourier',
+        "CO_AutoCorr(y,30,'Fourier')",
         CO_AutoCorr(tau=30, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_36_Fourier = (
         'AC_36_Fourier',
+        "CO_AutoCorr(y,36,'Fourier')",
         CO_AutoCorr(tau=36, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_38_Fourier = (
         'AC_38_Fourier',
+        "CO_AutoCorr(y,38,'Fourier')",
         CO_AutoCorr(tau=38, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_39 = (
         'AC_39',
+        "CO_AutoCorr(y,39,'TimeDomain')",
         CO_AutoCorr(tau=39, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_38 = (
         'AC_38',
+        "CO_AutoCorr(y,38,'TimeDomain')",
         CO_AutoCorr(tau=38, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_37 = (
         'AC_37',
+        "CO_AutoCorr(y,37,'TimeDomain')",
         CO_AutoCorr(tau=37, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_36 = (
         'AC_36',
+        "CO_AutoCorr(y,36,'TimeDomain')",
         CO_AutoCorr(tau=36, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_35 = (
         'AC_35',
+        "CO_AutoCorr(y,35,'TimeDomain')",
         CO_AutoCorr(tau=35, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_34 = (
         'AC_34',
+        "CO_AutoCorr(y,34,'TimeDomain')",
         CO_AutoCorr(tau=34, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_33 = (
         'AC_33',
+        "CO_AutoCorr(y,33,'TimeDomain')",
         CO_AutoCorr(tau=33, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_32 = (
         'AC_32',
+        "CO_AutoCorr(y,32,'TimeDomain')",
         CO_AutoCorr(tau=32, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_31 = (
         'AC_31',
+        "CO_AutoCorr(y,31,'TimeDomain')",
         CO_AutoCorr(tau=31, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_30 = (
         'AC_30',
+        "CO_AutoCorr(y,30,'TimeDomain')",
         CO_AutoCorr(tau=30, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_8_Fourier = (
         'AC_8_Fourier',
+        "CO_AutoCorr(y,8,'Fourier')",
         CO_AutoCorr(tau=8, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_23_Fourier = (
         'AC_23_Fourier',
+        "CO_AutoCorr(y,23,'Fourier')",
         CO_AutoCorr(tau=23, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_31_Fourier = (
         'AC_31_Fourier',
+        "CO_AutoCorr(y,31,'Fourier')",
         CO_AutoCorr(tau=31, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_25_Fourier = (
         'AC_25_Fourier',
+        "CO_AutoCorr(y,25,'Fourier')",
         CO_AutoCorr(tau=25, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_2_Fourier = (
         'AC_2_Fourier',
+        "CO_AutoCorr(y,2,'Fourier')",
         CO_AutoCorr(tau=2, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_29_Fourier = (
         'AC_29_Fourier',
+        "CO_AutoCorr(y,29,'Fourier')",
         CO_AutoCorr(tau=29, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_6_Fourier = (
         'AC_6_Fourier',
+        "CO_AutoCorr(y,6,'Fourier')",
         CO_AutoCorr(tau=6, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_17_Fourier = (
         'AC_17_Fourier',
+        "CO_AutoCorr(y,17,'Fourier')",
         CO_AutoCorr(tau=17, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_33_Fourier = (
         'AC_33_Fourier',
+        "CO_AutoCorr(y,33,'Fourier')",
         CO_AutoCorr(tau=33, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_14_Fourier = (
         'AC_14_Fourier',
+        "CO_AutoCorr(y,14,'Fourier')",
         CO_AutoCorr(tau=14, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_12_Fourier = (
         'AC_12_Fourier',
+        "CO_AutoCorr(y,12,'Fourier')",
         CO_AutoCorr(tau=12, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_10_Fourier = (
         'AC_10_Fourier',
+        "CO_AutoCorr(y,10,'Fourier')",
         CO_AutoCorr(tau=10, whatMethod='Fourier'))
-
-    # outs: None
-    # tags: autocorrelation,correlation
-    AC_3 = (
-        'AC_3',
-        CO_AutoCorr(tau=3, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_1_Fourier = (
         'AC_1_Fourier',
+        "CO_AutoCorr(y,1,'Fourier')",
         CO_AutoCorr(tau=1, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_2 = (
         'AC_2',
+        "CO_AutoCorr(y,2,'TimeDomain')",
         CO_AutoCorr(tau=2, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_9 = (
         'AC_9',
+        "CO_AutoCorr(y,9,'TimeDomain')",
         CO_AutoCorr(tau=9, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_8 = (
         'AC_8',
+        "CO_AutoCorr(y,8,'TimeDomain')",
         CO_AutoCorr(tau=8, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_1 = (
         'AC_1',
+        "CO_AutoCorr(y,1,'TimeDomain')",
         CO_AutoCorr(tau=1, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_5 = (
         'AC_5',
+        "CO_AutoCorr(y,5,'TimeDomain')",
         CO_AutoCorr(tau=5, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_4 = (
         'AC_4',
+        "CO_AutoCorr(y,4,'TimeDomain')",
         CO_AutoCorr(tau=4, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_7 = (
         'AC_7',
+        "CO_AutoCorr(y,7,'TimeDomain')",
         CO_AutoCorr(tau=7, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_6 = (
         'AC_6',
+        "CO_AutoCorr(y,6,'TimeDomain')",
         CO_AutoCorr(tau=6, whatMethod='TimeDomain'))
+
+    # outs: None
+    # tags: autocorrelation,correlation
+    AC_3 = (
+        'AC_3',
+        "CO_AutoCorr(y,3,'TimeDomain')",
+        CO_AutoCorr(tau=3, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_28 = (
         'AC_28',
+        "CO_AutoCorr(y,28,'TimeDomain')",
         CO_AutoCorr(tau=28, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_29 = (
         'AC_29',
+        "CO_AutoCorr(y,29,'TimeDomain')",
         CO_AutoCorr(tau=29, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_3_Fourier = (
         'AC_3_Fourier',
+        "CO_AutoCorr(y,3,'Fourier')",
         CO_AutoCorr(tau=3, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_20 = (
         'AC_20',
+        "CO_AutoCorr(y,20,'TimeDomain')",
         CO_AutoCorr(tau=20, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_21 = (
         'AC_21',
+        "CO_AutoCorr(y,21,'TimeDomain')",
         CO_AutoCorr(tau=21, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_22 = (
         'AC_22',
+        "CO_AutoCorr(y,22,'TimeDomain')",
         CO_AutoCorr(tau=22, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_23 = (
         'AC_23',
+        "CO_AutoCorr(y,23,'TimeDomain')",
         CO_AutoCorr(tau=23, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_24 = (
         'AC_24',
+        "CO_AutoCorr(y,24,'TimeDomain')",
         CO_AutoCorr(tau=24, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_25 = (
         'AC_25',
+        "CO_AutoCorr(y,25,'TimeDomain')",
         CO_AutoCorr(tau=25, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_26 = (
         'AC_26',
+        "CO_AutoCorr(y,26,'TimeDomain')",
         CO_AutoCorr(tau=26, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_27 = (
         'AC_27',
+        "CO_AutoCorr(y,27,'TimeDomain')",
         CO_AutoCorr(tau=27, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_11_Fourier = (
         'AC_11_Fourier',
+        "CO_AutoCorr(y,11,'Fourier')",
         CO_AutoCorr(tau=11, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_27_Fourier = (
         'AC_27_Fourier',
+        "CO_AutoCorr(y,27,'Fourier')",
         CO_AutoCorr(tau=27, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_15_Fourier = (
         'AC_15_Fourier',
+        "CO_AutoCorr(y,15,'Fourier')",
         CO_AutoCorr(tau=15, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_18_Fourier = (
         'AC_18_Fourier',
+        "CO_AutoCorr(y,18,'Fourier')",
         CO_AutoCorr(tau=18, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_16_Fourier = (
         'AC_16_Fourier',
+        "CO_AutoCorr(y,16,'Fourier')",
         CO_AutoCorr(tau=16, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_11 = (
         'AC_11',
+        "CO_AutoCorr(y,11,'TimeDomain')",
         CO_AutoCorr(tau=11, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_10 = (
         'AC_10',
+        "CO_AutoCorr(y,10,'TimeDomain')",
         CO_AutoCorr(tau=10, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_13 = (
         'AC_13',
+        "CO_AutoCorr(y,13,'TimeDomain')",
         CO_AutoCorr(tau=13, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_12 = (
         'AC_12',
+        "CO_AutoCorr(y,12,'TimeDomain')",
         CO_AutoCorr(tau=12, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_15 = (
         'AC_15',
+        "CO_AutoCorr(y,15,'TimeDomain')",
         CO_AutoCorr(tau=15, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_14 = (
         'AC_14',
+        "CO_AutoCorr(y,14,'TimeDomain')",
         CO_AutoCorr(tau=14, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_17 = (
         'AC_17',
+        "CO_AutoCorr(y,17,'TimeDomain')",
         CO_AutoCorr(tau=17, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_16 = (
         'AC_16',
+        "CO_AutoCorr(y,16,'TimeDomain')",
         CO_AutoCorr(tau=16, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_19 = (
         'AC_19',
+        "CO_AutoCorr(y,19,'TimeDomain')",
         CO_AutoCorr(tau=19, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_18 = (
         'AC_18',
+        "CO_AutoCorr(y,18,'TimeDomain')",
         CO_AutoCorr(tau=18, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_9_Fourier = (
         'AC_9_Fourier',
+        "CO_AutoCorr(y,9,'Fourier')",
         CO_AutoCorr(tau=9, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_5_Fourier = (
         'AC_5_Fourier',
+        "CO_AutoCorr(y,5,'Fourier')",
         CO_AutoCorr(tau=5, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_24_Fourier = (
         'AC_24_Fourier',
+        "CO_AutoCorr(y,24,'Fourier')",
         CO_AutoCorr(tau=24, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_37_Fourier = (
         'AC_37_Fourier',
+        "CO_AutoCorr(y,37,'Fourier')",
         CO_AutoCorr(tau=37, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_40 = (
         'AC_40',
+        "CO_AutoCorr(y,40,'TimeDomain')",
         CO_AutoCorr(tau=40, whatMethod='TimeDomain'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_28_Fourier = (
         'AC_28_Fourier',
+        "CO_AutoCorr(y,28,'Fourier')",
         CO_AutoCorr(tau=28, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_34_Fourier = (
         'AC_34_Fourier',
+        "CO_AutoCorr(y,34,'Fourier')",
         CO_AutoCorr(tau=34, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_13_Fourier = (
         'AC_13_Fourier',
+        "CO_AutoCorr(y,13,'Fourier')",
         CO_AutoCorr(tau=13, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_4_Fourier = (
         'AC_4_Fourier',
+        "CO_AutoCorr(y,4,'Fourier')",
         CO_AutoCorr(tau=4, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_21_Fourier = (
         'AC_21_Fourier',
+        "CO_AutoCorr(y,21,'Fourier')",
         CO_AutoCorr(tau=21, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_39_Fourier = (
         'AC_39_Fourier',
+        "CO_AutoCorr(y,39,'Fourier')",
         CO_AutoCorr(tau=39, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_40_Fourier = (
         'AC_40_Fourier',
+        "CO_AutoCorr(y,40,'Fourier')",
         CO_AutoCorr(tau=40, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_20_Fourier = (
         'AC_20_Fourier',
+        "CO_AutoCorr(y,20,'Fourier')",
         CO_AutoCorr(tau=20, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_26_Fourier = (
         'AC_26_Fourier',
+        "CO_AutoCorr(y,26,'Fourier')",
         CO_AutoCorr(tau=26, whatMethod='Fourier'))
 
     # outs: None
     # tags: autocorrelation,correlation
     AC_22_Fourier = (
         'AC_22_Fourier',
+        "CO_AutoCorr(y,22,'Fourier')",
         CO_AutoCorr(tau=22, whatMethod='Fourier'))
 
     # outs: Nac,ac1,ac1maxima,ac1minima,ac2
@@ -8143,6 +8736,7 @@ class HCTSAOperations(object):
     # tags: correlation
     CO_AutoCorrShape = (
         'CO_AutoCorrShape',
+        'CO_AutoCorrShape(y)',
         CO_AutoCorrShape())
 
     # outs: conv4,iqr,max,maxp,mean
@@ -8151,6 +8745,7 @@ class HCTSAOperations(object):
     # tags: AMI,correlation
     CO_CompareMinAMI_std2_2_80 = (
         'CO_CompareMinAMI_std2_2_80',
+        "CO_CompareMinAMI(y,'std2',[2:80])",
         CO_CompareMinAMI(meth='std2', nbins=[MatlabSequence('2:80')]))
 
     # outs: conv4,iqr,max,maxp,mean
@@ -8159,6 +8754,7 @@ class HCTSAOperations(object):
     # tags: AMI,correlation
     CO_CompareMinAMI_quantiles_2_80 = (
         'CO_CompareMinAMI_quantiles_2_80',
+        "CO_CompareMinAMI(y,'quantiles',[2:80])",
         CO_CompareMinAMI(meth='quantiles', nbins=[MatlabSequence('2:80')]))
 
     # outs: conv4,iqr,max,maxp,mean
@@ -8167,6 +8763,7 @@ class HCTSAOperations(object):
     # tags: AMI,correlation
     CO_CompareMinAMI_even_2_80 = (
         'CO_CompareMinAMI_even_2_80',
+        "CO_CompareMinAMI(y,'even',[2:80])",
         CO_CompareMinAMI(meth='even', nbins=[MatlabSequence('2:80')]))
 
     # outs: conv4,iqr,max,maxp,mean
@@ -8175,6 +8772,7 @@ class HCTSAOperations(object):
     # tags: AMI,correlation
     CO_CompareMinAMI_std1_2_80 = (
         'CO_CompareMinAMI_std1_2_80',
+        "CO_CompareMinAMI(y,'std1',[2:80])",
         CO_CompareMinAMI(meth='std1', nbins=[MatlabSequence('2:80')]))
 
     # outs: arearat,areas_50,areas_all,eucdm1,eucdm2
@@ -8186,6 +8784,7 @@ class HCTSAOperations(object):
     # tags: correlation,embedding
     CO_Embed2_tau = (
         'CO_Embed2_tau',
+        "CO_Embed2(y,'tau')",
         CO_Embed2(tau='tau'))
 
     # outs: ac1_thetaac1,ac1_thetaac2,ac1_thetaac3,diff_thetaac12,max_thetaac1
@@ -8194,6 +8793,7 @@ class HCTSAOperations(object):
     # tags: correlation,embedding
     CO_Embed2_AngleTau_50 = (
         'CO_Embed2_AngleTau_50',
+        'CO_Embed2_AngleTau(y,50)',
         CO_Embed2_AngleTau(maxtau=50))
 
     # outs: downdiag01,downdiag05,incircle_01,incircle_02,incircle_05
@@ -8205,6 +8805,7 @@ class HCTSAOperations(object):
     # tags: correlation
     CO_Embed2_Basic_1 = (
         'CO_Embed2_Basic_1',
+        'CO_Embed2_Basic(y,1)',
         CO_Embed2_Basic(tau=1))
 
     # outs: downdiag01,downdiag05,incircle_01,incircle_02,incircle_05
@@ -8216,6 +8817,7 @@ class HCTSAOperations(object):
     # tags: correlation
     CO_Embed2_Basic_tau = (
         'CO_Embed2_Basic_tau',
+        "CO_Embed2_Basic(y,'tau')",
         CO_Embed2_Basic(tau='tau'))
 
     # outs: d_ac1,d_ac2,d_ac3,d_cv,d_expfit_l
@@ -8224,6 +8826,7 @@ class HCTSAOperations(object):
     # tags: correlation,embedding
     CO_Embed2_Dist_tau = (
         'CO_Embed2_Dist_tau',
+        "CO_Embed2_Dist(y,'tau')",
         CO_Embed2_Dist(tau='tau'))
 
     # outs: ac1,ac2,hist10_ent,iqr,iqronrange
@@ -8233,6 +8836,7 @@ class HCTSAOperations(object):
     # tags: correlation,embedding
     CO_Embed2_Shapes_tau_circle_1 = (
         'CO_Embed2_Shapes_tau_circle_1',
+        "CO_Embed2_Shapes(y,'tau','circle',1)",
         CO_Embed2_Shapes(tau='tau', shape='circle', r=1))
 
     # outs: ac1,ac2,hist10_ent,iqr,iqronrange
@@ -8242,1140 +8846,603 @@ class HCTSAOperations(object):
     # tags: correlation,embedding
     CO_Embed2_Shapes_tau_circle_01 = (
         'CO_Embed2_Shapes_tau_circle_01',
+        "CO_Embed2_Shapes(y,'tau','circle',0.1)",
         CO_Embed2_Shapes(tau='tau', shape='circle', r=0.1))
 
-    # outs: None
-    # tags: AMI,correlation,tau
-    CO_FirstMin_mi = (
-        'CO_FirstMin_mi',
-        CO_FirstMin(MinWhat='mi'))
+    # tags: 
+    CO_FirstMin_mi_kraskov2_3 = (
+        'CO_FirstMin_mi_kraskov2_3',
+        "CO_FirstMin(y,'mi-kraskov2','3')",
+        CO_FirstMin(minWhat='mi-kraskov2', extraParam='3'))
+
+    # tags: 
+    CO_FirstMin_mi_kraskov1 = (
+        'CO_FirstMin_mi_kraskov1',
+        "CO_FirstMin(y,'mi-kraskov1')",
+        CO_FirstMin(minWhat='mi-kraskov1'))
+
+    # tags: 
+    CO_FirstMin_mi_hist_5 = (
+        'CO_FirstMin_mi_hist_5',
+        "CO_FirstMin(y,'mi-hist',5)",
+        CO_FirstMin(minWhat='mi-hist', extraParam=5))
 
     # outs: None
     # tags: autocorrelation,correlation,tau
     CO_FirstMin_ac = (
         'CO_FirstMin_ac',
-        CO_FirstMin(MinWhat='ac'))
+        "CO_FirstMin(y,'ac')",
+        CO_FirstMin(minWhat='ac'))
+
+    # tags: 
+    CO_FirstMin_mi_gaussian = (
+        'CO_FirstMin_mi_gaussian',
+        "CO_FirstMin(y,'mi-gaussian')",
+        CO_FirstMin(minWhat='mi-gaussian'))
+
+    # tags: 
+    CO_FirstMin_mi_hist_10 = (
+        'CO_FirstMin_mi_hist_10',
+        "CO_FirstMin(y,'mi-hist',10)",
+        CO_FirstMin(minWhat='mi-hist', extraParam=10))
+
+    # tags: 
+    CO_FirstMin_mi_kernel = (
+        'CO_FirstMin_mi_kernel',
+        "CO_FirstMin(y,'mi-kernel')",
+        CO_FirstMin(minWhat='mi-kernel'))
 
     # outs: None
     # tags: autocorrelation,correlation,tau
     CO_FirstZero_ac = (
         'CO_FirstZero_ac',
-        CO_FirstZero(corrfn='ac'))
+        "CO_FirstZero(y,'ac')",
+        CO_FirstZero(corrFun='ac'))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std2_10 = (
-        'CO_HistogramAMI_2_std2_10',
-        CO_HistogramAMI(tau=2, meth='std2', nbins=10))
+    CO_HistogramAMI_even_10 = (
+        'CO_HistogramAMI_even_10',
+        "CO_HistogramAMI(y,1:5,'even',10)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='even', numBins=10))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std1_2 = (
-        'CO_HistogramAMI_2_std1_2',
-        CO_HistogramAMI(tau=2, meth='std1', nbins=2))
+    CO_HistogramAMI_std2_10 = (
+        'CO_HistogramAMI_std2_10',
+        "CO_HistogramAMI(y,1:5,'std2',10)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='std2', numBins=10))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std1_6 = (
-        'CO_HistogramAMI_2_std1_6',
-        CO_HistogramAMI(tau=2, meth='std1', nbins=6))
+    CO_HistogramAMI_std2_5 = (
+        'CO_HistogramAMI_std2_5',
+        "CO_HistogramAMI(y,1:5,'std2',5)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='std2', numBins=5))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std1_4 = (
-        'CO_HistogramAMI_2_std1_4',
-        CO_HistogramAMI(tau=2, meth='std1', nbins=4))
+    CO_HistogramAMI_std2_2 = (
+        'CO_HistogramAMI_std2_2',
+        "CO_HistogramAMI(y,1:5,'std2',2)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='std2', numBins=2))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std1_8 = (
-        'CO_HistogramAMI_2_std1_8',
-        CO_HistogramAMI(tau=2, meth='std1', nbins=8))
+    CO_HistogramAMI_quantiles_10 = (
+        'CO_HistogramAMI_quantiles_10',
+        "CO_HistogramAMI(y,1:5,'quantiles',10)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='quantiles', numBins=10))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_2_quantiles_4 = (
-        'CO_HistogramAMI_2_quantiles_4',
-        CO_HistogramAMI(tau=2, meth='quantiles', nbins=4))
+    CO_HistogramAMI_std1_2 = (
+        'CO_HistogramAMI_std1_2',
+        "CO_HistogramAMI(y,1:5,'std1',2)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='std1', numBins=2))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_2_quantiles_6 = (
-        'CO_HistogramAMI_2_quantiles_6',
-        CO_HistogramAMI(tau=2, meth='quantiles', nbins=6))
+    CO_HistogramAMI_std1_5 = (
+        'CO_HistogramAMI_std1_5',
+        "CO_HistogramAMI(y,1:5,'std1',5)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='std1', numBins=5))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_2_quantiles_2 = (
-        'CO_HistogramAMI_2_quantiles_2',
-        CO_HistogramAMI(tau=2, meth='quantiles', nbins=2))
+    CO_HistogramAMI_even_2 = (
+        'CO_HistogramAMI_even_2',
+        "CO_HistogramAMI(y,1:5,'even',2)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='even', numBins=2))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_3_quantiles_4 = (
-        'CO_HistogramAMI_3_quantiles_4',
-        CO_HistogramAMI(tau=3, meth='quantiles', nbins=4))
+    CO_HistogramAMI_even_5 = (
+        'CO_HistogramAMI_even_5',
+        "CO_HistogramAMI(y,1:5,'even',5)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='even', numBins=5))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_3_quantiles_2 = (
-        'CO_HistogramAMI_3_quantiles_2',
-        CO_HistogramAMI(tau=3, meth='quantiles', nbins=2))
+    CO_HistogramAMI_std1_10 = (
+        'CO_HistogramAMI_std1_10',
+        "CO_HistogramAMI(y,1:5,'std1',10)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='std1', numBins=10))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std1_10 = (
-        'CO_HistogramAMI_5_std1_10',
-        CO_HistogramAMI(tau=5, meth='std1', nbins=10))
+    CO_HistogramAMI_quantiles_2 = (
+        'CO_HistogramAMI_quantiles_2',
+        "CO_HistogramAMI(y,1:5,'quantiles',2)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='quantiles', numBins=2))
 
-    # outs: None
+    # outs: ami1,ami2,ami3,ami4,ami5
     # tags: AMI,correlation,information
-    CO_HistogramAMI_3_quantiles_8 = (
-        'CO_HistogramAMI_3_quantiles_8',
-        CO_HistogramAMI(tau=3, meth='quantiles', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std1_20 = (
-        'CO_HistogramAMI_1_std1_20',
-        CO_HistogramAMI(tau=1, meth='std1', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std2_8 = (
-        'CO_HistogramAMI_5_std2_8',
-        CO_HistogramAMI(tau=5, meth='std2', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std2_2 = (
-        'CO_HistogramAMI_5_std2_2',
-        CO_HistogramAMI(tau=5, meth='std2', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std2_4 = (
-        'CO_HistogramAMI_5_std2_4',
-        CO_HistogramAMI(tau=5, meth='std2', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std1_20 = (
-        'CO_HistogramAMI_2_std1_20',
-        CO_HistogramAMI(tau=2, meth='std1', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std1_8 = (
-        'CO_HistogramAMI_4_std1_8',
-        CO_HistogramAMI(tau=4, meth='std1', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std1_4 = (
-        'CO_HistogramAMI_4_std1_4',
-        CO_HistogramAMI(tau=4, meth='std1', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std1_6 = (
-        'CO_HistogramAMI_4_std1_6',
-        CO_HistogramAMI(tau=4, meth='std1', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std1_2 = (
-        'CO_HistogramAMI_4_std1_2',
-        CO_HistogramAMI(tau=4, meth='std1', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std2_10 = (
-        'CO_HistogramAMI_4_std2_10',
-        CO_HistogramAMI(tau=4, meth='std2', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_even_20 = (
-        'CO_HistogramAMI_5_even_20',
-        CO_HistogramAMI(tau=5, meth='even', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std1_20 = (
-        'CO_HistogramAMI_5_std1_20',
-        CO_HistogramAMI(tau=5, meth='std1', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_quantiles_10 = (
-        'CO_HistogramAMI_3_quantiles_10',
-        CO_HistogramAMI(tau=3, meth='quantiles', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std2_6 = (
-        'CO_HistogramAMI_5_std2_6',
-        CO_HistogramAMI(tau=5, meth='std2', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_quantiles_20 = (
-        'CO_HistogramAMI_2_quantiles_20',
-        CO_HistogramAMI(tau=2, meth='quantiles', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_quantiles_8 = (
-        'CO_HistogramAMI_1_quantiles_8',
-        CO_HistogramAMI(tau=1, meth='quantiles', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_quantiles_2 = (
-        'CO_HistogramAMI_1_quantiles_2',
-        CO_HistogramAMI(tau=1, meth='quantiles', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_quantiles_6 = (
-        'CO_HistogramAMI_1_quantiles_6',
-        CO_HistogramAMI(tau=1, meth='quantiles', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_quantiles_4 = (
-        'CO_HistogramAMI_1_quantiles_4',
-        CO_HistogramAMI(tau=1, meth='quantiles', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std2_8 = (
-        'CO_HistogramAMI_2_std2_8',
-        CO_HistogramAMI(tau=2, meth='std2', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std2_4 = (
-        'CO_HistogramAMI_2_std2_4',
-        CO_HistogramAMI(tau=2, meth='std2', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std2_6 = (
-        'CO_HistogramAMI_2_std2_6',
-        CO_HistogramAMI(tau=2, meth='std2', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std2_2 = (
-        'CO_HistogramAMI_2_std2_2',
-        CO_HistogramAMI(tau=2, meth='std2', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_quantiles_20 = (
-        'CO_HistogramAMI_1_quantiles_20',
-        CO_HistogramAMI(tau=1, meth='quantiles', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_even_8 = (
-        'CO_HistogramAMI_1_even_8',
-        CO_HistogramAMI(tau=1, meth='even', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_even_2 = (
-        'CO_HistogramAMI_1_even_2',
-        CO_HistogramAMI(tau=1, meth='even', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_even_6 = (
-        'CO_HistogramAMI_1_even_6',
-        CO_HistogramAMI(tau=1, meth='even', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_even_4 = (
-        'CO_HistogramAMI_1_even_4',
-        CO_HistogramAMI(tau=1, meth='even', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_even_6 = (
-        'CO_HistogramAMI_5_even_6',
-        CO_HistogramAMI(tau=5, meth='even', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_even_4 = (
-        'CO_HistogramAMI_5_even_4',
-        CO_HistogramAMI(tau=5, meth='even', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_even_2 = (
-        'CO_HistogramAMI_5_even_2',
-        CO_HistogramAMI(tau=5, meth='even', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_even_8 = (
-        'CO_HistogramAMI_5_even_8',
-        CO_HistogramAMI(tau=5, meth='even', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_quantiles_8 = (
-        'CO_HistogramAMI_2_quantiles_8',
-        CO_HistogramAMI(tau=2, meth='quantiles', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_quantiles_20 = (
-        'CO_HistogramAMI_4_quantiles_20',
-        CO_HistogramAMI(tau=4, meth='quantiles', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std2_20 = (
-        'CO_HistogramAMI_2_std2_20',
-        CO_HistogramAMI(tau=2, meth='std2', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std2_20 = (
-        'CO_HistogramAMI_4_std2_20',
-        CO_HistogramAMI(tau=4, meth='std2', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_even_2 = (
-        'CO_HistogramAMI_4_even_2',
-        CO_HistogramAMI(tau=4, meth='even', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_even_4 = (
-        'CO_HistogramAMI_4_even_4',
-        CO_HistogramAMI(tau=4, meth='even', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_even_6 = (
-        'CO_HistogramAMI_4_even_6',
-        CO_HistogramAMI(tau=4, meth='even', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_even_8 = (
-        'CO_HistogramAMI_4_even_8',
-        CO_HistogramAMI(tau=4, meth='even', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_even_20 = (
-        'CO_HistogramAMI_2_even_20',
-        CO_HistogramAMI(tau=2, meth='even', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std2_2 = (
-        'CO_HistogramAMI_4_std2_2',
-        CO_HistogramAMI(tau=4, meth='std2', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std2_6 = (
-        'CO_HistogramAMI_4_std2_6',
-        CO_HistogramAMI(tau=4, meth='std2', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std2_8 = (
-        'CO_HistogramAMI_4_std2_8',
-        CO_HistogramAMI(tau=4, meth='std2', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_quantiles_10 = (
-        'CO_HistogramAMI_2_quantiles_10',
-        CO_HistogramAMI(tau=2, meth='quantiles', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_std1_10 = (
-        'CO_HistogramAMI_2_std1_10',
-        CO_HistogramAMI(tau=2, meth='std1', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std1_10 = (
-        'CO_HistogramAMI_3_std1_10',
-        CO_HistogramAMI(tau=3, meth='std1', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_even_2 = (
-        'CO_HistogramAMI_3_even_2',
-        CO_HistogramAMI(tau=3, meth='even', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_even_4 = (
-        'CO_HistogramAMI_3_even_4',
-        CO_HistogramAMI(tau=3, meth='even', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_even_6 = (
-        'CO_HistogramAMI_3_even_6',
-        CO_HistogramAMI(tau=3, meth='even', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_even_8 = (
-        'CO_HistogramAMI_3_even_8',
-        CO_HistogramAMI(tau=3, meth='even', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std1_10 = (
-        'CO_HistogramAMI_4_std1_10',
-        CO_HistogramAMI(tau=4, meth='std1', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_quantiles_20 = (
-        'CO_HistogramAMI_3_quantiles_20',
-        CO_HistogramAMI(tau=3, meth='quantiles', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std2_2 = (
-        'CO_HistogramAMI_3_std2_2',
-        CO_HistogramAMI(tau=3, meth='std2', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std2_6 = (
-        'CO_HistogramAMI_3_std2_6',
-        CO_HistogramAMI(tau=3, meth='std2', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std2_4 = (
-        'CO_HistogramAMI_3_std2_4',
-        CO_HistogramAMI(tau=3, meth='std2', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std2_8 = (
-        'CO_HistogramAMI_3_std2_8',
-        CO_HistogramAMI(tau=3, meth='std2', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std2_20 = (
-        'CO_HistogramAMI_3_std2_20',
-        CO_HistogramAMI(tau=3, meth='std2', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_quantiles_8 = (
-        'CO_HistogramAMI_4_quantiles_8',
-        CO_HistogramAMI(tau=4, meth='quantiles', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_quantiles_6 = (
-        'CO_HistogramAMI_4_quantiles_6',
-        CO_HistogramAMI(tau=4, meth='quantiles', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_quantiles_4 = (
-        'CO_HistogramAMI_4_quantiles_4',
-        CO_HistogramAMI(tau=4, meth='quantiles', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_quantiles_2 = (
-        'CO_HistogramAMI_4_quantiles_2',
-        CO_HistogramAMI(tau=4, meth='quantiles', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std2_20 = (
-        'CO_HistogramAMI_1_std2_20',
-        CO_HistogramAMI(tau=1, meth='std2', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_quantiles_6 = (
-        'CO_HistogramAMI_3_quantiles_6',
-        CO_HistogramAMI(tau=3, meth='quantiles', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std2_8 = (
-        'CO_HistogramAMI_1_std2_8',
-        CO_HistogramAMI(tau=1, meth='std2', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std2_4 = (
-        'CO_HistogramAMI_1_std2_4',
-        CO_HistogramAMI(tau=1, meth='std2', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std2_6 = (
-        'CO_HistogramAMI_1_std2_6',
-        CO_HistogramAMI(tau=1, meth='std2', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std2_2 = (
-        'CO_HistogramAMI_1_std2_2',
-        CO_HistogramAMI(tau=1, meth='std2', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_even_10 = (
-        'CO_HistogramAMI_1_even_10',
-        CO_HistogramAMI(tau=1, meth='even', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_quantiles_8 = (
-        'CO_HistogramAMI_5_quantiles_8',
-        CO_HistogramAMI(tau=5, meth='quantiles', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_even_20 = (
-        'CO_HistogramAMI_4_even_20',
-        CO_HistogramAMI(tau=4, meth='even', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_quantiles_6 = (
-        'CO_HistogramAMI_5_quantiles_6',
-        CO_HistogramAMI(tau=5, meth='quantiles', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_quantiles_10 = (
-        'CO_HistogramAMI_4_quantiles_10',
-        CO_HistogramAMI(tau=4, meth='quantiles', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_quantiles_10 = (
-        'CO_HistogramAMI_1_quantiles_10',
-        CO_HistogramAMI(tau=1, meth='quantiles', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_quantiles_10 = (
-        'CO_HistogramAMI_5_quantiles_10',
-        CO_HistogramAMI(tau=5, meth='quantiles', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_quantiles_4 = (
-        'CO_HistogramAMI_5_quantiles_4',
-        CO_HistogramAMI(tau=5, meth='quantiles', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_quantiles_2 = (
-        'CO_HistogramAMI_5_quantiles_2',
-        CO_HistogramAMI(tau=5, meth='quantiles', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_even_10 = (
-        'CO_HistogramAMI_2_even_10',
-        CO_HistogramAMI(tau=2, meth='even', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std2_10 = (
-        'CO_HistogramAMI_3_std2_10',
-        CO_HistogramAMI(tau=3, meth='std2', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std1_2 = (
-        'CO_HistogramAMI_1_std1_2',
-        CO_HistogramAMI(tau=1, meth='std1', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std1_6 = (
-        'CO_HistogramAMI_1_std1_6',
-        CO_HistogramAMI(tau=1, meth='std1', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std1_4 = (
-        'CO_HistogramAMI_1_std1_4',
-        CO_HistogramAMI(tau=1, meth='std1', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std1_8 = (
-        'CO_HistogramAMI_1_std1_8',
-        CO_HistogramAMI(tau=1, meth='std1', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std2_10 = (
-        'CO_HistogramAMI_1_std2_10',
-        CO_HistogramAMI(tau=1, meth='std2', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std1_8 = (
-        'CO_HistogramAMI_3_std1_8',
-        CO_HistogramAMI(tau=3, meth='std1', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std1_4 = (
-        'CO_HistogramAMI_3_std1_4',
-        CO_HistogramAMI(tau=3, meth='std1', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std1_6 = (
-        'CO_HistogramAMI_3_std1_6',
-        CO_HistogramAMI(tau=3, meth='std1', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std1_2 = (
-        'CO_HistogramAMI_3_std1_2',
-        CO_HistogramAMI(tau=3, meth='std1', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_even_20 = (
-        'CO_HistogramAMI_1_even_20',
-        CO_HistogramAMI(tau=1, meth='even', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_std1_20 = (
-        'CO_HistogramAMI_3_std1_20',
-        CO_HistogramAMI(tau=3, meth='std1', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_even_10 = (
-        'CO_HistogramAMI_3_even_10',
-        CO_HistogramAMI(tau=3, meth='even', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std2_20 = (
-        'CO_HistogramAMI_5_std2_20',
-        CO_HistogramAMI(tau=5, meth='std2', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_quantiles_20 = (
-        'CO_HistogramAMI_5_quantiles_20',
-        CO_HistogramAMI(tau=5, meth='quantiles', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_even_10 = (
-        'CO_HistogramAMI_4_even_10',
-        CO_HistogramAMI(tau=4, meth='even', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std1_20 = (
-        'CO_HistogramAMI_4_std1_20',
-        CO_HistogramAMI(tau=4, meth='std1', nbins=20))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std2_10 = (
-        'CO_HistogramAMI_5_std2_10',
-        CO_HistogramAMI(tau=5, meth='std2', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_even_8 = (
-        'CO_HistogramAMI_2_even_8',
-        CO_HistogramAMI(tau=2, meth='even', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std1_8 = (
-        'CO_HistogramAMI_5_std1_8',
-        CO_HistogramAMI(tau=5, meth='std1', nbins=8))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std1_6 = (
-        'CO_HistogramAMI_5_std1_6',
-        CO_HistogramAMI(tau=5, meth='std1', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_even_2 = (
-        'CO_HistogramAMI_2_even_2',
-        CO_HistogramAMI(tau=2, meth='even', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std1_4 = (
-        'CO_HistogramAMI_5_std1_4',
-        CO_HistogramAMI(tau=5, meth='std1', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_std1_2 = (
-        'CO_HistogramAMI_5_std1_2',
-        CO_HistogramAMI(tau=5, meth='std1', nbins=2))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_even_6 = (
-        'CO_HistogramAMI_2_even_6',
-        CO_HistogramAMI(tau=2, meth='even', nbins=6))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_2_even_4 = (
-        'CO_HistogramAMI_2_even_4',
-        CO_HistogramAMI(tau=2, meth='even', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_4_std2_4 = (
-        'CO_HistogramAMI_4_std2_4',
-        CO_HistogramAMI(tau=4, meth='std2', nbins=4))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_1_std1_10 = (
-        'CO_HistogramAMI_1_std1_10',
-        CO_HistogramAMI(tau=1, meth='std1', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_5_even_10 = (
-        'CO_HistogramAMI_5_even_10',
-        CO_HistogramAMI(tau=5, meth='even', nbins=10))
-
-    # outs: None
-    # tags: AMI,correlation,information
-    CO_HistogramAMI_3_even_20 = (
-        'CO_HistogramAMI_3_even_20',
-        CO_HistogramAMI(tau=3, meth='even', nbins=20))
+    CO_HistogramAMI_quantiles_5 = (
+        'CO_HistogramAMI_quantiles_5',
+        "CO_HistogramAMI(y,1:5,'quantiles',5)",
+        CO_HistogramAMI(tau=MatlabSequence('1:5'), meth='quantiles', numBins=5))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_045 = (
         'AC_nl_045',
+        'CO_NonlinearAutocorr(y,[0,4,5])',
         CO_NonlinearAutocorr(taus=(0.0, 4.0, 5.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_044 = (
         'AC_nl_044',
+        'CO_NonlinearAutocorr(y,[0,4,4])',
         CO_NonlinearAutocorr(taus=(0.0, 4.0, 4.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_046 = (
         'AC_nl_046',
+        'CO_NonlinearAutocorr(y,[0,4,6])',
         CO_NonlinearAutocorr(taus=(0.0, 4.0, 6.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_122 = (
         'AC_nl_122',
+        'CO_NonlinearAutocorr(y,[1,2,2])',
         CO_NonlinearAutocorr(taus=(1.0, 2.0, 2.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_123 = (
         'AC_nl_123',
+        'CO_NonlinearAutocorr(y,[1,2,3])',
         CO_NonlinearAutocorr(taus=(1.0, 2.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_124 = (
         'AC_nl_124',
+        'CO_NonlinearAutocorr(y,[1,2,4])',
         CO_NonlinearAutocorr(taus=(1.0, 2.0, 4.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_1357 = (
         'AC_nl_1357',
+        'CO_NonlinearAutocorr(y,[1,3,5,7])',
         CO_NonlinearAutocorr(taus=(1.0, 3.0, 5.0, 7.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_1234567 = (
         'AC_nl_1234567',
+        'CO_NonlinearAutocorr(y,[1,2,3,4,5,6,7])',
         CO_NonlinearAutocorr(taus=(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_246 = (
         'AC_nl_246',
+        'CO_NonlinearAutocorr(y,[2,4,6])',
         CO_NonlinearAutocorr(taus=(2.0, 4.0, 6.0)))
-
-    # outs: None
-    # tags: autocorrelation,correlation,nonlinearautocorr
-    AC_nl_33 = (
-        'AC_nl_33',
-        CO_NonlinearAutocorr(taus=(3.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_012 = (
         'AC_nl_012',
+        'CO_NonlinearAutocorr(y,[0,1,2])',
         CO_NonlinearAutocorr(taus=(0.0, 1.0, 2.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_013 = (
         'AC_nl_013',
+        'CO_NonlinearAutocorr(y,[0,1,3])',
         CO_NonlinearAutocorr(taus=(0.0, 1.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_011 = (
         'AC_nl_011',
+        'CO_NonlinearAutocorr(y,[0,1,1])',
         CO_NonlinearAutocorr(taus=(0.0, 1.0, 1.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_016 = (
         'AC_nl_016',
+        'CO_NonlinearAutocorr(y,[0,1,6])',
         CO_NonlinearAutocorr(taus=(0.0, 1.0, 6.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_014 = (
         'AC_nl_014',
+        'CO_NonlinearAutocorr(y,[0,1,4])',
         CO_NonlinearAutocorr(taus=(0.0, 1.0, 4.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_015 = (
         'AC_nl_015',
+        'CO_NonlinearAutocorr(y,[0,1,5])',
         CO_NonlinearAutocorr(taus=(0.0, 1.0, 5.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_056 = (
         'AC_nl_056',
+        'CO_NonlinearAutocorr(y,[0,5,6])',
         CO_NonlinearAutocorr(taus=(0.0, 5.0, 6.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_055 = (
         'AC_nl_055',
+        'CO_NonlinearAutocorr(y,[0,5,5])',
         CO_NonlinearAutocorr(taus=(0.0, 5.0, 5.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_113 = (
         'AC_nl_113',
+        'CO_NonlinearAutocorr(y,[1,1,3])',
         CO_NonlinearAutocorr(taus=(1.0, 1.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_112 = (
         'AC_nl_112',
+        'CO_NonlinearAutocorr(y,[1,1,2])',
         CO_NonlinearAutocorr(taus=(1.0, 1.0, 2.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_12345678 = (
         'AC_nl_12345678',
+        'CO_NonlinearAutocorr(y,[1,2,3,4,5,6,7,8])',
         CO_NonlinearAutocorr(taus=(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0)))
+
+    # outs: None
+    # tags: autocorrelation,correlation,nonlinearautocorr
+    AC_nl_004 = (
+        'AC_nl_004',
+        'CO_NonlinearAutocorr(y,[0,0,4])',
+        CO_NonlinearAutocorr(taus=(0.0, 0.0, 4.0)))
+
+    # outs: None
+    # tags: autocorrelation,correlation,nonlinearautocorr
+    AC_nl_133 = (
+        'AC_nl_133',
+        'CO_NonlinearAutocorr(y,[1,3,3])',
+        CO_NonlinearAutocorr(taus=(1.0, 3.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_44 = (
         'AC_nl_44',
+        'CO_NonlinearAutocorr(y,[4,4])',
         CO_NonlinearAutocorr(taus=(4.0, 4.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_026 = (
         'AC_nl_026',
+        'CO_NonlinearAutocorr(y,[0,2,6])',
         CO_NonlinearAutocorr(taus=(0.0, 2.0, 6.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_025 = (
         'AC_nl_025',
+        'CO_NonlinearAutocorr(y,[0,2,5])',
         CO_NonlinearAutocorr(taus=(0.0, 2.0, 5.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_024 = (
         'AC_nl_024',
+        'CO_NonlinearAutocorr(y,[0,2,4])',
         CO_NonlinearAutocorr(taus=(0.0, 2.0, 4.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_023 = (
         'AC_nl_023',
+        'CO_NonlinearAutocorr(y,[0,2,3])',
         CO_NonlinearAutocorr(taus=(0.0, 2.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_022 = (
         'AC_nl_022',
+        'CO_NonlinearAutocorr(y,[0,2,2])',
         CO_NonlinearAutocorr(taus=(0.0, 2.0, 2.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_1234 = (
         'AC_nl_1234',
+        'CO_NonlinearAutocorr(y,[1,2,3,4])',
         CO_NonlinearAutocorr(taus=(1.0, 2.0, 3.0, 4.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_066 = (
         'AC_nl_066',
+        'CO_NonlinearAutocorr(y,[0,6,6])',
         CO_NonlinearAutocorr(taus=(0.0, 6.0, 6.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_13 = (
         'AC_nl_13',
+        'CO_NonlinearAutocorr(y,[1,3])',
         CO_NonlinearAutocorr(taus=(1.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_12 = (
         'AC_nl_12',
+        'CO_NonlinearAutocorr(y,[1,2])',
         CO_NonlinearAutocorr(taus=(1.0, 2.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_11 = (
         'AC_nl_11',
+        'CO_NonlinearAutocorr(y,[1,1])',
         CO_NonlinearAutocorr(taus=(1.0, 1.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_14 = (
         'AC_nl_14',
+        'CO_NonlinearAutocorr(y,[1,4])',
         CO_NonlinearAutocorr(taus=(1.0, 4.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_12345 = (
         'AC_nl_12345',
+        'CO_NonlinearAutocorr(y,[1,2,3,4,5])',
         CO_NonlinearAutocorr(taus=(1.0, 2.0, 3.0, 4.0, 5.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_223 = (
         'AC_nl_223',
+        'CO_NonlinearAutocorr(y,[2,2,3])',
         CO_NonlinearAutocorr(taus=(2.0, 2.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_55 = (
         'AC_nl_55',
+        'CO_NonlinearAutocorr(y,[5,5])',
         CO_NonlinearAutocorr(taus=(5.0, 5.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_033 = (
         'AC_nl_033',
+        'CO_NonlinearAutocorr(y,[0,3,3])',
         CO_NonlinearAutocorr(taus=(0.0, 3.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_034 = (
         'AC_nl_034',
+        'CO_NonlinearAutocorr(y,[0,3,4])',
         CO_NonlinearAutocorr(taus=(0.0, 3.0, 4.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_035 = (
         'AC_nl_035',
+        'CO_NonlinearAutocorr(y,[0,3,5])',
         CO_NonlinearAutocorr(taus=(0.0, 3.0, 5.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_036 = (
         'AC_nl_036',
+        'CO_NonlinearAutocorr(y,[0,3,6])',
         CO_NonlinearAutocorr(taus=(0.0, 3.0, 6.0)))
-
-    # outs: None
-    # tags: autocorrelation,correlation,nonlinearautocorr
-    AC_nl_133 = (
-        'AC_nl_133',
-        CO_NonlinearAutocorr(taus=(1.0, 3.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_135 = (
         'AC_nl_135',
+        'CO_NonlinearAutocorr(y,[1,3,5])',
         CO_NonlinearAutocorr(taus=(1.0, 3.0, 5.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_134 = (
         'AC_nl_134',
+        'CO_NonlinearAutocorr(y,[1,3,4])',
         CO_NonlinearAutocorr(taus=(1.0, 3.0, 4.0)))
+
+    # outs: None
+    # tags: autocorrelation,correlation,nonlinearautocorr
+    AC_nl_33 = (
+        'AC_nl_33',
+        'CO_NonlinearAutocorr(y,[3,3])',
+        CO_NonlinearAutocorr(taus=(3.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_24 = (
         'AC_nl_24',
+        'CO_NonlinearAutocorr(y,[2,4])',
         CO_NonlinearAutocorr(taus=(2.0, 4.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_22 = (
         'AC_nl_22',
+        'CO_NonlinearAutocorr(y,[2,2])',
         CO_NonlinearAutocorr(taus=(2.0, 2.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_2468 = (
         'AC_nl_2468',
+        'CO_NonlinearAutocorr(y,[2,4,6,8])',
         CO_NonlinearAutocorr(taus=(2.0, 4.0, 6.0, 8.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_001 = (
         'AC_nl_001',
+        'CO_NonlinearAutocorr(y,[0,0,1])',
         CO_NonlinearAutocorr(taus=(0.0, 0.0, 1.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_003 = (
         'AC_nl_003',
+        'CO_NonlinearAutocorr(y,[0,0,3])',
         CO_NonlinearAutocorr(taus=(0.0, 0.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_002 = (
         'AC_nl_002',
+        'CO_NonlinearAutocorr(y,[0,0,2])',
         CO_NonlinearAutocorr(taus=(0.0, 0.0, 2.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_005 = (
         'AC_nl_005',
+        'CO_NonlinearAutocorr(y,[0,0,5])',
         CO_NonlinearAutocorr(taus=(0.0, 0.0, 5.0)))
-
-    # outs: None
-    # tags: autocorrelation,correlation,nonlinearautocorr
-    AC_nl_004 = (
-        'AC_nl_004',
-        CO_NonlinearAutocorr(taus=(0.0, 0.0, 4.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_006 = (
         'AC_nl_006',
+        'CO_NonlinearAutocorr(y,[0,0,6])',
         CO_NonlinearAutocorr(taus=(0.0, 0.0, 6.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_123456 = (
         'AC_nl_123456',
+        'CO_NonlinearAutocorr(y,[1,2,3,4,5,6])',
         CO_NonlinearAutocorr(taus=(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_233 = (
         'AC_nl_233',
+        'CO_NonlinearAutocorr(y,[2,3,3])',
         CO_NonlinearAutocorr(taus=(2.0, 3.0, 3.0)))
 
     # outs: None
     # tags: autocorrelation,correlation,nonlinearautocorr
     AC_nl_66 = (
         'AC_nl_66',
+        'CO_NonlinearAutocorr(y,[6,6])',
         CO_NonlinearAutocorr(taus=(6.0, 6.0)))
 
     # outs: None
     # tags: AMI,correlation,information
     CO_RM_AMInformation_10 = (
         'CO_RM_AMInformation_10',
+        'CO_RM_AMInformation(y,10)',
         CO_RM_AMInformation(tau=10))
 
     # outs: None
     # tags: AMI,correlation,information
     CO_RM_AMInformation_7 = (
         'CO_RM_AMInformation_7',
+        'CO_RM_AMInformation(y,7)',
         CO_RM_AMInformation(tau=7))
 
     # outs: None
     # tags: AMI,correlation,information
     CO_RM_AMInformation_6 = (
         'CO_RM_AMInformation_6',
+        'CO_RM_AMInformation(y,6)',
         CO_RM_AMInformation(tau=6))
 
     # outs: None
     # tags: AMI,correlation,information
     CO_RM_AMInformation_5 = (
         'CO_RM_AMInformation_5',
+        'CO_RM_AMInformation(y,5)',
         CO_RM_AMInformation(tau=5))
 
     # outs: None
     # tags: AMI,correlation,information
     CO_RM_AMInformation_4 = (
         'CO_RM_AMInformation_4',
+        'CO_RM_AMInformation(y,4)',
         CO_RM_AMInformation(tau=4))
 
     # outs: None
     # tags: AMI,correlation,information
     CO_RM_AMInformation_3 = (
         'CO_RM_AMInformation_3',
+        'CO_RM_AMInformation(y,3)',
         CO_RM_AMInformation(tau=3))
 
     # outs: None
     # tags: AMI,correlation,information
     CO_RM_AMInformation_2 = (
         'CO_RM_AMInformation_2',
+        'CO_RM_AMInformation(y,2)',
         CO_RM_AMInformation(tau=2))
 
     # outs: None
     # tags: AMI,correlation,information
     CO_RM_AMInformation_1 = (
         'CO_RM_AMInformation_1',
+        'CO_RM_AMInformation(y,1)',
         CO_RM_AMInformation(tau=1))
 
     # outs: None
     # tags: AMI,correlation,information
     CO_RM_AMInformation_0 = (
         'CO_RM_AMInformation_0',
+        'CO_RM_AMInformation(y,0)',
         CO_RM_AMInformation(tau=0))
 
     # outs: None
     # tags: AMI,correlation,information
     CO_RM_AMInformation_9 = (
         'CO_RM_AMInformation_9',
+        'CO_RM_AMInformation(y,9)',
         CO_RM_AMInformation(tau=9))
 
     # outs: None
     # tags: AMI,correlation,information
     CO_RM_AMInformation_8 = (
         'CO_RM_AMInformation_8',
+        'CO_RM_AMInformation(y,8)',
         CO_RM_AMInformation(tau=8))
 
     # outs: ac1_all,ac1_n,ac1_p,ac2_all,ac2_n
@@ -9394,6 +9461,7 @@ class HCTSAOperations(object):
     # tags: correlation
     CO_StickAngles_y = (
         'CO_StickAngles_y',
+        'CO_StickAngles(y)',
         CO_StickAngles())
 
     # outs: ac1_all,ac1_n,ac1_p,ac2_all,ac2_n
@@ -9412,71 +9480,15 @@ class HCTSAOperations(object):
     # tags: correlation,locdep,raw,spreaddep
     CO_StickAngles_x = (
         'CO_StickAngles_x',
+        'CO_StickAngles(x)',
         CO_StickAngles())
 
     # outs: None
     # tags: correlation
     CO_TSTL_AutoCorrMethod_err = (
         'CO_TSTL_AutoCorrMethod_err',
+        'CO_TSTL_AutoCorrMethod(y)',
         CO_TSTL_AutoCorrMethod())
-
-    # outs: ami1,ami10,ami11,ami12,ami13
-    # outs: ami14,ami15,ami16,ami17,ami18
-    # outs: ami19,ami2,ami20,ami21,ami3
-    # outs: ami4,ami5,ami6,ami7,ami8
-    # outs: ami9,fmmi,mami,modeperiodmax,pextrema
-    # outs: pmaxima,pmodeperiodmax,stdami
-    # tags: AMI,entropy,tstool
-    CO_TSTL_amutual_20_10 = (
-        'CO_TSTL_amutual_20_10',
-        CO_TSTL_amutual(maxtau=20, nbins=10))
-
-    # outs: ami1,ami10,ami11,ami12,ami13
-    # outs: ami14,ami15,ami16,ami17,ami18
-    # outs: ami19,ami2,ami20,ami21,ami3
-    # outs: ami4,ami5,ami6,ami7,ami8
-    # outs: ami9,fmmi,mami,modeperiodmax,pextrema
-    # outs: pmaxima,pmodeperiodmax,stdami
-    # tags: AMI,entropy,lengthdep,tstool
-    CO_TSTL_amutual_20 = (
-        'CO_TSTL_amutual_20',
-        CO_TSTL_amutual(maxtau=20, nbins=()))
-
-    # outs: ami1,ami10,ami11,ami12,ami13
-    # outs: ami14,ami15,ami16,ami17,ami18
-    # outs: ami19,ami2,ami20,ami21,ami22
-    # outs: ami23,ami24,ami25,ami26,ami27
-    # outs: ami28,ami29,ami3,ami30,ami31
-    # outs: ami32,ami33,ami34,ami35,ami36
-    # outs: ami37,ami38,ami39,ami4,ami40
-    # outs: ami41,ami42,ami43,ami44,ami45
-    # outs: ami46,ami47,ami48,ami49,ami5
-    # outs: ami50,ami6,ami7,ami8,ami9
-    # outs: amiac1,fmmi,mami,modeperiodmax,modeperiodmin
-    # outs: pcrossmean,pcrossmedian,pcrossq10,pcrossq90,pextrema
-    # outs: pmaxima,pminima,pmodeperiodmax,pmodeperiodmin,stdami
-    # tags: AMI,entropy,tstool
-    CO_TSTL_amutual2_50 = (
-        'CO_TSTL_amutual2_50',
-        CO_TSTL_amutual2(maxtau=50))
-
-    # outs: ami1,ami10,ami11,ami12,ami13
-    # outs: ami14,ami15,ami16,ami17,ami18
-    # outs: ami19,ami2,ami20,ami21,ami22
-    # outs: ami23,ami24,ami25,ami26,ami27
-    # outs: ami28,ami29,ami3,ami30,ami31
-    # outs: ami32,ami33,ami34,ami35,ami36
-    # outs: ami37,ami38,ami39,ami4,ami40
-    # outs: ami41,ami42,ami43,ami44,ami45
-    # outs: ami46,ami47,ami48,ami49,ami5
-    # outs: ami50,ami6,ami7,ami8,ami9
-    # outs: amiac1,fmmi,mami,modeperiodmax,modeperiodmin
-    # outs: pcrossmean,pcrossmedian,pcrossq10,pcrossq90,pextrema
-    # outs: pmaxima,pminima,pmodeperiodmax,pmodeperiodmin,stdami
-    # tags: AMI,entropy,tstool
-    CO_TSTL_amutual2_diff__50 = (
-        'CO_TSTL_amutual2_diff__50',
-        CO_TSTL_amutual2(maxtau=50))
 
     # outs: fives,fours,max,mode,npatmode
     # outs: ones,statav2_m,statav2_s,statav3_m,statav3_s
@@ -9484,6 +9496,7 @@ class HCTSAOperations(object):
     # tags: correlation
     CO_TranslateShape_circle_25_pts = (
         'CO_TranslateShape_circle_25_pts',
+        "CO_TranslateShape(y,'circle',2.5,'pts')",
         CO_TranslateShape(shape='circle', d=2.5, howtomove='pts'))
 
     # outs: fives,fours,max,mode,npatmode
@@ -9493,6 +9506,7 @@ class HCTSAOperations(object):
     # tags: correlation
     CO_TranslateShape_circle_35_pts = (
         'CO_TranslateShape_circle_35_pts',
+        "CO_TranslateShape(y,'circle',3.5,'pts')",
         CO_TranslateShape(shape='circle', d=3.5, howtomove='pts'))
 
     # outs: eights,elevens,fives,fours,mode
@@ -9502,7 +9516,17 @@ class HCTSAOperations(object):
     # tags: correlation
     CO_TranslateShape_circle_55_pts = (
         'CO_TranslateShape_circle_55_pts',
+        "CO_TranslateShape(y,'circle',5.5,'pts')",
         CO_TranslateShape(shape='circle', d=5.5, howtomove='pts'))
+
+    # outs: max,mode,npatmode,ones,statav2_m
+    # outs: statav2_s,statav3_m,statav3_s,statav4_m,statav4_s
+    # outs: std,threes,twos
+    # tags: correlation
+    CO_TranslateShape_circle_15_pts = (
+        'CO_TranslateShape_circle_15_pts',
+        "CO_TranslateShape(y,'circle',1.5,'pts')",
+        CO_TranslateShape(shape='circle', d=1.5, howtomove='pts'))
 
     # outs: eights,fives,fours,mode,nines
     # outs: npatmode,ones,sevens,sixes,statav2_m
@@ -9511,392 +9535,448 @@ class HCTSAOperations(object):
     # tags: correlation
     CO_TranslateShape_circle_45_pts = (
         'CO_TranslateShape_circle_45_pts',
+        "CO_TranslateShape(y,'circle',4.5,'pts')",
         CO_TranslateShape(shape='circle', d=4.5, howtomove='pts'))
-
-    # outs: max,mode,npatmode,ones,statav2_m
-    # outs: statav2_s,statav3_m,statav3_s,statav4_m,statav4_s
-    # outs: std,threes,twos
-    # tags: correlation
-    CO_TranslateShape_circle_15_pts = (
-        'CO_TranslateShape_circle_15_pts',
-        CO_TranslateShape(shape='circle', d=1.5, howtomove='pts'))
 
     # outs: None
     # tags: autocorrelation,correlation,tau
     CO_f1ecac = (
         'CO_f1ecac',
+        'CO_f1ecac(y)',
         CO_f1ecac())
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_5_10 = (
         'CO_fzcglscf_5_10',
+        'CO_fzcglscf(y,5,10)',
         CO_fzcglscf(alpha=5, beta=10))
+
+    # outs: None
+    # tags: correlation,glscf,tau
+    CO_fzcglscf_10_10 = (
+        'CO_fzcglscf_10_10',
+        'CO_fzcglscf(y,10,10)',
+        CO_fzcglscf(alpha=10, beta=10))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_2_5 = (
         'CO_fzcglscf_2_5',
+        'CO_fzcglscf(y,2,5)',
         CO_fzcglscf(alpha=2, beta=5))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_2_2 = (
         'CO_fzcglscf_2_2',
+        'CO_fzcglscf(y,2,2)',
         CO_fzcglscf(alpha=2, beta=2))
+
+    # outs: None
+    # tags: correlation,glscf,tau
+    CO_fzcglscf_1_10 = (
+        'CO_fzcglscf_1_10',
+        'CO_fzcglscf(y,1,10)',
+        CO_fzcglscf(alpha=1, beta=10))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_2_10 = (
         'CO_fzcglscf_2_10',
+        'CO_fzcglscf(y,2,10)',
         CO_fzcglscf(alpha=2, beta=10))
-
-    # outs: None
-    # tags: correlation,glscf,tau
-    CO_fzcglscf_10_10 = (
-        'CO_fzcglscf_10_10',
-        CO_fzcglscf(alpha=10, beta=10))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_1_1 = (
         'CO_fzcglscf_1_1',
+        'CO_fzcglscf(y,1,1)',
         CO_fzcglscf(alpha=1, beta=1))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_1_3 = (
         'CO_fzcglscf_1_3',
+        'CO_fzcglscf(y,1,3)',
         CO_fzcglscf(alpha=1, beta=3))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_1_2 = (
         'CO_fzcglscf_1_2',
+        'CO_fzcglscf(y,1,2)',
         CO_fzcglscf(alpha=1, beta=2))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_1_5 = (
         'CO_fzcglscf_1_5',
+        'CO_fzcglscf(y,1,5)',
         CO_fzcglscf(alpha=1, beta=5))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_1_4 = (
         'CO_fzcglscf_1_4',
+        'CO_fzcglscf(y,1,4)',
         CO_fzcglscf(alpha=1, beta=4))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_1_7 = (
         'CO_fzcglscf_1_7',
+        'CO_fzcglscf(y,1,7)',
         CO_fzcglscf(alpha=1, beta=7))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_1_6 = (
         'CO_fzcglscf_1_6',
+        'CO_fzcglscf(y,1,6)',
         CO_fzcglscf(alpha=1, beta=6))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_1_9 = (
         'CO_fzcglscf_1_9',
+        'CO_fzcglscf(y,1,9)',
         CO_fzcglscf(alpha=1, beta=9))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_1_8 = (
         'CO_fzcglscf_1_8',
+        'CO_fzcglscf(y,1,8)',
         CO_fzcglscf(alpha=1, beta=8))
-
-    # outs: None
-    # tags: correlation,glscf,tau
-    CO_fzcglscf_1_10 = (
-        'CO_fzcglscf_1_10',
-        CO_fzcglscf(alpha=1, beta=10))
 
     # outs: None
     # tags: correlation,glscf,tau
     CO_fzcglscf_5_5 = (
         'CO_fzcglscf_5_5',
+        'CO_fzcglscf(y,5,5)',
         CO_fzcglscf(alpha=5, beta=5))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_2_5_2 = (
         'CO_glscf_2_5_2',
+        'CO_glscf(y,2,5,2)',
         CO_glscf(alpha=2, beta=5, tau=2))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_2_5_3 = (
         'CO_glscf_2_5_3',
+        'CO_glscf(y,2,5,3)',
         CO_glscf(alpha=2, beta=5, tau=3))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_2_5_4 = (
         'CO_glscf_2_5_4',
+        'CO_glscf(y,2,5,4)',
         CO_glscf(alpha=2, beta=5, tau=4))
-
-    # outs: None
-    # tags: correlation,glscf
-    CO_glscf_2_5_5 = (
-        'CO_glscf_2_5_5',
-        CO_glscf(alpha=2, beta=5, tau=5))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_1_tau = (
         'CO_glscf_1_1_tau',
+        "CO_glscf(y,1,1,'tau')",
         CO_glscf(alpha=1, beta=1, tau='tau'))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_2_tau = (
         'CO_glscf_1_2_tau',
+        "CO_glscf(y,1,2,'tau')",
         CO_glscf(alpha=1, beta=2, tau='tau'))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_5_tau = (
         'CO_glscf_1_5_tau',
+        "CO_glscf(y,1,5,'tau')",
         CO_glscf(alpha=1, beta=5, tau='tau'))
-
-    # outs: None
-    # tags: correlation,glscf
-    CO_glscf_2_2_1 = (
-        'CO_glscf_2_2_1',
-        CO_glscf(alpha=2, beta=2, tau=1))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_2_2_tau = (
         'CO_glscf_2_2_tau',
+        "CO_glscf(y,2,2,'tau')",
         CO_glscf(alpha=2, beta=2, tau='tau'))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_2_2_3 = (
         'CO_glscf_2_2_3',
+        'CO_glscf(y,2,2,3)',
         CO_glscf(alpha=2, beta=2, tau=3))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_2_2_2 = (
         'CO_glscf_2_2_2',
+        'CO_glscf(y,2,2,2)',
         CO_glscf(alpha=2, beta=2, tau=2))
+
+    # outs: None
+    # tags: correlation,glscf
+    CO_glscf_2_2_1 = (
+        'CO_glscf_2_2_1',
+        'CO_glscf(y,2,2,1)',
+        CO_glscf(alpha=2, beta=2, tau=1))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_2_2_5 = (
         'CO_glscf_2_2_5',
+        'CO_glscf(y,2,2,5)',
         CO_glscf(alpha=2, beta=2, tau=5))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_2_2_4 = (
         'CO_glscf_2_2_4',
+        'CO_glscf(y,2,2,4)',
         CO_glscf(alpha=2, beta=2, tau=4))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_10_4 = (
         'CO_glscf_1_10_4',
+        'CO_glscf(y,1,10,4)',
         CO_glscf(alpha=1, beta=10, tau=4))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_10_5 = (
         'CO_glscf_1_10_5',
+        'CO_glscf(y,1,10,5)',
         CO_glscf(alpha=1, beta=10, tau=5))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_10_2 = (
         'CO_glscf_1_10_2',
+        'CO_glscf(y,1,10,2)',
         CO_glscf(alpha=1, beta=10, tau=2))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_10_3 = (
         'CO_glscf_1_10_3',
+        'CO_glscf(y,1,10,3)',
         CO_glscf(alpha=1, beta=10, tau=3))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_10_1 = (
         'CO_glscf_1_10_1',
+        'CO_glscf(y,1,10,1)',
         CO_glscf(alpha=1, beta=10, tau=1))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_2_5_tau = (
         'CO_glscf_2_5_tau',
+        "CO_glscf(y,2,5,'tau')",
         CO_glscf(alpha=2, beta=5, tau='tau'))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_1_5 = (
         'CO_glscf_1_1_5',
+        'CO_glscf(y,1,1,5)',
         CO_glscf(alpha=1, beta=1, tau=5))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_1_4 = (
         'CO_glscf_1_1_4',
+        'CO_glscf(y,1,1,4)',
         CO_glscf(alpha=1, beta=1, tau=4))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_1_3 = (
         'CO_glscf_1_1_3',
+        'CO_glscf(y,1,1,3)',
         CO_glscf(alpha=1, beta=1, tau=3))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_1_2 = (
         'CO_glscf_1_1_2',
+        'CO_glscf(y,1,1,2)',
         CO_glscf(alpha=1, beta=1, tau=2))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_1_1 = (
         'CO_glscf_1_1_1',
+        'CO_glscf(y,1,1,1)',
         CO_glscf(alpha=1, beta=1, tau=1))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_5_3 = (
         'CO_glscf_1_5_3',
+        'CO_glscf(y,1,5,3)',
         CO_glscf(alpha=1, beta=5, tau=3))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_5_2 = (
         'CO_glscf_1_5_2',
+        'CO_glscf(y,1,5,2)',
         CO_glscf(alpha=1, beta=5, tau=2))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_5_1 = (
         'CO_glscf_1_5_1',
+        'CO_glscf(y,1,5,1)',
         CO_glscf(alpha=1, beta=5, tau=1))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_5_5 = (
         'CO_glscf_1_5_5',
+        'CO_glscf(y,1,5,5)',
         CO_glscf(alpha=1, beta=5, tau=5))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_5_4 = (
         'CO_glscf_1_5_4',
+        'CO_glscf(y,1,5,4)',
         CO_glscf(alpha=1, beta=5, tau=4))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_2_5_1 = (
         'CO_glscf_2_5_1',
+        'CO_glscf(y,2,5,1)',
         CO_glscf(alpha=2, beta=5, tau=1))
+
+    # outs: None
+    # tags: correlation,glscf
+    CO_glscf_2_5_5 = (
+        'CO_glscf_2_5_5',
+        'CO_glscf(y,2,5,5)',
+        CO_glscf(alpha=2, beta=5, tau=5))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_10_tau = (
         'CO_glscf_1_10_tau',
+        "CO_glscf(y,1,10,'tau')",
         CO_glscf(alpha=1, beta=10, tau='tau'))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_2_1 = (
         'CO_glscf_1_2_1',
+        'CO_glscf(y,1,2,1)',
         CO_glscf(alpha=1, beta=2, tau=1))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_2_2 = (
         'CO_glscf_1_2_2',
+        'CO_glscf(y,1,2,2)',
         CO_glscf(alpha=1, beta=2, tau=2))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_2_3 = (
         'CO_glscf_1_2_3',
+        'CO_glscf(y,1,2,3)',
         CO_glscf(alpha=1, beta=2, tau=3))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_2_4 = (
         'CO_glscf_1_2_4',
+        'CO_glscf(y,1,2,4)',
         CO_glscf(alpha=1, beta=2, tau=4))
 
     # outs: None
     # tags: correlation,glscf
     CO_glscf_1_2_5 = (
         'CO_glscf_1_2_5',
+        'CO_glscf(y,1,2,5)',
         CO_glscf(alpha=1, beta=2, tau=5))
 
     # outs: abs,absnum,denom,num,raw
     # tags: autocorrelation,correlation,nonlinear
     CO_tc3_1 = (
         'CO_tc3_1',
+        'CO_tc3(y,1)',
         CO_tc3(tau=1))
 
     # outs: abs,absnum,denom,num,raw
     # tags: autocorrelation,correlation,nonlinear
     CO_tc3_3 = (
         'CO_tc3_3',
+        'CO_tc3(y,3)',
         CO_tc3(tau=3))
 
     # outs: abs,absnum,denom,num,raw
     # tags: autocorrelation,correlation,nonlinear
     CO_tc3_mi = (
         'CO_tc3_mi',
+        "CO_tc3(y,'mi')",
         CO_tc3(tau='mi'))
 
     # outs: abs,absnum,denom,num,raw
     # tags: autocorrelation,correlation,nonlinear
     CO_tc3_ac = (
         'CO_tc3_ac',
+        "CO_tc3(y,'ac')",
         CO_tc3(tau='ac'))
 
     # outs: abs,absnum,denom,num,raw
     # tags: autocorrelation,correlation,nonlinear
     CO_tc3_2 = (
         'CO_tc3_2',
+        'CO_tc3(y,2)',
         CO_tc3(tau=2))
 
     # outs: abs,absnum,denom,num,raw
     # tags: autocorrelation,correlation,nonlinear
     CO_trev_ac = (
         'CO_trev_ac',
+        "CO_trev(y,'ac')",
         CO_trev(tau='ac'))
 
     # outs: abs,absnum,denom,num,raw
     # tags: autocorrelation,correlation,nonlinear
     CO_trev_mi = (
         'CO_trev_mi',
+        "CO_trev(y,'mi')",
         CO_trev(tau='mi'))
 
     # outs: abs,absnum,denom,num,raw
     # tags: autocorrelation,correlation,nonlinear
     CO_trev_2 = (
         'CO_trev_2',
+        'CO_trev(y,2)',
         CO_trev(tau=2))
 
     # outs: abs,absnum,denom,num,raw
     # tags: autocorrelation,correlation,nonlinear
     CO_trev_3 = (
         'CO_trev_3',
+        'CO_trev(y,3)',
         CO_trev(tau=3))
 
     # outs: abs,absnum,denom,num,raw
     # tags: autocorrelation,correlation,nonlinear
     CO_trev_1 = (
         'CO_trev_1',
+        'CO_trev(y,1)',
         CO_trev(tau=1))
 
     # outs: E,diffn12,lambdamax,maxstepint,meanerrstepint
@@ -9905,6 +9985,7 @@ class HCTSAOperations(object):
     # tags: l1pwc,lengthdep,stepdetection
     CP_ML_StepDetect_l1pwc_02 = (
         'CP_ML_StepDetect_l1pwc_02',
+        "CP_ML_StepDetect(y,'l1pwc',0.2)",
         CP_ML_StepDetect(method='l1pwc', params=0.2))
 
     # outs: E,diffn12,lambdamax,maxstepint,meanerrstepint
@@ -9913,6 +9994,7 @@ class HCTSAOperations(object):
     # tags: l1pwc,stepdetection
     CP_ML_StepDetect_l1pwc_10 = (
         'CP_ML_StepDetect_l1pwc_10',
+        "CP_ML_StepDetect(y,'l1pwc',10)",
         CP_ML_StepDetect(method='l1pwc', params=10))
 
     # outs: E,diffn12,lambdamax,maxstepint,meanerrstepint
@@ -9921,6 +10003,7 @@ class HCTSAOperations(object):
     # tags: l1pwc,lengthdep,stepdetection
     CP_ML_StepDetect_l1pwc_005 = (
         'CP_ML_StepDetect_l1pwc_005',
+        "CP_ML_StepDetect(y,'l1pwc',0.05)",
         CP_ML_StepDetect(method='l1pwc', params=0.05))
 
     # outs: bestlambda,bestrmserrpseg,corrsegerr,nsegsu001,nsegsu005
@@ -9928,132 +10011,154 @@ class HCTSAOperations(object):
     # tags: l1pwc,stepdetection
     CP_l1pwc_sweep_lambda_0_005_095 = (
         'CP_l1pwc_sweep_lambda_0_005_095',
+        'CP_l1pwc_sweep_lambda(y,0:0.05:0.95)',
         CP_l1pwc_sweep_lambda(lambdar=MatlabSequence('0:0.05:0.95')))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_db3_3_10_001 = (
         'CP_wavelet_varchg_db3_3_10_001',
+        "CP_wavelet_varchg(y,'db3',3,10,0.01)",
         CP_wavelet_varchg(wname='db3', level=3, maxnchpts=10, mindelay=0.01))
-
-    # outs: None
-    # tags: varchg,wavelet,waveletTB
-    CP_wavelet_varchg_sym2_4_10_001 = (
-        'CP_wavelet_varchg_sym2_4_10_001',
-        CP_wavelet_varchg(wname='sym2', level=4, maxnchpts=10, mindelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_db3_2_10_001 = (
         'CP_wavelet_varchg_db3_2_10_001',
+        "CP_wavelet_varchg(y,'db3',2,10,0.01)",
         CP_wavelet_varchg(wname='db3', level=2, maxnchpts=10, mindelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_db3_5_10_001 = (
         'CP_wavelet_varchg_db3_5_10_001',
+        "CP_wavelet_varchg(y,'db3',5,10,0.01)",
         CP_wavelet_varchg(wname='db3', level=5, maxnchpts=10, mindelay=0.01))
+
+    # outs: None
+    # tags: varchg,wavelet,waveletTB
+    CP_wavelet_varchg_sym2_4_10_001 = (
+        'CP_wavelet_varchg_sym2_4_10_001',
+        "CP_wavelet_varchg(y,'sym2',4,10,0.01)",
+        CP_wavelet_varchg(wname='sym2', level=4, maxnchpts=10, mindelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_db3_4_10_001 = (
         'CP_wavelet_varchg_db3_4_10_001',
+        "CP_wavelet_varchg(y,'db3',4,10,0.01)",
         CP_wavelet_varchg(wname='db3', level=4, maxnchpts=10, mindelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_sym2_3_10_001 = (
         'CP_wavelet_varchg_sym2_3_10_001',
+        "CP_wavelet_varchg(y,'sym2',3,10,0.01)",
         CP_wavelet_varchg(wname='sym2', level=3, maxnchpts=10, mindelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_sym2_5_10_001 = (
         'CP_wavelet_varchg_sym2_5_10_001',
+        "CP_wavelet_varchg(y,'sym2',5,10,0.01)",
         CP_wavelet_varchg(wname='sym2', level=5, maxnchpts=10, mindelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_sym2_2_10_001 = (
         'CP_wavelet_varchg_sym2_2_10_001',
+        "CP_wavelet_varchg(y,'sym2',2,10,0.01)",
         CP_wavelet_varchg(wname='sym2', level=2, maxnchpts=10, mindelay=0.01))
 
     # outs: None
     # tags: burstiness,locdep,raw
     DN_burstiness = (
         'DN_burstiness',
+        'DN_Burstiness(x)',
         DN_Burstiness())
 
     # outs: adiff,olapint,peaksepx,peaksepy,relent
     # tags: adiff,distribution,ksdensity,norm,olapint,peaksepx,peaksepy,raw,relent
     DN_CompareKSFit_norm = (
         'DN_CompareKSFit_norm',
+        "DN_CompareKSFit(x,'norm')",
         DN_CompareKSFit(whatDistn='norm'))
 
     # outs: adiff,olapint,peaksepx,peaksepy,relent
     # tags: adiff,distribution,exp,ksdensity,locdep,olapint,peaksepx,peaksepy,raw,relent,spreaddep,uni
     DN_CompareKSFit_exp = (
         'DN_CompareKSFit_exp',
+        "DN_CompareKSFit(x,'exp')",
         DN_CompareKSFit(whatDistn='exp'))
 
     # outs: adiff,olapint,peaksepx,peaksepy,relent
     # tags: adiff,distribution,gamma,ksdensity,locdep,olapint,peaksepx,peaksepy,raw,relent,uni
     DN_CompareKSFit_gamma = (
         'DN_CompareKSFit_gamma',
+        "DN_CompareKSFit(x,'gamma')",
         DN_CompareKSFit(whatDistn='gamma'))
-
-    # outs: adiff,olapint,peaksepx,peaksepy,relent
-    # tags: adiff,distribution,ksdensity,locdep,olapint,peaksepx,peaksepy,raw,relent,uni
-    DN_CompareKSFit_uni = (
-        'DN_CompareKSFit_uni',
-        DN_CompareKSFit(whatDistn='uni'))
 
     # outs: adiff,olapint,peaksepx,peaksepy,relent
     # tags: adiff,distribution,ksdensity,locdep,olapint,peaksepx,peaksepy,raw,rayleigh,relent,uni
     DN_CompareKSFit_rayleigh = (
         'DN_CompareKSFit_rayleigh',
+        "DN_CompareKSFit(x,'rayleigh')",
         DN_CompareKSFit(whatDistn='rayleigh'))
 
     # outs: adiff,olapint,peaksepx,peaksepy,relent
     # tags: adiff,beta,distribution,ksdensity,olapint,peaksepx,peaksepy,raw,relent,uni
     DN_CompareKSFit_beta = (
         'DN_CompareKSFit_beta',
+        "DN_CompareKSFit(x,'beta')",
         DN_CompareKSFit(whatDistn='beta'))
-
-    # outs: adiff,olapint,peaksepx,peaksepy,relent
-    # tags: adiff,distribution,ksdensity,locdep,lognormal,olapint,peaksepx,peaksepy,raw,relent,uni
-    DN_CompareKSFit_logn = (
-        'DN_CompareKSFit_logn',
-        DN_CompareKSFit(whatDistn='logn'))
 
     # outs: adiff,olapint,peaksepx,peaksepy,relent
     # tags: adiff,distribution,ev,ksdensity,locdep,olapint,peaksepx,peaksepy,raw,relent
     DN_CompareKSFit_ev = (
         'DN_CompareKSFit_ev',
+        "DN_CompareKSFit(x,'ev')",
         DN_CompareKSFit(whatDistn='ev'))
 
     # outs: adiff,olapint,peaksepx,peaksepy,relent
     # tags: adiff,distribution,ksdensity,locdep,olapint,peaksepx,peaksepy,raw,relent,uni,weibull
     DN_CompareKSFit_wbl = (
         'DN_CompareKSFit_wbl',
+        "DN_CompareKSFit(x,'wbl')",
         DN_CompareKSFit(whatDistn='wbl'))
+
+    # outs: adiff,olapint,peaksepx,peaksepy,relent
+    # tags: adiff,distribution,ksdensity,locdep,lognormal,olapint,peaksepx,peaksepy,raw,relent,uni
+    DN_CompareKSFit_logn = (
+        'DN_CompareKSFit_logn',
+        "DN_CompareKSFit(x,'logn')",
+        DN_CompareKSFit(whatDistn='logn'))
+
+    # outs: adiff,olapint,peaksepx,peaksepy,relent
+    # tags: adiff,distribution,ksdensity,locdep,olapint,peaksepx,peaksepy,raw,relent,uni
+    DN_CompareKSFit_uni = (
+        'DN_CompareKSFit_uni',
+        "DN_CompareKSFit(x,'uni')",
+        DN_CompareKSFit(whatDistn='uni'))
 
     # outs: entropy,max,numpeaks
     # tags: compare,distribution,entropy,ksdensity,max,numpeaks,raw,spreaddep
     DN_Compare_zscorex = (
         'DN_Compare_zscorex',
+        'DN_Compare_zscore(x)',
         DN_Compare_zscore())
 
     # outs: None
     # tags: distribution,locdep,moment,raw,shape
     DN_CustomSkewness_pearson = (
         'DN_CustomSkewness_pearson',
+        "DN_CustomSkewness(x,'pearson')",
         DN_CustomSkewness(whichskew='pearson'))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_CustomSkewness_bowley = (
         'DN_CustomSkewness_bowley',
+        "DN_CustomSkewness(y,'bowley')",
         DN_CustomSkewness(whichskew='bowley'))
 
     # outs: arclength_010,arclength_050,arclength_100,arclength_200,area_005
@@ -10064,204 +10169,238 @@ class HCTSAOperations(object):
     # tags: arclength,area,areaconst,crossconst,distribution,entropy,ksdensity,numpeaks,peakmax,raw,spreaddep,symmetry
     DN_FitKernelSmoothraw = (
         'DN_FitKernelSmoothraw',
+        "DN_FitKernelSmooth(x,'numcross',[0.05,0.1,0.2,0.3,0.4,0.5],'area',[0.05,0.1,0.2,0.3,0.4,0.5],'arclength',[0.1,0.5,1,2])",
         DN_FitKernelSmooth(varargin='numcross'))
 
     # outs: entropy,max
     # tags: distribution,entropy,ksdensity,peakmax
     DN_FitKernelSmoothzscore = (
         'DN_FitKernelSmoothzscore',
+        'DN_FitKernelSmooth(y)',
         DN_FitKernelSmooth())
 
     # outs: None
     # tags: distribution,fit
     DN_Fit_mle_geometric = (
         'DN_Fit_mle_geometric',
+        "DN_Fit_mle(y,'geometric')",
         DN_Fit_mle(fitwhat='geometric'))
 
     # outs: mean,std
     # tags: distribution,fit,location,locdep,raw,spread,spreaddep
     DN_Fit_mle_gaussian = (
         'DN_Fit_mle_gaussian',
+        "DN_Fit_mle(x,'gaussian')",
         DN_Fit_mle(fitwhat='gaussian'))
 
     # outs: None
     # tags: distribution,locdep,raw,skewness,spreaddep
     DN_HighLowMu = (
         'DN_HighLowMu',
+        'DN_HighLowMu(x)',
         DN_HighLowMu())
 
     # outs: None
     # tags: location
     DN_HistogramMode_10 = (
         'DN_HistogramMode_10',
+        'DN_HistogramMode(y,10)',
         DN_HistogramMode(nbins=10))
 
     # outs: None
     # tags: location
     DN_HistogramMode_5 = (
         'DN_HistogramMode_5',
+        'DN_HistogramMode(y,5)',
         DN_HistogramMode(nbins=5))
 
     # outs: None
     # tags: location
     DN_HistogramMode_20 = (
         'DN_HistogramMode_20',
+        'DN_HistogramMode(y,20)',
         DN_HistogramMode(nbins=20))
 
     # outs: None
     # tags: location,locdep,raw
     DN_median = (
         'DN_median',
+        "DN_Mean(x,'median')",
         DN_Mean(meantype='median'))
 
     # outs: None
     # tags: location,locdep,raw
     DN_hmean = (
         'DN_hmean',
+        "DN_Mean(x,'harm')",
         DN_Mean(meantype='harm'))
-
-    # outs: None
-    # tags: location,locdep,raw
-    DN_mean = (
-        'DN_mean',
-        DN_Mean(meantype='norm'))
 
     # outs: None
     # tags: location,locdep,raw,spreaddep
     DN_rms = (
         'DN_rms',
+        "DN_Mean(x,'rms')",
         DN_Mean(meantype='rms'))
+
+    # outs: None
+    # tags: location,locdep,raw
+    DN_mean = (
+        'DN_mean',
+        "DN_Mean(x,'norm')",
+        DN_Mean(meantype='norm'))
 
     # outs: None
     # tags: location,locdep,raw
     DN_midhinge = (
         'DN_midhinge',
+        "DN_Mean(x,'midhinge')",
         DN_Mean(meantype='midhinge'))
 
     # outs: None
     # tags: location,locdep,raw
     DN_iqm = (
         'DN_iqm',
+        "DN_Mean(x,'iqm')",
         DN_Mean(meantype='iqm'))
 
     # outs: None
     # tags: distribution
     DN_max = (
         'DN_max',
+        "DN_MinMax(y,'max')",
         DN_MinMax(minormax='max'))
 
     # outs: None
     # tags: misc
     DN_min = (
         'DN_min',
+        "DN_MinMax(y,'min')",
         DN_MinMax(minormax='min'))
-
-    # outs: None
-    # tags: distribution,moment,raw,shape,spreaddep
-    DN_Moments_raw_3 = (
-        'DN_Moments_raw_3',
-        DN_Moments(n=3))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_10 = (
         'DN_Moments_raw_10',
+        'DN_Moments(x,10)',
         DN_Moments(n=10))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_11 = (
         'DN_Moments_raw_11',
+        'DN_Moments(x,11)',
         DN_Moments(n=11))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_8 = (
         'DN_Moments_raw_8',
+        'DN_Moments(x,8)',
         DN_Moments(n=8))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_9 = (
         'DN_Moments_raw_9',
+        'DN_Moments(x,9)',
         DN_Moments(n=9))
+
+    # outs: None
+    # tags: distribution,moment,raw,shape,spreaddep
+    DN_Moments_raw_3 = (
+        'DN_Moments_raw_3',
+        'DN_Moments(x,3)',
+        DN_Moments(n=3))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_6 = (
         'DN_Moments_raw_6',
+        'DN_Moments(x,6)',
         DN_Moments(n=6))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_7 = (
         'DN_Moments_raw_7',
+        'DN_Moments(x,7)',
         DN_Moments(n=7))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_4 = (
         'DN_Moments_raw_4',
+        'DN_Moments(x,4)',
         DN_Moments(n=4))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_5 = (
         'DN_Moments_raw_5',
+        'DN_Moments(x,5)',
         DN_Moments(n=5))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_9 = (
         'DN_Moments_9',
+        'DN_Moments(y,9)',
         DN_Moments(n=9))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_8 = (
         'DN_Moments_8',
+        'DN_Moments(y,8)',
         DN_Moments(n=8))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_3 = (
         'DN_Moments_3',
+        'DN_Moments(y,3)',
         DN_Moments(n=3))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_5 = (
         'DN_Moments_5',
+        'DN_Moments(y,5)',
         DN_Moments(n=5))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_4 = (
         'DN_Moments_4',
+        'DN_Moments(y,4)',
         DN_Moments(n=4))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_7 = (
         'DN_Moments_7',
+        'DN_Moments(y,7)',
         DN_Moments(n=7))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_6 = (
         'DN_Moments_6',
+        'DN_Moments(y,6)',
         DN_Moments(n=6))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_11 = (
         'DN_Moments_11',
+        'DN_Moments(y,11)',
         DN_Moments(n=11))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_10 = (
         'DN_Moments_10',
+        'DN_Moments(y,10)',
         DN_Moments(n=10))
 
     # outs: mdrm,mdrmd,mdrstd,mfexpa,mfexpadjr2
@@ -10272,9 +10411,10 @@ class HCTSAOperations(object):
     # outs: stdrfexpb,stdrfexpc,stdrfexpr2,stdrfexprmse,stdrfla
     # outs: stdrfladjr2,stdrflb,stdrflr2,stdrflrmse,xcmerr1
     # outs: xcmerrn1
-    # tags: distribution,outliers,stochastic
+    # tags: distribution,outliers
     DN_OutlierInclude_abs = (
         'DN_OutlierInclude_abs',
+        "DN_OutlierInclude(y,'abs')",
         DN_OutlierInclude(howth='abs'))
 
     # outs: mdrm,mdrmd,mdrstd,mfexpa,mfexpadjr2
@@ -10285,9 +10425,10 @@ class HCTSAOperations(object):
     # outs: stdrfexpb,stdrfexpc,stdrfexpr2,stdrfexprmse,stdrfla
     # outs: stdrfladjr2,stdrflb,stdrflr2,stdrflrmse,xcmerr1
     # outs: xcmerrn1
-    # tags: distribution,outliers,stochastic
+    # tags: distribution,outliers
     DN_OutlierInclude_p = (
         'DN_OutlierInclude_p',
+        "DN_OutlierInclude(y,'p')",
         DN_OutlierInclude(howth='p'))
 
     # outs: mdrm,mdrmd,mdrstd,mfexpa,mfexpadjr2
@@ -10298,183 +10439,213 @@ class HCTSAOperations(object):
     # outs: stdrfexpb,stdrfexpc,stdrfexpr2,stdrfexprmse,stdrfla
     # outs: stdrfladjr2,stdrflb,stdrflr2,stdrflrmse,xcmerr1
     # outs: xcmerrn1
-    # tags: distribution,outliers,stochastic
+    # tags: distribution,outliers
     DN_OutlierInclude_n = (
         'DN_OutlierInclude_n',
+        "DN_OutlierInclude(y,'n')",
         DN_OutlierInclude(howth='n'))
 
     # outs: mean,std
     # tags: distribution,outliers,spread
     DN_OutlierTest2 = (
         'DN_OutlierTest2',
+        'DN_OutlierTest(y,2)',
         DN_OutlierTest(p=2))
 
     # outs: mean,std
     # tags: distribution,outliers,spread
     DN_OutlierTest5 = (
         'DN_OutlierTest5',
+        'DN_OutlierTest(y,5)',
         DN_OutlierTest(p=5))
 
     # outs: mean,std
     # tags: distribution,outliers,spread
     DN_OutlierTest10 = (
         'DN_OutlierTest10',
+        'DN_OutlierTest(y,10)',
         DN_OutlierTest(p=10))
-
-    # outs: None
-    # tags: locdep,raw
-    DN_ProportionValues_positive = (
-        'DN_ProportionValues_positive',
-        DN_ProportionValues(propwhat='positive'))
 
     # outs: None
     # tags: locdep,raw
     DN_ProportionValues_geq0 = (
         'DN_ProportionValues_geq0',
+        "DN_ProportionValues(x,'geq0')",
         DN_ProportionValues(propwhat='geq0'))
+
+    # outs: None
+    # tags: locdep,raw
+    DN_ProportionValues_positive = (
+        'DN_ProportionValues_positive',
+        "DN_ProportionValues(x,'positive')",
+        DN_ProportionValues(propwhat='positive'))
 
     # outs: None
     # tags: raw
     DN_ProportionValues_zeros = (
         'DN_ProportionValues_zeros',
+        "DN_ProportionValues(x,'zeros')",
         DN_ProportionValues(propwhat='zeros'))
 
     # outs: None
     # tags: distribution
     DN_Quantile_60 = (
         'DN_Quantile_60',
+        'DN_Quantile(y,0.60)',
         DN_Quantile(p=0.6))
 
     # outs: None
     # tags: distribution
     DN_Quantile_4 = (
         'DN_Quantile_4',
+        'DN_Quantile(y,0.04)',
         DN_Quantile(p=0.04))
 
     # outs: None
     # tags: distribution
     DN_Quantile_5 = (
         'DN_Quantile_5',
+        'DN_Quantile(y,0.05)',
         DN_Quantile(p=0.05))
 
     # outs: None
     # tags: distribution
     DN_Quantile_2 = (
         'DN_Quantile_2',
+        'DN_Quantile(y,0.02)',
         DN_Quantile(p=0.02))
 
     # outs: None
     # tags: distribution
     DN_Quantile_3 = (
         'DN_Quantile_3',
+        'DN_Quantile(y,0.03)',
         DN_Quantile(p=0.03))
 
     # outs: None
     # tags: distribution
     DN_Quantile_1 = (
         'DN_Quantile_1',
+        'DN_Quantile(y,0.01)',
         DN_Quantile(p=0.01))
 
     # outs: None
     # tags: distribution
     DN_Quantile_10 = (
         'DN_Quantile_10',
+        'DN_Quantile(y,0.10)',
         DN_Quantile(p=0.1))
 
     # outs: None
     # tags: distribution
     DN_Quantile_50 = (
         'DN_Quantile_50',
+        'DN_Quantile(y,0.50)',
         DN_Quantile(p=0.5))
 
     # outs: None
     # tags: distribution
     DN_Quantile_90 = (
         'DN_Quantile_90',
+        'DN_Quantile(y,0.90)',
         DN_Quantile(p=0.9))
 
     # outs: None
     # tags: distribution
     DN_Quantile_91 = (
         'DN_Quantile_91',
+        'DN_Quantile(y,0.91)',
         DN_Quantile(p=0.91))
 
     # outs: None
     # tags: distribution
     DN_Quantile_92 = (
         'DN_Quantile_92',
+        'DN_Quantile(y,0.92)',
         DN_Quantile(p=0.92))
 
     # outs: None
     # tags: distribution
     DN_Quantile_93 = (
         'DN_Quantile_93',
+        'DN_Quantile(y,0.93)',
         DN_Quantile(p=0.93))
 
     # outs: None
     # tags: distribution
     DN_Quantile_94 = (
         'DN_Quantile_94',
+        'DN_Quantile(y,0.94)',
         DN_Quantile(p=0.94))
 
     # outs: None
     # tags: distribution
     DN_Quantile_95 = (
         'DN_Quantile_95',
+        'DN_Quantile(y,0.95)',
         DN_Quantile(p=0.95))
 
     # outs: None
     # tags: distribution
     DN_Quantile_96 = (
         'DN_Quantile_96',
+        'DN_Quantile(y,0.96)',
         DN_Quantile(p=0.96))
 
     # outs: None
     # tags: distribution
     DN_Quantile_97 = (
         'DN_Quantile_97',
+        'DN_Quantile(y,0.97)',
         DN_Quantile(p=0.97))
 
     # outs: None
     # tags: distribution
     DN_Quantile_98 = (
         'DN_Quantile_98',
+        'DN_Quantile(y,0.98)',
         DN_Quantile(p=0.98))
 
     # outs: None
     # tags: distribution
     DN_Quantile_99 = (
         'DN_Quantile_99',
+        'DN_Quantile(y,0.99)',
         DN_Quantile(p=0.99))
 
     # outs: None
     # tags: distribution
     DN_Quantile_30 = (
         'DN_Quantile_30',
+        'DN_Quantile(y,0.30)',
         DN_Quantile(p=0.3))
-
-    # outs: None
-    # tags: distribution
-    DN_Quantile_40 = (
-        'DN_Quantile_40',
-        DN_Quantile(p=0.4))
 
     # outs: None
     # tags: distribution
     DN_Quantile_70 = (
         'DN_Quantile_70',
+        'DN_Quantile(y,0.70)',
         DN_Quantile(p=0.7))
+
+    # outs: None
+    # tags: distribution
+    DN_Quantile_40 = (
+        'DN_Quantile_40',
+        'DN_Quantile(y,0.40)',
+        DN_Quantile(p=0.4))
 
     # outs: None
     # tags: distribution
     DN_Quantile_80 = (
         'DN_Quantile_80',
+        'DN_Quantile(y,0.80)',
         DN_Quantile(p=0.8))
 
     # outs: None
     # tags: distribution
     DN_Quantile_20 = (
         'DN_Quantile_20',
+        'DN_Quantile(y,0.20)',
         DN_Quantile(p=0.2))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
@@ -10483,6 +10654,7 @@ class HCTSAOperations(object):
     # tags: correlation,distribution,outliers
     DN_RemovePoints_absclose_01 = (
         'DN_RemovePoints_absclose_01',
+        "DN_RemovePoints(y,'absclose',0.1)",
         DN_RemovePoints(howtorem='absclose', p=0.1))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
@@ -10491,6 +10663,7 @@ class HCTSAOperations(object):
     # tags: correlation,distribution,outliers
     DN_RemovePoints_absclose_05 = (
         'DN_RemovePoints_absclose_05',
+        "DN_RemovePoints(y,'absclose',0.5)",
         DN_RemovePoints(howtorem='absclose', p=0.5))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
@@ -10499,6 +10672,7 @@ class HCTSAOperations(object):
     # tags: correlation,distribution,outliers
     DN_RemovePoints_absfar_08 = (
         'DN_RemovePoints_absfar_08',
+        "DN_RemovePoints(y,'absfar',0.8)",
         DN_RemovePoints(howtorem='absfar', p=0.8))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
@@ -10507,7 +10681,17 @@ class HCTSAOperations(object):
     # tags: correlation,distribution,outliers
     DN_RemovePoints_absfar_05 = (
         'DN_RemovePoints_absfar_05',
+        "DN_RemovePoints(y,'absfar',0.5)",
         DN_RemovePoints(howtorem='absfar', p=0.5))
+
+    # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
+    # outs: kurtosisrat,mean,median,skewnessrat,std
+    # outs: sumabsacfdiff
+    # tags: correlation,distribution,outliers
+    DN_RemovePoints_min_05 = (
+        'DN_RemovePoints_min_05',
+        "DN_RemovePoints(y,'min',0.5)",
+        DN_RemovePoints(howtorem='min', p=0.5))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10515,6 +10699,7 @@ class HCTSAOperations(object):
     # tags: correlation,distribution,outliers
     DN_RemovePoints_absclose_08 = (
         'DN_RemovePoints_absclose_08',
+        "DN_RemovePoints(y,'absclose',0.8)",
         DN_RemovePoints(howtorem='absclose', p=0.8))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
@@ -10523,6 +10708,7 @@ class HCTSAOperations(object):
     # tags: correlation,distribution,outliers
     DN_RemovePoints_min_08 = (
         'DN_RemovePoints_min_08',
+        "DN_RemovePoints(y,'min',0.8)",
         DN_RemovePoints(howtorem='min', p=0.8))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
@@ -10531,6 +10717,7 @@ class HCTSAOperations(object):
     # tags: correlation,distribution,outliers
     DN_RemovePoints_max_08 = (
         'DN_RemovePoints_max_08',
+        "DN_RemovePoints(y,'max',0.8)",
         DN_RemovePoints(howtorem='max', p=0.8))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
@@ -10539,6 +10726,7 @@ class HCTSAOperations(object):
     # tags: correlation,distribution,outliers
     DN_RemovePoints_min_01 = (
         'DN_RemovePoints_min_01',
+        "DN_RemovePoints(y,'min',0.1)",
         DN_RemovePoints(howtorem='min', p=0.1))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
@@ -10547,6 +10735,7 @@ class HCTSAOperations(object):
     # tags: correlation,distribution,outliers
     DN_RemovePoints_max_05 = (
         'DN_RemovePoints_max_05',
+        "DN_RemovePoints(y,'max',0.5)",
         DN_RemovePoints(howtorem='max', p=0.5))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
@@ -10555,6 +10744,7 @@ class HCTSAOperations(object):
     # tags: correlation,distribution,outliers
     DN_RemovePoints_max_01 = (
         'DN_RemovePoints_max_01',
+        "DN_RemovePoints(y,'max',0.1)",
         DN_RemovePoints(howtorem='max', p=0.1))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
@@ -10563,21 +10753,15 @@ class HCTSAOperations(object):
     # tags: correlation,distribution,outliers
     DN_RemovePoints_absfar_01 = (
         'DN_RemovePoints_absfar_01',
+        "DN_RemovePoints(y,'absfar',0.1)",
         DN_RemovePoints(howtorem='absfar', p=0.1))
-
-    # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
-    # outs: kurtosisrat,mean,median,skewnessrat,std
-    # outs: sumabsacfdiff
-    # tags: correlation,distribution,outliers
-    DN_RemovePoints_min_05 = (
-        'DN_RemovePoints_min_05',
-        DN_RemovePoints(howtorem='min', p=0.5))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
     # tags: distribution,exp1,gof
     DN_SimpleFit_exp1_ks = (
         'DN_SimpleFit_exp1_ks',
+        "DN_SimpleFit(y,'exp1',0)",
         DN_SimpleFit(dmodel='exp1', nbins=0))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
@@ -10585,6 +10769,7 @@ class HCTSAOperations(object):
     # tags: adjr2,model,r2,resAC1,resAC2,resruns,rmse,sin1
     DN_SimpleFit_sin1 = (
         'DN_SimpleFit_sin1',
+        "DN_SimpleFit(y,'sin1')",
         DN_SimpleFit(dmodel='sin1'))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
@@ -10592,6 +10777,7 @@ class HCTSAOperations(object):
     # tags: adjr2,model,r2,resAC1,resAC2,resruns,rmse,sin2
     DN_SimpleFit_sin2 = (
         'DN_SimpleFit_sin2',
+        "DN_SimpleFit(y,'sin2')",
         DN_SimpleFit(dmodel='sin2'))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
@@ -10599,13 +10785,23 @@ class HCTSAOperations(object):
     # tags: adjr2,model,r2,resAC1,resAC2,resruns,rmse,sin3
     DN_SimpleFit_sin3 = (
         'DN_SimpleFit_sin3',
+        "DN_SimpleFit(y,'sin3')",
         DN_SimpleFit(dmodel='sin3'))
+
+    # outs: adjr2,r2,resAC1,resAC2,resruns
+    # outs: rmse
+    # tags: adjr2,fourier1,model,r2,resAC1,resAC2,resruns,rmse
+    DN_SimpleFit_fourier1 = (
+        'DN_SimpleFit_fourier1',
+        "DN_SimpleFit(y,'fourier1')",
+        DN_SimpleFit(dmodel='fourier1'))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
     # tags: distribution,gauss1,gof
     DN_SimpleFit_gauss1_h30 = (
         'DN_SimpleFit_gauss1_h30',
+        "DN_SimpleFit(y,'gauss1',30)",
         DN_SimpleFit(dmodel='gauss1', nbins=30))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
@@ -10613,6 +10809,7 @@ class HCTSAOperations(object):
     # tags: distribution,gauss2,gof
     DN_SimpleFit_gauss2_h10 = (
         'DN_SimpleFit_gauss2_h10',
+        "DN_SimpleFit(y,'gauss2',10)",
         DN_SimpleFit(dmodel='gauss2', nbins=10))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
@@ -10620,6 +10817,7 @@ class HCTSAOperations(object):
     # tags: distribution,gof,power1
     DN_SimpleFit_power1_h10 = (
         'DN_SimpleFit_power1_h10',
+        "DN_SimpleFit(y,'power1',10)",
         DN_SimpleFit(dmodel='power1', nbins=10))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
@@ -10627,27 +10825,15 @@ class HCTSAOperations(object):
     # tags: distribution,exp1,gof
     DN_SimpleFit_exp1_h10 = (
         'DN_SimpleFit_exp1_h10',
+        "DN_SimpleFit(y,'exp1',10)",
         DN_SimpleFit(dmodel='exp1', nbins=10))
-
-    # outs: adjr2,r2,resAC1,resAC2,resruns
-    # outs: rmse
-    # tags: adjr2,fourier1,model,r2,resAC1,resAC2,resruns,rmse
-    DN_SimpleFit_fourier1 = (
-        'DN_SimpleFit_fourier1',
-        DN_SimpleFit(dmodel='fourier1'))
-
-    # outs: adjr2,r2,resAC1,resAC2,resruns
-    # outs: rmse
-    # tags: distribution,gauss1,gof
-    DN_SimpleFit_gauss1_ks = (
-        'DN_SimpleFit_gauss1_ks',
-        DN_SimpleFit(dmodel='gauss1', nbins=0))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
     # tags: distribution,gof,power1
     DN_SimpleFit_power1_ks = (
         'DN_SimpleFit_power1_ks',
+        "DN_SimpleFit(y,'power1',0)",
         DN_SimpleFit(dmodel='power1', nbins=0))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
@@ -10655,6 +10841,7 @@ class HCTSAOperations(object):
     # tags: distribution,gauss1,gof
     DN_SimpleFit_gauss1_h10 = (
         'DN_SimpleFit_gauss1_h10',
+        "DN_SimpleFit(y,'gauss1',10)",
         DN_SimpleFit(dmodel='gauss1', nbins=10))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
@@ -10662,525 +10849,620 @@ class HCTSAOperations(object):
     # tags: distribution,gof,power1
     DN_SimpleFit_power1_h30 = (
         'DN_SimpleFit_power1_h30',
+        "DN_SimpleFit(y,'power1',30)",
         DN_SimpleFit(dmodel='power1', nbins=30))
-
-    # outs: adjr2,r2,resAC1,resAC2,resruns
-    # outs: rmse
-    # tags: distribution,gauss2,gof
-    DN_SimpleFit_gauss2_h30 = (
-        'DN_SimpleFit_gauss2_h30',
-        DN_SimpleFit(dmodel='gauss2', nbins=30))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
     # tags: distribution,gauss2,gof
     DN_SimpleFit_gauss2_ks = (
         'DN_SimpleFit_gauss2_ks',
+        "DN_SimpleFit(y,'gauss2',0)",
         DN_SimpleFit(dmodel='gauss2', nbins=0))
+
+    # outs: adjr2,r2,resAC1,resAC2,resruns
+    # outs: rmse
+    # tags: distribution,gauss2,gof
+    DN_SimpleFit_gauss2_h30 = (
+        'DN_SimpleFit_gauss2_h30',
+        "DN_SimpleFit(y,'gauss2',30)",
+        DN_SimpleFit(dmodel='gauss2', nbins=30))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
     # tags: distribution,exp1,gof
     DN_SimpleFit_exp1_h30 = (
         'DN_SimpleFit_exp1_h30',
+        "DN_SimpleFit(y,'exp1',30)",
         DN_SimpleFit(dmodel='exp1', nbins=30))
+
+    # outs: adjr2,r2,resAC1,resAC2,resruns
+    # outs: rmse
+    # tags: distribution,gauss1,gof
+    DN_SimpleFit_gauss1_ks = (
+        'DN_SimpleFit_gauss1_ks',
+        "DN_SimpleFit(y,'gauss1',0)",
+        DN_SimpleFit(dmodel='gauss1', nbins=0))
 
     # outs: None
     # tags: raw,spread,spreaddep
     DN_Spread_std = (
         'DN_Spread_std',
+        "DN_Spread(x,'std')",
         DN_Spread(SpreadMeasure='std'))
 
     # outs: None
     # tags: diff,raw,spread,spreaddep
     DN_Spread_std_diff = (
         'DN_Spread_std_diff',
+        "DN_Spread(diff(x),'std')",
         DN_Spread(SpreadMeasure='std'))
 
     # outs: None
     # tags: raw,spread,spreaddep
     DN_Spread_iqr = (
         'DN_Spread_iqr',
+        "DN_Spread(x,'iqr')",
         DN_Spread(SpreadMeasure='iqr'))
 
     # outs: None
     # tags: raw,spread,spreaddep
     DN_Spread_mead = (
         'DN_Spread_mead',
+        "DN_Spread(x,'mead')",
         DN_Spread(SpreadMeasure='mead'))
 
     # outs: None
     # tags: raw,spread,spreaddep
     DN_Spread_mad = (
         'DN_Spread_mad',
+        "DN_Spread(x,'mad')",
         DN_Spread(SpreadMeasure='mad'))
 
     # outs: None
     # tags: location,locdep,raw
     DN_TrimmedMean_2 = (
         'DN_TrimmedMean_2',
+        'DN_TrimmedMean(x,2)',
         DN_TrimmedMean(n=2))
 
     # outs: None
     # tags: location,locdep,raw
     DN_TrimmedMean_1 = (
         'DN_TrimmedMean_1',
+        'DN_TrimmedMean(x,1)',
         DN_TrimmedMean(n=1))
 
     # outs: None
     # tags: location,locdep,raw
     DN_TrimmedMean_5 = (
         'DN_TrimmedMean_5',
+        'DN_TrimmedMean(x,5)',
         DN_TrimmedMean(n=5))
 
     # outs: None
     # tags: location,locdep,raw
     DN_TrimmedMean_50 = (
         'DN_TrimmedMean_50',
+        'DN_TrimmedMean(x,50)',
         DN_TrimmedMean(n=50))
 
     # outs: None
     # tags: location,locdep,raw
     DN_TrimmedMean_25 = (
         'DN_TrimmedMean_25',
+        'DN_TrimmedMean(x,25)',
         DN_TrimmedMean(n=25))
 
     # outs: None
     # tags: location,locdep,raw
     DN_TrimmedMean_10 = (
         'DN_TrimmedMean_10',
+        'DN_TrimmedMean(x,10)',
         DN_TrimmedMean(n=10))
 
     # outs: None
     # tags: distribution,spread
     DN_Withinp_30 = (
         'DN_Withinp_30',
+        'DN_Withinp(y,3)',
         DN_Withinp(p=3))
 
     # outs: None
     # tags: distribution,spread
     DN_Withinp_20 = (
         'DN_Withinp_20',
+        'DN_Withinp(y,2)',
         DN_Withinp(p=2))
 
     # outs: None
     # tags: distribution,spread
     DN_Withinp_25 = (
         'DN_Withinp_25',
+        'DN_Withinp(y,2.5)',
         DN_Withinp(p=2.5))
 
     # outs: None
     # tags: distribution,spread
     DN_Withinp_10 = (
         'DN_Withinp_10',
+        'DN_Withinp(y,1)',
         DN_Withinp(p=1))
 
     # outs: None
     # tags: distribution,spread
     DN_Withinp_15 = (
         'DN_Withinp_15',
+        'DN_Withinp(y,1.5)',
         DN_Withinp(p=1.5))
 
     # outs: None
     # tags: distribution,spread
     DN_Withinp_05 = (
         'DN_Withinp_05',
+        'DN_Withinp(y,0.5)',
         DN_Withinp(p=0.5))
 
     # outs: None
     # tags: cv,locdep,raw,spread,spreaddep
     DN_cv_4 = (
         'DN_cv_4',
+        'DN_cv(x,4)',
         DN_cv(k=4))
 
     # outs: None
     # tags: cv,locdep,raw,spread,spreaddep
     DN_cv_5 = (
         'DN_cv_5',
+        'DN_cv(x,5)',
         DN_cv(k=5))
 
     # outs: None
     # tags: cv,locdep,raw,spread,spreaddep
     DN_cv_6 = (
         'DN_cv_6',
+        'DN_cv(x,6)',
         DN_cv(k=6))
 
     # outs: None
     # tags: cv,locdep,raw,spread,spreaddep
     DN_cv_1 = (
         'DN_cv_1',
+        'DN_cv(x,1)',
         DN_cv(k=1))
 
     # outs: None
     # tags: cv,locdep,raw,spread,spreaddep
     DN_cv_2 = (
         'DN_cv_2',
+        'DN_cv(x,2)',
         DN_cv(k=2))
 
     # outs: None
     # tags: cv,locdep,raw,spread,spreaddep
     DN_cv_3 = (
         'DN_cv_3',
+        'DN_cv(x,3)',
         DN_cv(k=3))
 
     # outs: None
     # tags: distribution,gof,lengthdep
     DN_nlogL_norm = (
         'DN_nlogL_norm',
+        'DN_nlogL_norm(y)',
         DN_nlogL_norm())
 
     # outs: None
     # tags: distribution,spread
     DN_pleft_01 = (
         'DN_pleft_01',
+        'DN_pleft(y,0.1)',
         DN_pleft(th=0.1))
 
     # outs: None
     # tags: distribution,spread
     DN_pleft_03 = (
         'DN_pleft_03',
+        'DN_pleft(y,0.3)',
         DN_pleft(th=0.3))
 
     # outs: None
     # tags: distribution,spread
     DN_pleft_04 = (
         'DN_pleft_04',
+        'DN_pleft(y,0.4)',
         DN_pleft(th=0.4))
 
     # outs: None
     # tags: distribution,spread
     DN_pleft_05 = (
         'DN_pleft_05',
+        'DN_pleft(y,0.5)',
         DN_pleft(th=0.5))
 
     # outs: None
     # tags: distribution,spread
     DN_pleft_005 = (
         'DN_pleft_005',
+        'DN_pleft(y,0.05)',
         DN_pleft(th=0.05))
 
     # outs: None
     # tags: distribution,spread
     DN_pleft_02 = (
         'DN_pleft_02',
+        'DN_pleft(y,0.2)',
         DN_pleft(th=0.2))
 
     # outs: None
     # tags: periodicity
     DT_IsSeasonal = (
         'DT_IsSeasonal',
+        'DT_IsSeasonal(y)',
         DT_IsSeasonal())
 
     # outs: None
     # tags: entropy
     ApEn1_02 = (
         'ApEn1_02',
+        'EN_ApEn(y,1,0.2)',
         EN_ApEn(mnom=1, rth=0.2))
-
-    # outs: None
-    # tags: entropy
-    ApEn2_02 = (
-        'ApEn2_02',
-        EN_ApEn(mnom=2, rth=0.2))
 
     # outs: None
     # tags: entropy
     ApEn2_01 = (
         'ApEn2_01',
+        'EN_ApEn(y,2,0.1)',
         EN_ApEn(mnom=2, rth=0.1))
+
+    # outs: None
+    # tags: entropy
+    ApEn2_02 = (
+        'ApEn2_02',
+        'EN_ApEn(y,2,0.2)',
+        EN_ApEn(mnom=2, rth=0.2))
 
     # outs: None
     # tags: entropy
     ApEn1_01 = (
         'ApEn1_01',
+        'EN_ApEn(y,1,0.1)',
         EN_ApEn(mnom=1, rth=0.1))
 
     # outs: None
     # tags: entropy
     EN_histen_ks__01 = (
         'EN_histen_ks__01',
+        "EN_DistributionEntropy(y,'ks',[],0.1)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.1))
 
     # outs: None
     # tags: entropy
     EN_histen_ks__02 = (
         'EN_histen_ks__02',
+        "EN_DistributionEntropy(y,'ks',[],0.2)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.2))
 
     # outs: None
     # tags: entropy
     EN_histen_ks__03 = (
         'EN_histen_ks__03',
+        "EN_DistributionEntropy(y,'ks',[],0.3)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.3))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_10_005 = (
         'EN_histen_hist_10_005',
+        "EN_DistributionEntropy(y,'hist',10,0.05)",
         EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.05))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_10_001 = (
         'EN_histen_hist_10_001',
+        "EN_DistributionEntropy(y,'hist',10,0.01)",
         EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.01))
+
+    # outs: None
+    # tags: entropy
+    EN_histen_hist_10_002 = (
+        'EN_histen_hist_10_002',
+        "EN_DistributionEntropy(y,'hist',10,0.02)",
+        EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.02))
 
     # outs: None
     # tags: entropy
     EN_histen_ks_01_0 = (
         'EN_histen_ks_01_0',
+        "EN_DistributionEntropy(y,'ks',0.1,0)",
         EN_DistributionEntropy(HistorKS='ks', nbins=0.1, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_histen_ks_001_0 = (
+        'EN_histen_ks_001_0',
+        "EN_DistributionEntropy(y,'ks',0.01,0)",
+        EN_DistributionEntropy(HistorKS='ks', nbins=0.01, olremp=0))
 
     # outs: None
     # tags: entropy
     EN_histen_ks_05_0 = (
         'EN_histen_ks_05_0',
+        "EN_DistributionEntropy(y,'ks',0.5,0)",
         EN_DistributionEntropy(HistorKS='ks', nbins=0.5, olremp=0))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_10_02 = (
         'EN_histen_hist_10_02',
+        "EN_DistributionEntropy(y,'hist',10,0.2)",
         EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.2))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_10_01 = (
         'EN_histen_hist_10_01',
+        "EN_DistributionEntropy(y,'hist',10,0.1)",
         EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.1))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_5_0 = (
         'EN_histen_hist_5_0',
+        "EN_DistributionEntropy(y,'hist',5,0)",
         EN_DistributionEntropy(HistorKS='hist', nbins=5, olremp=0))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_hist_10_002 = (
-        'EN_histen_hist_10_002',
-        EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.02))
 
     # outs: None
     # tags: entropy
     EN_histen_ks_1_0 = (
         'EN_histen_ks_1_0',
+        "EN_DistributionEntropy(y,'ks',1,0)",
         EN_DistributionEntropy(HistorKS='ks', nbins=1, olremp=0))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_ks_02_0 = (
-        'EN_histen_ks_02_0',
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.2, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks_01_0 = (
         'EN_histen_raw_ks_01_0',
+        "EN_DistributionEntropy(x,'ks',0.1,0)",
         EN_DistributionEntropy(HistorKS='ks', nbins=0.1, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_histen_ks_02_0 = (
+        'EN_histen_ks_02_0',
+        "EN_DistributionEntropy(y,'ks',0.2,0)",
+        EN_DistributionEntropy(HistorKS='ks', nbins=0.2, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks__01 = (
         'EN_histen_raw_ks__01',
+        "EN_DistributionEntropy(x,'ks',[],0.1)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.1))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_20_0 = (
         'EN_histen_hist_20_0',
+        "EN_DistributionEntropy(y,'hist',20,0)",
         EN_DistributionEntropy(HistorKS='hist', nbins=20, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks_1_0 = (
         'EN_histen_raw_ks_1_0',
+        "EN_DistributionEntropy(x,'ks',1,0)",
         EN_DistributionEntropy(HistorKS='ks', nbins=1, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks__03 = (
         'EN_histen_raw_ks__03',
+        "EN_DistributionEntropy(x,'ks',[],0.3)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.3))
 
     # outs: None
     # tags: entropy
     EN_histen_ks_005_0 = (
         'EN_histen_ks_005_0',
+        "EN_DistributionEntropy(y,'ks',0.05,0)",
         EN_DistributionEntropy(HistorKS='ks', nbins=0.05, olremp=0))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_ks_001_0 = (
-        'EN_histen_ks_001_0',
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.01, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks_05_0 = (
         'EN_histen_raw_ks_05_0',
+        "EN_DistributionEntropy(x,'ks',0.5,0)",
         EN_DistributionEntropy(HistorKS='ks', nbins=0.5, olremp=0))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_10_0 = (
         'EN_histen_hist_10_0',
+        "EN_DistributionEntropy(y,'hist',10,0)",
         EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks_02_0 = (
         'EN_histen_raw_ks_02_0',
+        "EN_DistributionEntropy(x,'ks',0.2,0)",
         EN_DistributionEntropy(HistorKS='ks', nbins=0.2, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks__02 = (
         'EN_histen_raw_ks__02',
+        "EN_DistributionEntropy(x,'ks',[],0.2)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.2))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_50_0 = (
         'EN_histen_hist_50_0',
+        "EN_DistributionEntropy(y,'hist',50,0)",
         EN_DistributionEntropy(HistorKS='hist', nbins=50, olremp=0))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_10_03 = (
         'EN_histen_hist_10_03',
+        "EN_DistributionEntropy(y,'hist',10,0.3)",
         EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.3))
 
     # outs: None
     # tags: entropy
     EN_histen_ks__001 = (
         'EN_histen_ks__001',
+        "EN_DistributionEntropy(y,'ks',[],0.01)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.01))
 
     # outs: None
     # tags: entropy
     EN_histen_ks__002 = (
         'EN_histen_ks__002',
+        "EN_DistributionEntropy(y,'ks',[],0.02)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.02))
 
     # outs: None
     # tags: entropy
     EN_histen_ks__005 = (
         'EN_histen_ks__005',
+        "EN_DistributionEntropy(y,'ks',[],0.05)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.05))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks__005 = (
         'EN_histen_raw_ks__005',
+        "EN_DistributionEntropy(x,'ks',[],0.05)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.05))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks__002 = (
         'EN_histen_raw_ks__002',
+        "EN_DistributionEntropy(x,'ks',[],0.02)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.02))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks__001 = (
         'EN_histen_raw_ks__001',
+        "EN_DistributionEntropy(x,'ks',[],0.01)",
         EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.01))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks_001_0 = (
         'EN_histen_raw_ks_001_0',
+        "EN_DistributionEntropy(x,'ks',0.01,0)",
         EN_DistributionEntropy(HistorKS='ks', nbins=0.01, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks_005_0 = (
         'EN_histen_raw_ks_005_0',
+        "EN_DistributionEntropy(x,'ks',0.05,0)",
         EN_DistributionEntropy(HistorKS='ks', nbins=0.05, olremp=0))
+
+    # outs: None
+    # tags: MichaelSmall,entropy,mex,shannon
+    MS_shannon_3_2 = (
+        'MS_shannon_3_2',
+        'EN_MS_shannon(y,3,2)',
+        EN_MS_shannon(nbin=3, depth=2))
+
+    # outs: maxent,meanent,medent,minent,stdent
+    # tags: MichaelSmall,entropy,mex,shannon
+    MS_shannon_2t10_4 = (
+        'MS_shannon_2t10_4',
+        'EN_MS_shannon(y,2:10,4)',
+        EN_MS_shannon(nbin=MatlabSequence('2:10'), depth=4))
 
     # outs: None
     # tags: MichaelSmall,entropy,mex,shannon
     MS_shannon_2_2 = (
         'MS_shannon_2_2',
+        'EN_MS_shannon(y,2,2)',
         EN_MS_shannon(nbin=2, depth=2))
 
     # outs: None
     # tags: MichaelSmall,entropy,mex,shannon
     MS_shannon_2_3 = (
         'MS_shannon_2_3',
+        'EN_MS_shannon(y,2,3)',
         EN_MS_shannon(nbin=2, depth=3))
 
     # outs: maxent,meanent,medent,minent,stdent
     # tags: MichaelSmall,entropy,mex,shannon
     MS_shannon_2_1t10 = (
         'MS_shannon_2_1t10',
+        'EN_MS_shannon(y,2,1:10)',
         EN_MS_shannon(nbin=2, depth=MatlabSequence('1:10')))
-
-    # outs: maxent,meanent,medent,minent,stdent
-    # tags: MichaelSmall,entropy,mex,shannon
-    MS_shannon_2t10_3 = (
-        'MS_shannon_2t10_3',
-        EN_MS_shannon(nbin=MatlabSequence('2:10'), depth=3))
 
     # outs: maxent,meanent,medent,minent,stdent
     # tags: MichaelSmall,entropy,mex,shannon
     MS_shannon_4_1t10 = (
         'MS_shannon_4_1t10',
+        'EN_MS_shannon(y,4,1:10)',
         EN_MS_shannon(nbin=4, depth=MatlabSequence('1:10')))
 
     # outs: maxent,meanent,medent,minent,stdent
     # tags: MichaelSmall,entropy,mex,shannon
     MS_shannon_2t10_2 = (
         'MS_shannon_2t10_2',
+        'EN_MS_shannon(y,2:10,2)',
         EN_MS_shannon(nbin=MatlabSequence('2:10'), depth=2))
 
     # outs: maxent,meanent,medent,minent,stdent
     # tags: MichaelSmall,entropy,mex,shannon
-    MS_shannon_2t10_4 = (
-        'MS_shannon_2t10_4',
-        EN_MS_shannon(nbin=MatlabSequence('2:10'), depth=4))
+    MS_shannon_2t10_3 = (
+        'MS_shannon_2t10_3',
+        'EN_MS_shannon(y,2:10,3)',
+        EN_MS_shannon(nbin=MatlabSequence('2:10'), depth=3))
 
     # outs: maxent,meanent,medent,minent,stdent
     # tags: MichaelSmall,entropy,mex,shannon
     MS_shannon_3_1t10 = (
         'MS_shannon_3_1t10',
+        'EN_MS_shannon(y,3,1:10)',
         EN_MS_shannon(nbin=3, depth=MatlabSequence('1:10')))
-
-    # outs: None
-    # tags: MichaelSmall,entropy,mex,shannon
-    MS_shannon_3_2 = (
-        'MS_shannon_3_2',
-        EN_MS_shannon(nbin=3, depth=2))
 
     # outs: None
     # tags: entropy
     EN_PermEn_3 = (
         'EN_PermEn_3',
+        'EN_PermEn(y,3)',
         EN_PermEn(ordd=3))
 
     # outs: None
     # tags: entropy
     EN_PermEn_5 = (
         'EN_PermEn_5',
+        'EN_PermEn(y,5)',
         EN_PermEn(ordd=5))
 
     # outs: None
     # tags: entropy
     EN_PermEn_2 = (
         'EN_PermEn_2',
+        'EN_PermEn(y,2)',
         EN_PermEn(ordd=2))
 
     # outs: None
     # tags: entropy
     EN_PermEn_4 = (
         'EN_PermEn_4',
+        'EN_PermEn(y,4)',
         EN_PermEn(ordd=4))
 
     # outs: None
     # tags: entropy
     RM_entropy = (
         'RM_entropy',
+        'EN_RM_entropy(y)',
         EN_RM_entropy())
 
     # outs: ac1diff,ac1fexpa,ac1fexpadjr2,ac1fexpb,ac1fexpr2
@@ -11198,10 +11480,11 @@ class HCTSAOperations(object):
     # outs: xc1fexpa,xc1fexpadjr2,xc1fexpb,xc1fexpr2,xc1fexprmse
     # outs: xc1hp,xcn1diff,xcn1fexpa,xcn1fexpadjr2,xcn1fexpb
     # outs: xcn1fexpr2,xcn1fexprmse,xcn1hp
-    # tags: entropy,lengthdep,slow,stochastic
+    # tags: entropy,lengthdep,slow
     EN_Randomize_statdist = (
         'EN_Randomize_statdist',
-        EN_Randomize(randomizeHow='statdist'))
+        "EN_Randomize(y,'statdist','default')",
+        EN_Randomize(randomizeHow='statdist', randomSeed='default'))
 
     # outs: ac1diff,ac1fexpa,ac1fexpadjr2,ac1fexpb,ac1fexpr2
     # outs: ac1fexprmse,ac1hp,ac2diff,ac2fexpa,ac2fexpadjr2
@@ -11218,50 +11501,63 @@ class HCTSAOperations(object):
     # outs: xc1fexpa,xc1fexpadjr2,xc1fexpb,xc1fexpr2,xc1fexprmse
     # outs: xc1hp,xcn1diff,xcn1fexpa,xcn1fexpadjr2,xcn1fexpb
     # outs: xcn1fexpr2,xcn1fexprmse,xcn1hp
-    # tags: entropy,lengthdep,slow,stochastic
-    EN_Randomize_permute = (
-        'EN_Randomize_permute',
-        EN_Randomize(randomizeHow='permute'))
-
-    # outs: ac1diff,ac1fexpa,ac1fexpadjr2,ac1fexpb,ac1fexpr2
-    # outs: ac1fexprmse,ac1hp,ac2diff,ac2fexpa,ac2fexpadjr2
-    # outs: ac2fexpb,ac2fexpr2,ac2fexprmse,ac2hp,ac3diff
-    # outs: ac3fexpa,ac3fexpadjr2,ac3fexpb,ac3fexpr2,ac3fexprmse
-    # outs: ac3hp,ac4diff,ac4fexpa,ac4fexpadjr2,ac4fexpb
-    # outs: ac4fexpr2,ac4fexprmse,ac4hp,d1fexpa,d1fexpadjr2
-    # outs: d1fexpb,d1fexpc,d1fexpr2,d1fexprmse,d1hp
-    # outs: sampen2_02diff,sampen2_02fexpa,sampen2_02fexpadjr2,sampen2_02fexpb,sampen2_02fexpc
-    # outs: sampen2_02fexpr2,sampen2_02fexprmse,sampen2_02hp,statav5diff,statav5fexpa
-    # outs: statav5fexpadjr2,statav5fexpb,statav5fexpc,statav5fexpr2,statav5fexprmse
-    # outs: statav5hp,swss5_1diff,swss5_1fexpa,swss5_1fexpadjr2,swss5_1fexpb
-    # outs: swss5_1fexpc,swss5_1fexpr2,swss5_1fexprmse,swss5_1hp,xc1diff
-    # outs: xc1fexpa,xc1fexpadjr2,xc1fexpb,xc1fexpr2,xc1fexprmse
-    # outs: xc1hp,xcn1diff,xcn1fexpa,xcn1fexpadjr2,xcn1fexpb
-    # outs: xcn1fexpr2,xcn1fexprmse,xcn1hp
-    # tags: entropy,lengthdep,slow,stochastic
+    # tags: entropy,lengthdep,slow
     EN_Randomize_dyndist = (
         'EN_Randomize_dyndist',
-        EN_Randomize(randomizeHow='dyndist'))
+        "EN_Randomize(y,'dyndist','default')",
+        EN_Randomize(randomizeHow='dyndist', randomSeed='default'))
 
-    # outs: meanchp,meanchsampen,p1,p2,p3
-    # outs: p4,sampen1,sampen2,sampen3,sampen4
-    # tags: entropy,sampen
-    EN_SampEn_4_01 = (
-        'EN_SampEn_4_01',
-        EN_SampEn(M=4, r=0.1))
+    # outs: ac1diff,ac1fexpa,ac1fexpadjr2,ac1fexpb,ac1fexpr2
+    # outs: ac1fexprmse,ac1hp,ac2diff,ac2fexpa,ac2fexpadjr2
+    # outs: ac2fexpb,ac2fexpr2,ac2fexprmse,ac2hp,ac3diff
+    # outs: ac3fexpa,ac3fexpadjr2,ac3fexpb,ac3fexpr2,ac3fexprmse
+    # outs: ac3hp,ac4diff,ac4fexpa,ac4fexpadjr2,ac4fexpb
+    # outs: ac4fexpr2,ac4fexprmse,ac4hp,d1fexpa,d1fexpadjr2
+    # outs: d1fexpb,d1fexpc,d1fexpr2,d1fexprmse,d1hp
+    # outs: sampen2_02diff,sampen2_02fexpa,sampen2_02fexpadjr2,sampen2_02fexpb,sampen2_02fexpc
+    # outs: sampen2_02fexpr2,sampen2_02fexprmse,sampen2_02hp,statav5diff,statav5fexpa
+    # outs: statav5fexpadjr2,statav5fexpb,statav5fexpc,statav5fexpr2,statav5fexprmse
+    # outs: statav5hp,swss5_1diff,swss5_1fexpa,swss5_1fexpadjr2,swss5_1fexpb
+    # outs: swss5_1fexpc,swss5_1fexpr2,swss5_1fexprmse,swss5_1hp,xc1diff
+    # outs: xc1fexpa,xc1fexpadjr2,xc1fexpb,xc1fexpr2,xc1fexprmse
+    # outs: xc1hp,xcn1diff,xcn1fexpa,xcn1fexpadjr2,xcn1fexpb
+    # outs: xcn1fexpr2,xcn1fexprmse,xcn1hp
+    # tags: entropy,lengthdep,slow
+    EN_Randomize_permute = (
+        'EN_Randomize_permute',
+        "EN_Randomize(y,'permute','default')",
+        EN_Randomize(randomizeHow='permute', randomSeed='default'))
 
     # outs: meanchp,meanchsampen,p1,p2,p3
     # outs: p4,sampen1,sampen2,sampen3,sampen4
     # tags: controlen,entropy
     EN_SampEn_4_02_diff1 = (
         'EN_SampEn_4_02_diff1',
-        EN_SampEn(M=4, r=0.2, preprocess='diff1'))
+        "EN_SampEn(y,4,0.2,'diff1')",
+        EN_SampEn(M=4, r=0.2, preProcessHow='diff1'))
+
+    # outs: meanchp,meanchsampen,p1,p2,p3
+    # outs: p4,sampen1,sampen2,sampen3,sampen4
+    # tags: controlen,entropy
+    EN_SampEn_4_01_diff1 = (
+        'EN_SampEn_4_01_diff1',
+        "EN_SampEn(y,4,0.1,'diff1')",
+        EN_SampEn(M=4, r=0.1, preProcessHow='diff1'))
+
+    # outs: meanchp,meanchsampen,p1,p2,p3
+    # outs: p4,sampen1,sampen2,sampen3,sampen4
+    # tags: entropy,sampen
+    EN_SampEn_4_01 = (
+        'EN_SampEn_4_01',
+        'EN_SampEn(y,4,0.1)',
+        EN_SampEn(M=4, r=0.1))
 
     # outs: meanchp,meanchsampen,p1,p2,p3
     # outs: p4,sampen1,sampen2,sampen3,sampen4
     # tags: entropy,sampen
     EN_SampEn_4_02 = (
         'EN_SampEn_4_02',
+        'EN_SampEn(y,4,0.2)',
         EN_SampEn(M=4, r=0.2))
 
     # outs: meanchp,meanchsampen,p1,p2,p3
@@ -11269,117 +11565,128 @@ class HCTSAOperations(object):
     # tags: entropy,sampen
     EN_SampEn_4_03 = (
         'EN_SampEn_4_03',
+        'EN_SampEn(y,4,0.3)',
         EN_SampEn(M=4, r=0.3))
-
-    # outs: meanchp,meanchsampen,p1,p2,p3
-    # outs: p4,sampen1,sampen2,sampen3,sampen4
-    # tags: entropy,sampen
-    EN_SampEn_4_015 = (
-        'EN_SampEn_4_015',
-        EN_SampEn(M=4, r=0.15))
 
     # outs: meanchp,meanchsampen,p1,p2,p3
     # outs: p4,sampen1,sampen2,sampen3,sampen4
     # tags: entropy,sampen
     EN_SampEn_4_005 = (
         'EN_SampEn_4_005',
+        'EN_SampEn(y,4,0.05)',
         EN_SampEn(M=4, r=0.05))
 
     # outs: meanchp,meanchsampen,p1,p2,p3
     # outs: p4,sampen1,sampen2,sampen3,sampen4
-    # tags: controlen,entropy
-    EN_SampEn_4_01_diff1 = (
-        'EN_SampEn_4_01_diff1',
-        EN_SampEn(M=4, r=0.1, preprocess='diff1'))
+    # tags: entropy,sampen
+    EN_SampEn_4_015 = (
+        'EN_SampEn_4_015',
+        'EN_SampEn(y,4,0.15)',
+        EN_SampEn(M=4, r=0.15))
 
     # outs: None
     # tags: entropy,shannonpdf
     EN_Shannonpdf = (
         'EN_Shannonpdf',
+        'EN_Shannonpdf(y)',
         EN_Shannonpdf())
-
-    # outs: None
-    # tags: entropy,threshold
-    EN_wentropy_threshent1 = (
-        'EN_wentropy_threshent1',
-        EN_wentropy(whaten='threshold', p=1))
 
     # outs: None
     # tags: entropy,threshold
     EN_wentropy_threshent01 = (
         'EN_wentropy_threshent01',
+        "EN_wentropy(y,'threshold',0.1)",
         EN_wentropy(whaten='threshold', p=0.1))
 
     # outs: None
     # tags: entropy,threshold
     EN_wentropy_threshent05 = (
         'EN_wentropy_threshent05',
+        "EN_wentropy(y,'threshold',0.5)",
         EN_wentropy(whaten='threshold', p=0.5))
 
     # outs: None
     # tags: entropy,shannon
     EN_wentropy_shannon = (
         'EN_wentropy_shannon',
+        "EN_wentropy(y,'shannon')",
         EN_wentropy(whaten='shannon'))
 
     # outs: None
     # tags: entropy,sure
     EN_wentropy_sureent15 = (
         'EN_wentropy_sureent15',
+        "EN_wentropy(y,'sure',1.5)",
         EN_wentropy(whaten='sure', p=1.5))
 
     # outs: None
     # tags: entropy,threshold
     EN_wentropy_threshent15 = (
         'EN_wentropy_threshent15',
+        "EN_wentropy(y,'threshold',1.5)",
         EN_wentropy(whaten='threshold', p=1.5))
 
     # outs: None
     # tags: entropy,logenergy
     EN_wentropy_logenent = (
         'EN_wentropy_logenent',
+        "EN_wentropy(y,'logenergy')",
         EN_wentropy(whaten='logenergy'))
 
     # outs: None
     # tags: entropy,threshold
     EN_wentropy_threshent02 = (
         'EN_wentropy_threshent02',
+        "EN_wentropy(y,'threshold',0.2)",
         EN_wentropy(whaten='threshold', p=0.2))
+
+    # outs: None
+    # tags: entropy,threshold
+    EN_wentropy_threshent1 = (
+        'EN_wentropy_threshent1',
+        "EN_wentropy(y,'threshold',1)",
+        EN_wentropy(whaten='threshold', p=1))
 
     # outs: None
     # tags: entropy,threshold
     EN_wentropy_threshent2 = (
         'EN_wentropy_threshent2',
+        "EN_wentropy(y,'threshold',2)",
         EN_wentropy(whaten='threshold', p=2))
 
     # outs: None
     # tags: entropy,sure
     EN_wentropy_sureent2 = (
         'EN_wentropy_sureent2',
+        "EN_wentropy(y,'sure',2)",
         EN_wentropy(whaten='sure', p=2))
 
     # outs: None
     # tags: entropy,sure
     EN_wentropy_sureent1 = (
         'EN_wentropy_sureent1',
+        "EN_wentropy(y,'sure',1)",
         EN_wentropy(whaten='sure', p=1))
 
     # outs: None
     # tags: entropy,sure
     EN_wentropy_sureent05 = (
         'EN_wentropy_sureent05',
+        "EN_wentropy(y,'sure',0.5)",
         EN_wentropy(whaten='sure', p=0.5))
 
     # outs: None
     # tags: entropy,sure
     EN_wentropy_sureent01 = (
         'EN_wentropy_sureent01',
+        "EN_wentropy(y,'sure',0.1)",
         EN_wentropy(whaten='sure', p=0.1))
 
     # outs: None
     # tags: entropy,sure
     EN_wentropy_sureent02 = (
         'EN_wentropy_sureent02',
+        "EN_wentropy(y,'sure',0.2)",
         EN_wentropy(whaten='sure', p=0.2))
 
     # outs: iqrq,maxq,meankickf,meanq,meanqover
@@ -11388,6 +11695,7 @@ class HCTSAOperations(object):
     # tags: outliers
     EX_MovingThreshold_1_002 = (
         'EX_MovingThreshold_1_002',
+        'EX_MovingThreshold(y,1,0.02)',
         EX_MovingThreshold(a=1, b=0.02))
 
     # outs: iqrq,maxq,meankickf,meanq,meanqover
@@ -11396,15 +11704,8 @@ class HCTSAOperations(object):
     # tags: outliers
     EX_MovingThreshold_01_01 = (
         'EX_MovingThreshold_01_01',
+        'EX_MovingThreshold(y,0.1,0.1)',
         EX_MovingThreshold(a=0.1, b=0.1))
-
-    # outs: iqrq,maxq,meankickf,meanq,meanqover
-    # outs: mediankickf,medianq,minq,pkick,stdkickf
-    # outs: stdq
-    # tags: outliers
-    EX_MovingThreshold_1_01 = (
-        'EX_MovingThreshold_1_01',
-        EX_MovingThreshold(a=1, b=0.1))
 
     # outs: iqrq,maxq,meankickf,meanq,meanqover
     # outs: mediankickf,medianq,minq,pkick,stdkickf
@@ -11412,7 +11713,17 @@ class HCTSAOperations(object):
     # tags: outliers
     EX_MovingThreshold_01_002 = (
         'EX_MovingThreshold_01_002',
+        'EX_MovingThreshold(y,0.1,0.02)',
         EX_MovingThreshold(a=0.1, b=0.02))
+
+    # outs: iqrq,maxq,meankickf,meanq,meanqover
+    # outs: mediankickf,medianq,minq,pkick,stdkickf
+    # outs: stdq
+    # tags: outliers
+    EX_MovingThreshold_1_01 = (
+        'EX_MovingThreshold_1_01',
+        'EX_MovingThreshold(y,1,0.1)',
+        EX_MovingThreshold(a=1, b=0.1))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11420,6 +11731,7 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LocalSimple_mean3 = (
         'FC_LocalSimple_mean3',
+        "FC_LocalSimple(y,'mean',3)",
         FC_LocalSimple(fmeth='mean', ltrain=3))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
@@ -11428,6 +11740,7 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LocalSimple_mean2 = (
         'FC_LocalSimple_mean2',
+        "FC_LocalSimple(y,'mean',2)",
         FC_LocalSimple(fmeth='mean', ltrain=2))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
@@ -11436,6 +11749,7 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LocalSimple_mean1 = (
         'FC_LocalSimple_mean1',
+        "FC_LocalSimple(y,'mean',1)",
         FC_LocalSimple(fmeth='mean', ltrain=1))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
@@ -11444,15 +11758,8 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LocalSimple_lfit4 = (
         'FC_LocalSimple_lfit4',
+        "FC_LocalSimple(y,'lfit',4)",
         FC_LocalSimple(fmeth='lfit', ltrain=4))
-
-    # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
-    # outs: rmserr,stderr,swm,sws,taures
-    # outs: tauresrat
-    # tags: forecasting
-    FC_LocalSimple_lfittau = (
-        'FC_LocalSimple_lfittau',
-        FC_LocalSimple(fmeth='lfit', ltrain='ac'))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11460,7 +11767,26 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LocalSimple_mean4 = (
         'FC_LocalSimple_mean4',
+        "FC_LocalSimple(y,'mean',4)",
         FC_LocalSimple(fmeth='mean', ltrain=4))
+
+    # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
+    # outs: rmserr,stderr,swm,sws,taures
+    # outs: tauresrat
+    # tags: forecasting
+    FC_LocalSimple_lfittau = (
+        'FC_LocalSimple_lfittau',
+        "FC_LocalSimple(y,'lfit','ac')",
+        FC_LocalSimple(fmeth='lfit', ltrain='ac'))
+
+    # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
+    # outs: rmserr,stderr,swm,sws,taures
+    # outs: tauresrat
+    # tags: forecasting
+    FC_LocalSimple_median5 = (
+        'FC_LocalSimple_median5',
+        "FC_LocalSimple(y,'median',5)",
+        FC_LocalSimple(fmeth='median', ltrain=5))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11468,6 +11794,7 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LocalSimple_lfit2 = (
         'FC_LocalSimple_lfit2',
+        "FC_LocalSimple(y,'lfit',2)",
         FC_LocalSimple(fmeth='lfit', ltrain=2))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
@@ -11476,6 +11803,7 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LocalSimple_lfit3 = (
         'FC_LocalSimple_lfit3',
+        "FC_LocalSimple(y,'lfit',3)",
         FC_LocalSimple(fmeth='lfit', ltrain=3))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
@@ -11484,6 +11812,7 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LocalSimple_lfit5 = (
         'FC_LocalSimple_lfit5',
+        "FC_LocalSimple(y,'lfit',5)",
         FC_LocalSimple(fmeth='lfit', ltrain=5))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
@@ -11492,6 +11821,7 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LocalSimple_meantau = (
         'FC_LocalSimple_meantau',
+        "FC_LocalSimple(y,'mean','ac')",
         FC_LocalSimple(fmeth='mean', ltrain='ac'))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
@@ -11500,15 +11830,8 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LocalSimple_median7 = (
         'FC_LocalSimple_median7',
+        "FC_LocalSimple(y,'median',7)",
         FC_LocalSimple(fmeth='median', ltrain=7))
-
-    # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
-    # outs: rmserr,stderr,swm,sws,taures
-    # outs: tauresrat
-    # tags: forecasting
-    FC_LocalSimple_median5 = (
-        'FC_LocalSimple_median5',
-        FC_LocalSimple(fmeth='median', ltrain=5))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11516,6 +11839,7 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LocalSimple_median3 = (
         'FC_LocalSimple_median3',
+        "FC_LocalSimple(y,'median',3)",
         FC_LocalSimple(fmeth='median', ltrain=3))
 
     # outs: ac1_chn,ac1_meansgndiff,ac1_stdn,ac2_chn,ac2_meansgndiff
@@ -11526,742 +11850,955 @@ class HCTSAOperations(object):
     # tags: forecasting
     FC_LoopLocalSimple_mean = (
         'FC_LoopLocalSimple_mean',
+        "FC_LoopLocalSimple(y,'mean')",
         FC_LoopLocalSimple(fmeth='mean'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_50_3_q = (
-        'FC_Surprise_dist_50_3_q',
-        FC_Surprise(whatinf='dist', memory=50, ng=3, cgmeth='quantile'))
+    # tags: information,symbolic
+    FC_Surprise_dist_100_4_q_500 = (
+        'FC_Surprise_dist_100_4_q_500',
+        "FC_Surprise(y,'dist',100,4,'quantile',500,'default')",
+        FC_Surprise(whatPrior='dist', memory=100, numGroups=4, cgmeth='quantile', numIters=500,
+                    randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_50_3_udq = (
-        'FC_Surprise_dist_50_3_udq',
-        FC_Surprise(whatinf='dist', memory=50, ng=3, cgmeth='updown'))
+    # tags: information,symbolic
+    FC_Surprise_T2_50_3_udq_500 = (
+        'FC_Surprise_T2_50_3_udq_500',
+        "FC_Surprise(y,'T2',50,3,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='T2', memory=50, numGroups=3, cgmeth='updown', numIters=500, randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_20_2_udq = (
-        'FC_Surprise_T1_20_2_udq',
-        FC_Surprise(whatinf='T1', memory=20, ng=2, cgmeth='updown'))
+    # tags: information,symbolic
+    FC_Surprise_T1_50_3_q_500 = (
+        'FC_Surprise_T1_50_3_q_500',
+        "FC_Surprise(y,'T1',50,3,'quantile',500,'default')",
+    
+                       FC_Surprise(whatPrior='T1', memory=50, numGroups=3, cgmeth='quantile', numIters=500, randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_10_tau_m2quad = (
-        'FC_Surprise_T1_10_tau_m2quad',
-        FC_Surprise(whatinf='T1', memory=10, ng='tau', cgmeth='embed2quadrants'))
+    # tags: information,symbolic
+    FC_Surprise_T1_20_2_q_500 = (
+        'FC_Surprise_T1_20_2_q_500',
+        "FC_Surprise(y,'T1',20,2,'quantile',500,'default')",
+    
+                       FC_Surprise(whatPrior='T1', memory=20, numGroups=2, cgmeth='quantile', numIters=500, randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_10_tau_m2quad = (
-        'FC_Surprise_dist_10_tau_m2quad',
-        FC_Surprise(whatinf='dist', memory=10, ng='tau', cgmeth='embed2quadrants'))
+    # tags: information,symbolic
+    FC_Surprise_T1_10_tau_m2quad_500 = (
+        'FC_Surprise_T1_10_tau_m2quad_500',
+        "FC_Surprise(y,'T1',10,'tau','embed2quadrants',500,'default')",
+        FC_Surprise(whatPrior='T1', memory=10, numGroups='tau', cgmeth='embed2quadrants', numIters=500,
+                    randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_5_1_m2quad = (
-        'FC_Surprise_dist_5_1_m2quad',
-        FC_Surprise(whatinf='dist', memory=5, ng=1, cgmeth='embed2quadrants'))
+    # tags: information,symbolic
+    FC_Surprise_T1_50_3_udq_500 = (
+        'FC_Surprise_T1_50_3_udq_500',
+        "FC_Surprise(y,'T1',50,3,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='T1', memory=50, numGroups=3, cgmeth='updown', numIters=500, randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_5_tau_m2quad = (
-        'FC_Surprise_dist_5_tau_m2quad',
-        FC_Surprise(whatinf='dist', memory=5, ng='tau', cgmeth='embed2quadrants'))
+    # tags: information,symbolic
+    FC_Surprise_T2_100_5_q_500 = (
+        'FC_Surprise_T2_100_5_q_500',
+        "FC_Surprise(y,'T2',100,5,'quantile',500,'default')",
+    
+                       FC_Surprise(whatPrior='T2', memory=100, numGroups=5, cgmeth='quantile', numIters=500, randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_20_tau_m2quad = (
-        'FC_Surprise_T1_20_tau_m2quad',
-        FC_Surprise(whatinf='T1', memory=20, ng='tau', cgmeth='embed2quadrants'))
+    # tags: information,symbolic
+    FC_Surprise_T1_20_2_udq_500 = (
+        'FC_Surprise_T1_20_2_udq_500',
+        "FC_Surprise(y,'T1',20,2,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='T1', memory=20, numGroups=2, cgmeth='updown', numIters=500, randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_100_5_q = (
-        'FC_Surprise_T1_100_5_q',
-        FC_Surprise(whatinf='T1', memory=100, ng=5, cgmeth='quantile'))
+    # tags: information,symbolic
+    FC_Surprise_T1_100_5_udq_500 = (
+        'FC_Surprise_T1_100_5_udq_500',
+        "FC_Surprise(y,'T1',100,5,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='T1', memory=100, numGroups=5, cgmeth='updown', numIters=500, randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_100_4_q = (
-        'FC_Surprise_dist_100_4_q',
-        FC_Surprise(whatinf='dist', memory=100, ng=4, cgmeth='quantile'))
+    # tags: information,symbolic
+    FC_Surprise_T1_20_tau_m2quad_500 = (
+        'FC_Surprise_T1_20_tau_m2quad_500',
+        "FC_Surprise(y,'T1',20,'tau','embed2quadrants',500,'default')",
+        FC_Surprise(whatPrior='T1', memory=20, numGroups='tau', cgmeth='embed2quadrants', numIters=500,
+                    randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_50_tau_m2quad = (
-        'FC_Surprise_T1_50_tau_m2quad',
-        FC_Surprise(whatinf='T1', memory=50, ng='tau', cgmeth='embed2quadrants'))
+    # tags: information,symbolic
+    FC_Surprise_dist_20_2_udq_500 = (
+        'FC_Surprise_dist_20_2_udq_500',
+        "FC_Surprise(y,'dist',20,2,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='dist', memory=20, numGroups=2, cgmeth='updown', numIters=500, randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_20_2_q = (
-        'FC_Surprise_T1_20_2_q',
-        FC_Surprise(whatinf='T1', memory=20, ng=2, cgmeth='quantile'))
+    # tags: information,symbolic
+    FC_Surprise_T2_20_2_udq_500 = (
+        'FC_Surprise_T2_20_2_udq_500',
+        "FC_Surprise(y,'T2',20,2,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='T2', memory=20, numGroups=2, cgmeth='updown', numIters=500, randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T2_100_5_udq = (
-        'FC_Surprise_T2_100_5_udq',
-        FC_Surprise(whatinf='T2', memory=100, ng=5, cgmeth='updown'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T2_100_4_q = (
-        'FC_Surprise_T2_100_4_q',
-        FC_Surprise(whatinf='T2', memory=100, ng=4, cgmeth='quantile'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_50_3_udq = (
-        'FC_Surprise_T1_50_3_udq',
-        FC_Surprise(whatinf='T1', memory=50, ng=3, cgmeth='updown'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T2_50_3_q = (
-        'FC_Surprise_T2_50_3_q',
-        FC_Surprise(whatinf='T2', memory=50, ng=3, cgmeth='quantile'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T2_100_tau_m2quad = (
-        'FC_Surprise_T2_100_tau_m2quad',
-        FC_Surprise(whatinf='T2', memory=100, ng='tau', cgmeth='embed2quadrants'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T2_100_4_udq = (
-        'FC_Surprise_T2_100_4_udq',
-        FC_Surprise(whatinf='T2', memory=100, ng=4, cgmeth='updown'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_50_3_q = (
-        'FC_Surprise_T1_50_3_q',
-        FC_Surprise(whatinf='T1', memory=50, ng=3, cgmeth='quantile'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_20_tau_m2quad = (
-        'FC_Surprise_dist_20_tau_m2quad',
-        FC_Surprise(whatinf='dist', memory=20, ng='tau', cgmeth='embed2quadrants'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_100_4_udq = (
-        'FC_Surprise_T1_100_4_udq',
-        FC_Surprise(whatinf='T1', memory=100, ng=4, cgmeth='updown'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T2_20_2_q = (
-        'FC_Surprise_T2_20_2_q',
-        FC_Surprise(whatinf='T2', memory=20, ng=2, cgmeth='quantile'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_100_4_udq = (
-        'FC_Surprise_dist_100_4_udq',
-        FC_Surprise(whatinf='dist', memory=100, ng=4, cgmeth='updown'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_100_5_udq = (
-        'FC_Surprise_T1_100_5_udq',
-        FC_Surprise(whatinf='T1', memory=100, ng=5, cgmeth='updown'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_5_2_q = (
-        'FC_Surprise_dist_5_2_q',
-        FC_Surprise(whatinf='dist', memory=5, ng=2, cgmeth='quantile'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_20_2_q = (
-        'FC_Surprise_dist_20_2_q',
-        FC_Surprise(whatinf='dist', memory=20, ng=2, cgmeth='quantile'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T2_20_2_udq = (
-        'FC_Surprise_T2_20_2_udq',
-        FC_Surprise(whatinf='T2', memory=20, ng=2, cgmeth='updown'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T2_100_5_q = (
-        'FC_Surprise_T2_100_5_q',
-        FC_Surprise(whatinf='T2', memory=100, ng=5, cgmeth='quantile'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_100_5_q = (
-        'FC_Surprise_dist_100_5_q',
-        FC_Surprise(whatinf='dist', memory=100, ng=5, cgmeth='quantile'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_5_2_udq = (
-        'FC_Surprise_dist_5_2_udq',
-        FC_Surprise(whatinf='dist', memory=5, ng=2, cgmeth='updown'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T2_50_3_udq = (
-        'FC_Surprise_T2_50_3_udq',
-        FC_Surprise(whatinf='T2', memory=50, ng=3, cgmeth='updown'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_20_2_udq = (
-        'FC_Surprise_dist_20_2_udq',
-        FC_Surprise(whatinf='dist', memory=20, ng=2, cgmeth='updown'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_dist_100_5_udq = (
-        'FC_Surprise_dist_100_5_udq',
-        FC_Surprise(whatinf='dist', memory=100, ng=5, cgmeth='updown'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T2_50_tau_m2quad = (
-        'FC_Surprise_T2_50_tau_m2quad',
-        FC_Surprise(whatinf='T2', memory=50, ng='tau', cgmeth='embed2quadrants'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_100_4_q = (
-        'FC_Surprise_T1_100_4_q',
-        FC_Surprise(whatinf='T1', memory=100, ng=4, cgmeth='quantile'))
+    # tags: information,symbolic
+    FC_Surprise_dist_10_tau_m2quad_500 = (
+        'FC_Surprise_dist_10_tau_m2quad_500',
+        "FC_Surprise(y,'dist',10,'tau','embed2quadrants',500,'default')",
+        FC_Surprise(whatPrior='dist', memory=10, numGroups='tau', cgmeth='embed2quadrants', numIters=500,
+                    randomSeed='default'))
 
     # outs: lq,max,mean,median,std
     # outs: tstat,uq
-    # tags: information,stochastic,symbolic
-    FC_Surprise_T1_10_1_m2quad = (
-        'FC_Surprise_T1_10_1_m2quad',
-        FC_Surprise(whatinf='T1', memory=10, ng=1, cgmeth='embed2quadrants'))
+    # tags: information,symbolic
+    FC_Surprise_T1_10_1_m2quad_500 = (
+        'FC_Surprise_T1_10_1_m2quad_500',
+        "FC_Surprise(y,'T1',10,1,'embed2quadrants',500,'default')",
+        FC_Surprise(whatPrior='T1', memory=10, numGroups=1, cgmeth='embed2quadrants', numIters=500,
+                    randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_T1_100_5_q_500 = (
+        'FC_Surprise_T1_100_5_q_500',
+        "FC_Surprise(y,'T1',100,5,'quantile',500,'default')",
+    
+                       FC_Surprise(whatPrior='T1', memory=100, numGroups=5, cgmeth='quantile', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_T1_100_4_udq_500 = (
+        'FC_Surprise_T1_100_4_udq_500',
+        "FC_Surprise(y,'T1',100,4,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='T1', memory=100, numGroups=4, cgmeth='updown', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_T1_100_4_q_500 = (
+        'FC_Surprise_T1_100_4_q_500',
+        "FC_Surprise(y,'T1',100,4,'quantile',500,'default')",
+    
+                       FC_Surprise(whatPrior='T1', memory=100, numGroups=4, cgmeth='quantile', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_T2_50_3_q_500 = (
+        'FC_Surprise_T2_50_3_q_500',
+        "FC_Surprise(y,'T2',50,3,'quantile',500,'default')",
+    
+                       FC_Surprise(whatPrior='T2', memory=50, numGroups=3, cgmeth='quantile', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_20_2_q_500 = (
+        'FC_Surprise_dist_20_2_q_500',
+        "FC_Surprise(y,'dist',20,2,'quantile',500,'default')",
+    
+                       FC_Surprise(whatPrior='dist', memory=20, numGroups=2, cgmeth='quantile', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_T2_20_2_q_500 = (
+        'FC_Surprise_T2_20_2_q_500',
+        "FC_Surprise(y,'T2',20,2,'quantile',500,'default')",
+    
+                       FC_Surprise(whatPrior='T2', memory=20, numGroups=2, cgmeth='quantile', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_20_tau_m2quad_500 = (
+        'FC_Surprise_dist_20_tau_m2quad_500',
+        "FC_Surprise(y,'dist',20,'tau','embed2quadrants',500,'default')",
+        FC_Surprise(whatPrior='dist', memory=20, numGroups='tau', cgmeth='embed2quadrants', numIters=500,
+                    randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_T2_100_5_udq_500 = (
+        'FC_Surprise_T2_100_5_udq_500',
+        "FC_Surprise(y,'T2',100,5,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='T2', memory=100, numGroups=5, cgmeth='updown', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_100_4_udq_500 = (
+        'FC_Surprise_dist_100_4_udq_500',
+        "FC_Surprise(y,'dist',100,4,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='dist', memory=100, numGroups=4, cgmeth='updown', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_T2_50_tau_m2quad_500 = (
+        'FC_Surprise_T2_50_tau_m2quad_500',
+        "FC_Surprise(y,'T2',50,'tau','embed2quadrants',500,'default')",
+        FC_Surprise(whatPrior='T2', memory=50, numGroups='tau', cgmeth='embed2quadrants', numIters=500,
+                    randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_5_2_udq_500 = (
+        'FC_Surprise_dist_5_2_udq_500',
+        "FC_Surprise(y,'dist',5,2,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='dist', memory=5, numGroups=2, cgmeth='updown', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_50_3_q_500 = (
+        'FC_Surprise_dist_50_3_q_500',
+        "FC_Surprise(y,'dist',50,3,'quantile',500,'default')",
+    
+                       FC_Surprise(whatPrior='dist', memory=50, numGroups=3, cgmeth='quantile', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_T1_50_tau_m2quad_500 = (
+        'FC_Surprise_T1_50_tau_m2quad_500',
+        "FC_Surprise(y,'T1',50,'tau','embed2quadrants',500,'default')",
+        FC_Surprise(whatPrior='T1', memory=50, numGroups='tau', cgmeth='embed2quadrants', numIters=500,
+                    randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_T2_100_4_udq_500 = (
+        'FC_Surprise_T2_100_4_udq_500',
+        "FC_Surprise(y,'T2',100,4,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='T2', memory=100, numGroups=4, cgmeth='updown', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_T2_100_4_q_500 = (
+        'FC_Surprise_T2_100_4_q_500',
+        "FC_Surprise(y,'T2',100,4,'quantile',500,'default')",
+    
+                       FC_Surprise(whatPrior='T2', memory=100, numGroups=4, cgmeth='quantile', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_100_5_q_500 = (
+        'FC_Surprise_dist_100_5_q_500',
+        "FC_Surprise(y,'dist',100,5,'quantile',500,'default')",
+        FC_Surprise(whatPrior='dist', memory=100, numGroups=5, cgmeth='quantile', numIters=500,
+                    randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_50_3_udq_500 = (
+        'FC_Surprise_dist_50_3_udq_500',
+        "FC_Surprise(y,'dist',50,3,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='dist', memory=50, numGroups=3, cgmeth='updown', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_T2_100_tau_m2quad_500 = (
+        'FC_Surprise_T2_100_tau_m2quad_500',
+        "FC_Surprise(y,'T2',100,'tau','embed2quadrants',500,'default')",
+        FC_Surprise(whatPrior='T2', memory=100, numGroups='tau', cgmeth='embed2quadrants', numIters=500,
+                    randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_5_1_m2quad_500 = (
+        'FC_Surprise_dist_5_1_m2quad_500',
+        "FC_Surprise(y,'dist',5,1,'embed2quadrants',500,'default')",
+        FC_Surprise(whatPrior='dist', memory=5, numGroups=1, cgmeth='embed2quadrants', numIters=500,
+                    randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_5_2_q_500 = (
+        'FC_Surprise_dist_5_2_q_500',
+        "FC_Surprise(y,'dist',5,2,'quantile',500,'default')",
+    
+                       FC_Surprise(whatPrior='dist', memory=5, numGroups=2, cgmeth='quantile', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_100_5_udq_500 = (
+        'FC_Surprise_dist_100_5_udq_500',
+        "FC_Surprise(y,'dist',100,5,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='dist', memory=100, numGroups=5, cgmeth='updown', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_5_tau_m2quad_500 = (
+        'FC_Surprise_dist_5_tau_m2quad_500',
+        "FC_Surprise(y,'dist',5,'tau','embed2quadrants',500,'default')",
+        FC_Surprise(whatPrior='dist', memory=5, numGroups='tau', cgmeth='embed2quadrants', numIters=500,
+                    randomSeed='default'))
+
+    # outs: None
+    # tags: chi2gof,distribution,hypothesistest,locdep,raw
+    HT_DistributionTest_chi2rayl50 = (
+        'HT_DistributionTest_chi2rayl50',
+        "HT_DistributionTest(x,'chi2gof','rayleigh',50)",
+        HT_DistributionTest(thetest='chi2gof', thedistn='rayleigh', nbins=50))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,raw
     HT_DistributionTest_ks_beta = (
         'HT_DistributionTest_ks_beta',
+        "HT_DistributionTest(x,'ks','beta')",
         HT_DistributionTest(thetest='ks', thedistn='beta'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2rayl100 = (
         'HT_DistributionTest_chi2rayl100',
+        "HT_DistributionTest(x,'chi2gof','rayleigh',100)",
         HT_DistributionTest(thetest='chi2gof', thedistn='rayleigh', nbins=100))
 
     # outs: None
     # tags: distribution,hypothesistest,lillie,raw
     HT_DistributionTest_lillie_norm = (
         'HT_DistributionTest_lillie_norm',
+        "HT_DistributionTest(x,'lillie','norm')",
         HT_DistributionTest(thetest='lillie', thedistn='norm'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2logn5 = (
         'HT_DistributionTest_chi2logn5',
+        "HT_DistributionTest(x,'chi2gof','logn',5)",
         HT_DistributionTest(thetest='chi2gof', thedistn='logn', nbins=5))
-
-    # outs: None
-    # tags: chi2gof,distribution,hypothesistest,locdep,raw
-    HT_DistributionTest_chi2rayl50 = (
-        'HT_DistributionTest_chi2rayl50',
-        HT_DistributionTest(thetest='chi2gof', thedistn='rayleigh', nbins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta25 = (
         'HT_DistributionTest_chi2beta25',
+        "HT_DistributionTest(x,'chi2gof','beta',25)",
         HT_DistributionTest(thetest='chi2gof', thedistn='beta', nbins=25))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2wbl100 = (
         'HT_DistributionTest_chi2wbl100',
+        "HT_DistributionTest(x,'chi2gof','wbl',100)",
         HT_DistributionTest(thetest='chi2gof', thedistn='wbl', nbins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2rayl25 = (
         'HT_DistributionTest_chi2rayl25',
+        "HT_DistributionTest(x,'chi2gof','rayleigh',25)",
         HT_DistributionTest(thetest='chi2gof', thedistn='rayleigh', nbins=25))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,locdep,raw
     HT_DistributionTest_ks_logn = (
         'HT_DistributionTest_ks_logn',
+        "HT_DistributionTest(x,'ks','logn')",
         HT_DistributionTest(thetest='ks', thedistn='logn'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2exp10 = (
         'HT_DistributionTest_chi2exp10',
+        "HT_DistributionTest(x,'chi2gof','exp',10)",
         HT_DistributionTest(thetest='chi2gof', thedistn='exp', nbins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2uni100 = (
         'HT_DistributionTest_chi2uni100',
+        "HT_DistributionTest(x,'chi2gof','uni',100)",
         HT_DistributionTest(thetest='chi2gof', thedistn='uni', nbins=100))
 
     # outs: None
-    # tags: chi2gof,distribution,hypothesistest,raw
-    HT_DistributionTest_chi2norm50 = (
-        'HT_DistributionTest_chi2norm50',
-        HT_DistributionTest(thetest='chi2gof', thedistn='norm', nbins=50))
+    # tags: chi2gof,distribution,hypothesistest,locdep,raw
+    HT_DistributionTest_chi2wbl5 = (
+        'HT_DistributionTest_chi2wbl5',
+        "HT_DistributionTest(x,'chi2gof','wbl',5)",
+        HT_DistributionTest(thetest='chi2gof', thedistn='wbl', nbins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2logn50 = (
         'HT_DistributionTest_chi2logn50',
+        "HT_DistributionTest(x,'chi2gof','logn',50)",
         HT_DistributionTest(thetest='chi2gof', thedistn='logn', nbins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta10 = (
         'HT_DistributionTest_chi2beta10',
+        "HT_DistributionTest(x,'chi2gof','beta',10)",
         HT_DistributionTest(thetest='chi2gof', thedistn='beta', nbins=10))
+
+    # outs: None
+    # tags: chi2gof,distribution,hypothesistest,raw
+    HT_DistributionTest_chi2uni50 = (
+        'HT_DistributionTest_chi2uni50',
+        "HT_DistributionTest(x,'chi2gof','uni',50)",
+        HT_DistributionTest(thetest='chi2gof', thedistn='uni', nbins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2gam10 = (
         'HT_DistributionTest_chi2gam10',
+        "HT_DistributionTest(x,'chi2gof','gamma',10)",
         HT_DistributionTest(thetest='chi2gof', thedistn='gamma', nbins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2ev50 = (
         'HT_DistributionTest_chi2ev50',
+        "HT_DistributionTest(x,'chi2gof','ev',50)",
         HT_DistributionTest(thetest='chi2gof', thedistn='ev', nbins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2wbl25 = (
         'HT_DistributionTest_chi2wbl25',
+        "HT_DistributionTest(x,'chi2gof','wbl',25)",
         HT_DistributionTest(thetest='chi2gof', thedistn='wbl', nbins=25))
-
-    # outs: None
-    # tags: chi2gof,distribution,hypothesistest,locdep,raw
-    HT_DistributionTest_chi2wbl5 = (
-        'HT_DistributionTest_chi2wbl5',
-        HT_DistributionTest(thetest='chi2gof', thedistn='wbl', nbins=5))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,raw
     HT_DistributionTest_ks_norm = (
         'HT_DistributionTest_ks_norm',
+        "HT_DistributionTest(x,'ks','norm')",
         HT_DistributionTest(thetest='ks', thedistn='norm'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta5 = (
         'HT_DistributionTest_chi2beta5',
+        "HT_DistributionTest(x,'chi2gof','beta',5)",
         HT_DistributionTest(thetest='chi2gof', thedistn='beta', nbins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2logn100 = (
         'HT_DistributionTest_chi2logn100',
+        "HT_DistributionTest(x,'chi2gof','logn',100)",
         HT_DistributionTest(thetest='chi2gof', thedistn='logn', nbins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2uni10 = (
         'HT_DistributionTest_chi2uni10',
+        "HT_DistributionTest(x,'chi2gof','uni',10)",
         HT_DistributionTest(thetest='chi2gof', thedistn='uni', nbins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2gam25 = (
         'HT_DistributionTest_chi2gam25',
+        "HT_DistributionTest(x,'chi2gof','gamma',25)",
         HT_DistributionTest(thetest='chi2gof', thedistn='gamma', nbins=25))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,raw
     HT_DistributionTest_ks_ev = (
         'HT_DistributionTest_ks_ev',
+        "HT_DistributionTest(x,'ks','ev')",
         HT_DistributionTest(thetest='ks', thedistn='ev'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2ev5 = (
         'HT_DistributionTest_chi2ev5',
+        "HT_DistributionTest(x,'chi2gof','ev',5)",
         HT_DistributionTest(thetest='chi2gof', thedistn='ev', nbins=5))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,raw
     HT_DistributionTest_ks_uni = (
         'HT_DistributionTest_ks_uni',
+        "HT_DistributionTest(x,'ks','uni')",
         HT_DistributionTest(thetest='ks', thedistn='uni'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2gam100 = (
         'HT_DistributionTest_chi2gam100',
+        "HT_DistributionTest(x,'chi2gof','gamma',100)",
         HT_DistributionTest(thetest='chi2gof', thedistn='gamma', nbins=100))
 
     # outs: None
-    # tags: chi2gof,distribution,hypothesistest,locdep,raw
-    HT_DistributionTest_chi2logn10 = (
-        'HT_DistributionTest_chi2logn10',
-        HT_DistributionTest(thetest='chi2gof', thedistn='logn', nbins=10))
+    # tags: chi2gof,distribution,hypothesistest,raw
+    HT_DistributionTest_chi2norm50 = (
+        'HT_DistributionTest_chi2norm50',
+        "HT_DistributionTest(x,'chi2gof','norm',50)",
+        HT_DistributionTest(thetest='chi2gof', thedistn='norm', nbins=50))
+
+    # outs: None
+    # tags: distribution,hypothesistest,ks,locdep,raw
+    HT_DistributionTest_ks_wbl = (
+        'HT_DistributionTest_ks_wbl',
+        "HT_DistributionTest(x,'ks','wbl')",
+        HT_DistributionTest(thetest='ks', thedistn='wbl'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2uni25 = (
         'HT_DistributionTest_chi2uni25',
+        "HT_DistributionTest(x,'chi2gof','uni',25)",
         HT_DistributionTest(thetest='chi2gof', thedistn='uni', nbins=25))
+
+    # outs: None
+    # tags: chi2gof,distribution,hypothesistest,locdep,raw
+    HT_DistributionTest_chi2exp25 = (
+        'HT_DistributionTest_chi2exp25',
+        "HT_DistributionTest(x,'chi2gof','exp',25)",
+        HT_DistributionTest(thetest='chi2gof', thedistn='exp', nbins=25))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2rayl5 = (
         'HT_DistributionTest_chi2rayl5',
+        "HT_DistributionTest(x,'chi2gof','rayleigh',5)",
         HT_DistributionTest(thetest='chi2gof', thedistn='rayleigh', nbins=5))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,locdep,raw
     HT_DistributionTest_ks_gam = (
         'HT_DistributionTest_ks_gam',
+        "HT_DistributionTest(x,'ks','gamma')",
         HT_DistributionTest(thetest='ks', thedistn='gamma'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2ev25 = (
         'HT_DistributionTest_chi2ev25',
+        "HT_DistributionTest(x,'chi2gof','ev',25)",
         HT_DistributionTest(thetest='chi2gof', thedistn='ev', nbins=25))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2wbl10 = (
         'HT_DistributionTest_chi2wbl10',
+        "HT_DistributionTest(x,'chi2gof','wbl',10)",
         HT_DistributionTest(thetest='chi2gof', thedistn='wbl', nbins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2gam5 = (
         'HT_DistributionTest_chi2gam5',
+        "HT_DistributionTest(x,'chi2gof','gamma',5)",
         HT_DistributionTest(thetest='chi2gof', thedistn='gamma', nbins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta50 = (
         'HT_DistributionTest_chi2beta50',
+        "HT_DistributionTest(x,'chi2gof','beta',50)",
         HT_DistributionTest(thetest='chi2gof', thedistn='beta', nbins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2rayl10 = (
         'HT_DistributionTest_chi2rayl10',
+        "HT_DistributionTest(x,'chi2gof','rayleigh',10)",
         HT_DistributionTest(thetest='chi2gof', thedistn='rayleigh', nbins=10))
 
     # outs: None
     # tags: distribution,hypothesistest,lillie,raw
     HT_DistributionTest_lillie_ev = (
         'HT_DistributionTest_lillie_ev',
+        "HT_DistributionTest(x,'lillie','ev')",
         HT_DistributionTest(thetest='lillie', thedistn='ev'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2exp100 = (
         'HT_DistributionTest_chi2exp100',
+        "HT_DistributionTest(x,'chi2gof','exp',100)",
         HT_DistributionTest(thetest='chi2gof', thedistn='exp', nbins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2norm10 = (
         'HT_DistributionTest_chi2norm10',
+        "HT_DistributionTest(x,'chi2gof','norm',10)",
         HT_DistributionTest(thetest='chi2gof', thedistn='norm', nbins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2exp50 = (
         'HT_DistributionTest_chi2exp50',
+        "HT_DistributionTest(x,'chi2gof','exp',50)",
         HT_DistributionTest(thetest='chi2gof', thedistn='exp', nbins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2norm5 = (
         'HT_DistributionTest_chi2norm5',
+        "HT_DistributionTest(x,'chi2gof','norm',5)",
         HT_DistributionTest(thetest='chi2gof', thedistn='norm', nbins=5))
-
-    # outs: None
-    # tags: chi2gof,distribution,hypothesistest,locdep,raw
-    HT_DistributionTest_chi2exp25 = (
-        'HT_DistributionTest_chi2exp25',
-        HT_DistributionTest(thetest='chi2gof', thedistn='exp', nbins=25))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2wbl50 = (
         'HT_DistributionTest_chi2wbl50',
+        "HT_DistributionTest(x,'chi2gof','wbl',50)",
         HT_DistributionTest(thetest='chi2gof', thedistn='wbl', nbins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2logn25 = (
         'HT_DistributionTest_chi2logn25',
+        "HT_DistributionTest(x,'chi2gof','logn',25)",
         HT_DistributionTest(thetest='chi2gof', thedistn='logn', nbins=25))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2ev10 = (
         'HT_DistributionTest_chi2ev10',
+        "HT_DistributionTest(x,'chi2gof','ev',10)",
         HT_DistributionTest(thetest='chi2gof', thedistn='ev', nbins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2gam50 = (
         'HT_DistributionTest_chi2gam50',
+        "HT_DistributionTest(x,'chi2gof','gamma',50)",
         HT_DistributionTest(thetest='chi2gof', thedistn='gamma', nbins=50))
-
-    # outs: None
-    # tags: chi2gof,distribution,hypothesistest,raw
-    HT_DistributionTest_chi2uni50 = (
-        'HT_DistributionTest_chi2uni50',
-        HT_DistributionTest(thetest='chi2gof', thedistn='uni', nbins=50))
-
-    # outs: None
-    # tags: distribution,hypothesistest,ks,locdep,raw
-    HT_DistributionTest_ks_wbl = (
-        'HT_DistributionTest_ks_wbl',
-        HT_DistributionTest(thetest='ks', thedistn='wbl'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2exp5 = (
         'HT_DistributionTest_chi2exp5',
+        "HT_DistributionTest(x,'chi2gof','exp',5)",
         HT_DistributionTest(thetest='chi2gof', thedistn='exp', nbins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta100 = (
         'HT_DistributionTest_chi2beta100',
+        "HT_DistributionTest(x,'chi2gof','beta',100)",
         HT_DistributionTest(thetest='chi2gof', thedistn='beta', nbins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2norm25 = (
         'HT_DistributionTest_chi2norm25',
+        "HT_DistributionTest(x,'chi2gof','norm',25)",
         HT_DistributionTest(thetest='chi2gof', thedistn='norm', nbins=25))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,locdep,raw
     HT_DistributionTest_ks_rayl = (
         'HT_DistributionTest_ks_rayl',
+        "HT_DistributionTest(x,'ks','rayleigh')",
         HT_DistributionTest(thetest='ks', thedistn='rayleigh'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2ev100 = (
         'HT_DistributionTest_chi2ev100',
+        "HT_DistributionTest(x,'chi2gof','ev',100)",
         HT_DistributionTest(thetest='chi2gof', thedistn='ev', nbins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2uni5 = (
         'HT_DistributionTest_chi2uni5',
+        "HT_DistributionTest(x,'chi2gof','uni',5)",
         HT_DistributionTest(thetest='chi2gof', thedistn='uni', nbins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2norm100 = (
         'HT_DistributionTest_chi2norm100',
+        "HT_DistributionTest(x,'chi2gof','norm',100)",
         HT_DistributionTest(thetest='chi2gof', thedistn='norm', nbins=100))
+
+    # outs: None
+    # tags: chi2gof,distribution,hypothesistest,locdep,raw
+    HT_DistributionTest_chi2logn10 = (
+        'HT_DistributionTest_chi2logn10',
+        "HT_DistributionTest(x,'chi2gof','logn',10)",
+        HT_DistributionTest(thetest='chi2gof', thedistn='logn', nbins=10))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,locdep,raw
     HT_DistributionTest_ks_exp = (
         'HT_DistributionTest_ks_exp',
+        "HT_DistributionTest(x,'ks','exp')",
         HT_DistributionTest(thetest='ks', thedistn='exp'))
 
     # outs: None
     # tags: distribution,hypothesistest,lillie,locdep,raw
     HT_DistributionTest_lillie_exp = (
         'HT_DistributionTest_lillie_exp',
+        "HT_DistributionTest(x,'lillie','exp')",
         HT_DistributionTest(thetest='lillie', thedistn='exp'))
 
     # outs: None
     # tags: hypothesistest,randomness,raw,runstest
     HT_HypothesisTest_runstestraw = (
         'HT_HypothesisTest_runstestraw',
+        "HT_HypothesisTest(x,'runstest')",
         HT_HypothesisTest(theTest='runstest'))
 
     # outs: None
     # tags: hypothesistest,signtest
     HT_HypothesisTest_signtest = (
         'HT_HypothesisTest_signtest',
+        "HT_HypothesisTest(y,'signtest')",
         HT_HypothesisTest(theTest='signtest'))
 
     # outs: None
     # tags: hypothesistest,ztest
     HT_HypothesisTest_ztest = (
         'HT_HypothesisTest_ztest',
+        "HT_HypothesisTest(y,'ztest')",
         HT_HypothesisTest(theTest='ztest'))
 
     # outs: None
     # tags: hypothesistest,jbtest,raw
     HT_HypothesisTest_jbtest = (
         'HT_HypothesisTest_jbtest',
+        "HT_HypothesisTest(x,'jbtest')",
         HT_HypothesisTest(theTest='jbtest'))
 
     # outs: None
     # tags: hypothesistest,randomness,runstest
     HT_HypothesisTest_runstest = (
         'HT_HypothesisTest_runstest',
+        "HT_HypothesisTest(y,'runstest')",
         HT_HypothesisTest(theTest='runstest'))
 
     # outs: None
     # tags: econometricstoolbox,hypothesistest,lbq,randomness
     HT_HypothesisTest_lbqtest = (
         'HT_HypothesisTest_lbqtest',
+        "HT_HypothesisTest(y,'lbq')",
         HT_HypothesisTest(theTest='lbq'))
 
     # outs: None
     # tags: hypothesistest,signrank
     HT_HypothesisTest_signrank = (
         'HT_HypothesisTest_signrank',
+        "HT_HypothesisTest(y,'signrank')",
         HT_HypothesisTest(theTest='signrank'))
 
     # outs: None
     # tags: econometricstoolbox,hypothesistest,lbq,randomness,raw
     HT_HypothesisTest_lbqtestraw = (
         'HT_HypothesisTest_lbqtestraw',
+        "HT_HypothesisTest(x,'lbq')",
         HT_HypothesisTest(theTest='lbq'))
+
+    # outs: ami1,ami10,ami11,ami12,ami13
+    # outs: ami14,ami15,ami16,ami17,ami18
+    # outs: ami19,ami2,ami20,ami3,ami4
+    # outs: ami5,ami6,ami7,ami8,ami9
+    # outs: amiac1,fmmi,mami,modeperiodmax,modeperiodmin
+    # outs: pcrossmean,pcrossmedian,pcrossq10,pcrossq90,pextrema
+    # outs: pmaxima,pminima,pmodeperiodmax,pmodeperiodmin,stdami
+    # tags: AMI,correlation,information
+    IN_AutoMutualInfoStats_diff_20_gaussian = (
+        'IN_AutoMutualInfoStats_diff_20_gaussian',
+        "IN_AutoMutualInfoStats(diff(y),20,'gaussian')",
+        IN_AutoMutualInfoStats(maxTau=20, estMethod='gaussian'))
+
+    # outs: ami1,ami10,ami11,ami12,ami13
+    # outs: ami14,ami15,ami16,ami17,ami18
+    # outs: ami19,ami2,ami20,ami21,ami22
+    # outs: ami23,ami24,ami25,ami26,ami27
+    # outs: ami28,ami29,ami3,ami30,ami31
+    # outs: ami32,ami33,ami34,ami35,ami36
+    # outs: ami37,ami38,ami39,ami4,ami40
+    # outs: ami5,ami6,ami7,ami8,ami9
+    # outs: amiac1,fmmi,mami,modeperiodmax,modeperiodmin
+    # outs: pcrossmean,pcrossmedian,pcrossq10,pcrossq90,pextrema
+    # outs: pmaxima,pminima,pmodeperiodmax,pmodeperiodmin,stdami
+    # tags: AMI,correlation,information
+    IN_AutoMutualInfoStats_40_kraskov1 = (
+        'IN_AutoMutualInfoStats_40_kraskov1',
+        "IN_AutoMutualInfoStats(y,40,'kraskov1')",
+        IN_AutoMutualInfoStats(maxTau=40, estMethod='kraskov1'))
+
+    # outs: ami1,ami10,ami11,ami12,ami13
+    # outs: ami14,ami15,ami16,ami17,ami18
+    # outs: ami19,ami2,ami20,ami21,ami22
+    # outs: ami23,ami24,ami25,ami26,ami27
+    # outs: ami28,ami29,ami3,ami30,ami31
+    # outs: ami32,ami33,ami34,ami35,ami36
+    # outs: ami37,ami38,ami39,ami4,ami40
+    # outs: ami5,ami6,ami7,ami8,ami9
+    # outs: amiac1,fmmi,mami,modeperiodmax,modeperiodmin
+    # outs: pcrossmean,pcrossmedian,pcrossq10,pcrossq90,pextrema
+    # outs: pmaxima,pminima,pmodeperiodmax,pmodeperiodmin,stdami
+    # tags: AMI,correlation,information
+    IN_AutoMutualInfoStats_40_gaussian = (
+        'IN_AutoMutualInfoStats_40_gaussian',
+        "IN_AutoMutualInfoStats(y,40,'gaussian')",
+        IN_AutoMutualInfoStats(maxTau=40, estMethod='gaussian'))
+
+    # outs: ami1,ami10,ami11,ami12,ami13
+    # outs: ami14,ami15,ami16,ami17,ami18
+    # outs: ami19,ami2,ami20,ami3,ami4
+    # outs: ami5,ami6,ami7,ami8,ami9
+    # outs: amiac1,fmmi,mami,modeperiodmax,modeperiodmin
+    # outs: pcrossmean,pcrossmedian,pcrossq10,pcrossq90,pextrema
+    # outs: pmaxima,pminima,pmodeperiodmax,pmodeperiodmin,stdami
+    # tags: AMI,correlation,information
+    IN_AutoMutualInfoStats_diff_20_kraskov1 = (
+        'IN_AutoMutualInfoStats_diff_20_kraskov1',
+        "IN_AutoMutualInfoStats(diff(y),20,'kraskov1')",
+        IN_AutoMutualInfoStats(maxTau=20, estMethod='kraskov1'))
 
     # outs: SD1,SD2,hf,lf,lfhf
     # outs: pnn10,pnn20,pnn30,pnn40,pnn5
     # outs: tri,vlf
-    # tags: maxlittle,medical
+    # tags: medical
     MD_hrv_classic = (
         'MD_hrv_classic',
+        'MD_hrv_classic(y)',
         MD_hrv_classic())
 
     # outs: pnn10,pnn100,pnn20,pnn30,pnn40
     # outs: pnn5,pnn50,pnn60,pnn70,pnn80
     # outs: pnn90
-    # tags: maxlittle,medical,raw,spreaddep
+    # tags: medical,raw,spreaddep
     MD_pNN_raw = (
         'MD_pNN_raw',
+        'MD_pNN(x)',
         MD_pNN())
 
     # outs: None
-    # tags: maxlittle,medical,symbolic
+    # tags: medical,symbolic
     MD_polvar_01_3 = (
         'MD_polvar_01_3',
+        'MD_polvar(y,0.1,3)',
         MD_polvar(d=0.1, D=3))
 
     # outs: None
-    # tags: maxlittle,medical,symbolic
+    # tags: medical,symbolic
     MD_polvar_1_6 = (
         'MD_polvar_1_6',
+        'MD_polvar(y,1,6)',
         MD_polvar(d=1, D=6))
 
     # outs: None
-    # tags: maxlittle,medical,symbolic
+    # tags: medical,symbolic
     MD_polvar_1_4 = (
         'MD_polvar_1_4',
+        'MD_polvar(y,1,4)',
         MD_polvar(d=1, D=4))
 
     # outs: None
-    # tags: maxlittle,medical,symbolic
+    # tags: medical,symbolic
     MD_polvar_1_5 = (
         'MD_polvar_1_5',
+        'MD_polvar(y,1,5)',
         MD_polvar(d=1, D=5))
 
     # outs: None
-    # tags: maxlittle,medical,symbolic
+    # tags: medical,symbolic
     MD_polvar_1_3 = (
         'MD_polvar_1_3',
+        'MD_polvar(y,1,3)',
         MD_polvar(d=1, D=3))
 
     # outs: None
-    # tags: maxlittle,medical,symbolic
-    MD_polvar_05_5 = (
-        'MD_polvar_05_5',
-        MD_polvar(d=0.5, D=5))
-
-    # outs: None
-    # tags: maxlittle,medical,symbolic
-    MD_polvar_05_3 = (
-        'MD_polvar_05_3',
-        MD_polvar(d=0.5, D=3))
-
-    # outs: None
-    # tags: maxlittle,medical,symbolic
-    MD_polvar_01_6 = (
-        'MD_polvar_01_6',
-        MD_polvar(d=0.1, D=6))
-
-    # outs: None
-    # tags: maxlittle,medical,symbolic
-    MD_polvar_01_5 = (
-        'MD_polvar_01_5',
-        MD_polvar(d=0.1, D=5))
-
-    # outs: None
-    # tags: maxlittle,medical,symbolic
-    MD_polvar_01_4 = (
-        'MD_polvar_01_4',
-        MD_polvar(d=0.1, D=4))
-
-    # outs: None
-    # tags: maxlittle,medical,symbolic
+    # tags: medical,symbolic
     MD_polvar_05_6 = (
         'MD_polvar_05_6',
+        'MD_polvar(y,0.5,6)',
         MD_polvar(d=0.5, D=6))
 
     # outs: None
-    # tags: maxlittle,medical,symbolic
+    # tags: medical,symbolic
+    MD_polvar_05_5 = (
+        'MD_polvar_05_5',
+        'MD_polvar(y,0.5,5)',
+        MD_polvar(d=0.5, D=5))
+
+    # outs: None
+    # tags: medical,symbolic
     MD_polvar_05_4 = (
         'MD_polvar_05_4',
+        'MD_polvar(y,0.5,4)',
         MD_polvar(d=0.5, D=4))
 
+    # outs: None
+    # tags: medical,symbolic
+    MD_polvar_05_3 = (
+        'MD_polvar_05_3',
+        'MD_polvar(y,0.5,3)',
+        MD_polvar(d=0.5, D=3))
+
+    # outs: None
+    # tags: medical,symbolic
+    MD_polvar_01_6 = (
+        'MD_polvar_01_6',
+        'MD_polvar(y,0.1,6)',
+        MD_polvar(d=0.1, D=6))
+
+    # outs: None
+    # tags: medical,symbolic
+    MD_polvar_01_5 = (
+        'MD_polvar_01_5',
+        'MD_polvar(y,0.1,5)',
+        MD_polvar(d=0.1, D=5))
+
+    # outs: None
+    # tags: medical,symbolic
+    MD_polvar_01_4 = (
+        'MD_polvar_01_4',
+        'MD_polvar(y,0.1,4)',
+        MD_polvar(d=0.1, D=4))
+
     # outs: SD1,SD2,tri10,tri20,trisqrt
-    # tags: maxlittle,medical,raw,spreaddep
+    # tags: medical,raw,spreaddep
     MD_rawHRVmeas = (
         'MD_rawHRVmeas',
+        'MD_rawHRVmeas(x)',
         MD_rawHRVmeas())
 
     # outs: aic_min,mean_all_aics,meanstd_aicsp,meanstd_aicsq,p_aic_opt
@@ -12269,6 +12806,7 @@ class HCTSAOperations(object):
     # tags: arma,model,systemidentificationtoolbox
     MF_ARMA_orders_1_6_1_4 = (
         'MF_ARMA_orders_1_6_1_4',
+        'MF_ARMA_orders(y,1:6,1:4)',
         MF_ARMA_orders(pr=MatlabSequence('1:6'), qr=MatlabSequence('1:4')))
 
     # outs: AC1,AC2,a2,a3,a4
@@ -12276,6 +12814,7 @@ class HCTSAOperations(object):
     # tags: AR,fit,gof,model,var
     MF_AR_arcov_3 = (
         'MF_AR_arcov_3',
+        'MF_AR_arcov(y,3)',
         MF_AR_arcov(p=3))
 
     # outs: AC1,AC2,a2,a3,e
@@ -12283,6 +12822,7 @@ class HCTSAOperations(object):
     # tags: AR,fit,gof,model,var
     MF_AR_arcov_2 = (
         'MF_AR_arcov_2',
+        'MF_AR_arcov(y,2)',
         MF_AR_arcov(p=2))
 
     # outs: AC1,AC2,a2,mu,rms
@@ -12290,6 +12830,7 @@ class HCTSAOperations(object):
     # tags: AR,fit,gof,model
     MF_AR_arcov_1 = (
         'MF_AR_arcov_1',
+        'MF_AR_arcov(y,1)',
         MF_AR_arcov(p=1))
 
     # outs: AC1,AC2,a2,a3,a4
@@ -12298,6 +12839,7 @@ class HCTSAOperations(object):
     # tags: AR,fit,gof,model,var
     MF_AR_arcov_5 = (
         'MF_AR_arcov_5',
+        'MF_AR_arcov(y,5)',
         MF_AR_arcov(p=5))
 
     # outs: AC1,AC2,a2,a3,a4
@@ -12305,16 +12847,8 @@ class HCTSAOperations(object):
     # tags: AR,fit,gof,model,var
     MF_AR_arcov_4 = (
         'MF_AR_arcov_4',
+        'MF_AR_arcov(y,4)',
         MF_AR_arcov(p=4))
-
-    # outs: aic_n,best_n,bestaic,bestmdl,firstonmin
-    # outs: maxdiff,maxonmed,maxv,mdl_n,meandiff
-    # outs: meanv,meddiff,medianv,minstdfromi,minv
-    # outs: stddiff,where01max,whereen4
-    # tags: ar,model,systemidentificationtoolbox
-    MF_CompareAR_1_10_all = (
-        'MF_CompareAR_1_10_all',
-        MF_CompareAR(orders=MatlabSequence('1:10'), howtotest='all'))
 
     # outs: aic_n,best_n,bestaic,bestmdl,firstonmin
     # outs: maxdiff,maxonmed,maxv,mdl_n,meandiff
@@ -12323,7 +12857,18 @@ class HCTSAOperations(object):
     # tags: ar,model,systemidentificationtoolbox
     MF_CompareAR_1_10_05 = (
         'MF_CompareAR_1_10_05',
+        'MF_CompareAR(y,1:10,0.5)',
         MF_CompareAR(orders=MatlabSequence('1:10'), howtotest=0.5))
+
+    # outs: aic_n,best_n,bestaic,bestmdl,firstonmin
+    # outs: maxdiff,maxonmed,maxv,mdl_n,meandiff
+    # outs: meanv,meddiff,medianv,minstdfromi,minv
+    # outs: stddiff,where01max,whereen4
+    # tags: ar,model,systemidentificationtoolbox
+    MF_CompareAR_1_10_all = (
+        'MF_CompareAR_1_10_all',
+        "MF_CompareAR(y,1:10,'all')",
+        MF_CompareAR(orders=MatlabSequence('1:10'), howtotest='all'))
 
     # outs: ac1s_iqr,ac1s_mean,ac1s_median,ac1s_std,mabserr_iqr
     # outs: mabserr_mean,mabserr_median,mabserr_std,meandiffs_iqr,meandiffs_mean
@@ -12332,7 +12877,8 @@ class HCTSAOperations(object):
     # tags: ar,arfit,model,prediction,systemidentificationtoolbox
     MF_CompareTestSets_y_ar_best_uniform_25_01_1 = (
         'MF_CompareTestSets_y_ar_best_uniform_25_01_1',
-        MF_CompareTestSets(model='ar', ordd='best', howtosubset='uniform', samplep=(25.0, 0.10000000000000001),
+        "MF_CompareTestSets(y,'ar','best','uniform',[25,0.1],1)",
+        MF_CompareTestSets(theModel='ar', ordd='best', subsetHow='uniform', samplep=(25.0, 0.10000000000000001),
                            steps=1))
 
     # outs: ac1s_iqr,ac1s_mean,ac1s_median,ac1s_std,mabserr_iqr
@@ -12342,17 +12888,8 @@ class HCTSAOperations(object):
     # tags: model,prediction,statespace,systemidentificationtoolbox
     MF_CompareTestSets_y_ss_2_uniform_25_01_1 = (
         'MF_CompareTestSets_y_ss_2_uniform_25_01_1',
-        MF_CompareTestSets(model='ss', ordd=2, howtosubset='uniform', samplep=(25.0, 0.10000000000000001),
-                           steps=1))
-
-    # outs: ac1s_iqr,ac1s_mean,ac1s_median,ac1s_std,mabserr_iqr
-    # outs: mabserr_mean,mabserr_median,mabserr_std,meandiffs_iqr,meandiffs_mean
-    # outs: meandiffs_median,meandiffs_std,rmserr_iqr,rmserr_mean,rmserr_median
-    # outs: rmserr_std,stdrats_iqr,stdrats_mean,stdrats_median,stdrats_std
-    # tags: ar,model,prediction,stochastic,systemidentificationtoolbox
-    MF_CompareTestSets_y_ar_4_rand_25_01_1 = (
-        'MF_CompareTestSets_y_ar_4_rand_25_01_1',
-        MF_CompareTestSets(model='ar', ordd=4, howtosubset='rand', samplep=(25.0, 0.10000000000000001),
+        "MF_CompareTestSets(y,'ss',2,'uniform',[25,0.1],1)",
+        MF_CompareTestSets(theModel='ss', ordd=2, subsetHow='uniform', samplep=(25.0, 0.10000000000000001),
                            steps=1))
 
     # outs: ac1s_iqr,ac1s_mean,ac1s_median,ac1s_std,mabserr_iqr
@@ -12362,8 +12899,20 @@ class HCTSAOperations(object):
     # tags: model,prediction,statespace,systemidentificationtoolbox
     MF_CompareTestSets_y_ss_best_uniform_25_01_1 = (
         'MF_CompareTestSets_y_ss_best_uniform_25_01_1',
-        MF_CompareTestSets(model='ss', ordd='best', howtosubset='uniform', samplep=(25.0, 0.10000000000000001),
+        "MF_CompareTestSets(y,'ss','best','uniform',[25,0.1],1)",
+        MF_CompareTestSets(theModel='ss', ordd='best', subsetHow='uniform', samplep=(25.0, 0.10000000000000001),
                            steps=1))
+
+    # outs: ac1s_iqr,ac1s_mean,ac1s_median,ac1s_std,mabserr_iqr
+    # outs: mabserr_mean,mabserr_median,mabserr_std,meandiffs_iqr,meandiffs_mean
+    # outs: meandiffs_median,meandiffs_std,rmserr_iqr,rmserr_mean,rmserr_median
+    # outs: rmserr_std,stdrats_iqr,stdrats_mean,stdrats_median,stdrats_std
+    # tags: model,prediction,systemidentificationtoolbox
+    MF_CompareTestSets_y_ar_4_rand_25_01_1 = (
+        'MF_CompareTestSets_y_ar_4_rand_25_01_1',
+        "MF_CompareTestSets(y,'ar',4,'rand',[25,0.1],1,'default')",
+        MF_CompareTestSets(theModel='ar', ordd=4, subsetHow='rand', samplep=(25.0, 0.10000000000000001),
+                           steps=1, randomSeed='default'))
 
     # outs: ac1,ac1n,ac2,ac2n,ac3
     # outs: ac3n,acmnd0,acsnd0,alphamin,alphamin_1
@@ -12375,6 +12924,7 @@ class HCTSAOperations(object):
     # tags: expsmoothing,model,siddarth
     MF_ExpSmoothing_05_best = (
         'MF_ExpSmoothing_05_best',
+        "MF_ExpSmoothing(y,0.5,'best')",
         MF_ExpSmoothing(ntrain=0.5, alpha='best'))
 
     # outs: a_1_max,a_1_mean,a_1_min,a_1_std,a_2_max
@@ -12383,7 +12933,8 @@ class HCTSAOperations(object):
     # tags: ar,model,prediction,systemidentificationtoolbox
     MF_FitSubsegments_ar_2_uniform_25_01 = (
         'MF_FitSubsegments_ar_2_uniform_25_01',
-        MF_FitSubsegments(model='ar', order=2, howtosubset='uniform', samplep=(25.0, 0.10000000000000001)))
+        "MF_FitSubsegments(y,'ar',2,'uniform',[25,0.1])",
+        MF_FitSubsegments(model='ar', order=2, subsetHow='uniform', samplep=(25.0, 0.10000000000000001)))
 
     # outs: fpe_max,fpe_mean,fpe_min,fpe_range,fpe_std
     # outs: p_1_max,p_1_mean,p_1_min,p_1_std,p_2_max
@@ -12393,16 +12944,9 @@ class HCTSAOperations(object):
     # tags: arma,model,prediction,systemidentificationtoolbox
     MF_FitSubsegments_arma_2_2_uniform_25_01 = (
         'MF_FitSubsegments_arma_2_2_uniform_25_01',
-        MF_FitSubsegments(model='arma', order=(2.0, 2.0), howtosubset='uniform', samplep=(25.0,
-                          0.10000000000000001)))
-
-    # outs: orders_max,orders_mean,orders_min,orders_mode,orders_range
-    # outs: orders_std,sbcs_max,sbcs_mean,sbcs_min,sbcs_range
-    # outs: sbcs_std
-    # tags: ar,arfit,model,prediction,stochastic,systemidentificationtoolbox
-    MF_FitSubsegments_arsbc_rand_25_01 = (
-        'MF_FitSubsegments_arsbc_rand_25_01',
-        MF_FitSubsegments(model='arsbc', order=(), howtosubset='rand', samplep=(25.0, 0.10000000000000001)))
+        "MF_FitSubsegments(y,'arma',[2,2],'uniform',[25,0.1])",
+    
+                             MF_FitSubsegments(model='arma', order=(2.0, 2.0), subsetHow='uniform', samplep=(25.0, 0.10000000000000001)))
 
     # outs: orders_max,orders_mean,orders_min,orders_mode,orders_range
     # outs: orders_std,sbcs_max,sbcs_mean,sbcs_min,sbcs_range
@@ -12410,13 +12954,25 @@ class HCTSAOperations(object):
     # tags: ar,arfit,model,prediction,systemidentificationtoolbox
     MF_FitSubsegments_arsbc_uniform_25_01 = (
         'MF_FitSubsegments_arsbc_uniform_25_01',
-        MF_FitSubsegments(model='arsbc', order=(), howtosubset='uniform', samplep=(25.0, 0.10000000000000001)))
+        "MF_FitSubsegments(y,'arsbc',[],'uniform',[25,0.1])",
+        MF_FitSubsegments(model='arsbc', order=(), subsetHow='uniform', samplep=(25.0, 0.10000000000000001)))
+
+    # outs: orders_max,orders_mean,orders_min,orders_mode,orders_range
+    # outs: orders_std,sbcs_max,sbcs_mean,sbcs_min,sbcs_range
+    # outs: sbcs_std
+    # tags: ar,arfit,model,prediction,systemidentificationtoolbox
+    MF_FitSubsegments_arsbc_rand_25_01 = (
+        'MF_FitSubsegments_arsbc_rand_25_01',
+        "MF_FitSubsegments(y,'arsbc',[],'rand',[25,0.1],'default')",
+        MF_FitSubsegments(model='arsbc', order=(), subsetHow='rand', samplep=(25.0, 0.10000000000000001),
+                          randomSeed='default'))
 
     # outs: fpe_max,fpe_mean,fpe_min,fpe_range,fpe_std
     # tags: model,prediction,statespace,systemidentificationtoolbox
     MF_FitSubsegments_ss_2_uniform_25_01 = (
         'MF_FitSubsegments_ss_2_uniform_25_01',
-        MF_FitSubsegments(model='ss', order=2, howtosubset='uniform', samplep=(25.0, 0.10000000000000001)))
+        "MF_FitSubsegments(y,'ss',2,'uniform',[25,0.1])",
+        MF_FitSubsegments(model='ss', order=2, subsetHow='uniform', samplep=(25.0, 0.10000000000000001)))
 
     # outs: Ks_vary_p,Ks_vary_q,bestpAIC,bestpLLF,bestqAIC
     # outs: bestqLLF,maxAIC,maxBIC,maxK,maxLLF
@@ -12427,6 +12983,7 @@ class HCTSAOperations(object):
     # tags: aic,bic,econometricstoolbox,garch,model
     MF_compare_GARCH_ar_1_3_1_3 = (
         'MF_compare_GARCH_ar_1_3_1_3',
+        "MF_GARCHcompare(y,'ar',1:3,1:3)",
         MF_GARCHcompare(preproc='ar', pr=MatlabSequence('1:3'), qr=MatlabSequence('1:3')))
 
     # outs: ARCH_1,ARCHerr_1,GARCH_1,GARCHerr_1,LLF
@@ -12441,9 +12998,10 @@ class HCTSAOperations(object):
     # outs: stde_mms,stde_normksstat,stde_normp,stde_p1_5,stde_p2_5
     # outs: stde_p3_5,stde_p4_5,stde_p5_5,stde_popt,stde_propbth
     # outs: stde_rmse,stde_sbc1,stde_stde,stdsigma,summaryexitflag
-    # tags: aic,bic,econometricstoolbox,garch,model,stochastic
+    # tags: aic,bic,econometricstoolbox,garch,model
     MF_GARCHfit_ar_P1_Q1 = (
         'MF_GARCHfit_ar_P1_Q1',
+        "MF_GARCHfit(y,'ar',1,1)",
         MF_GARCHfit(preproc='ar', P=1, Q=1))
 
     # outs: ARCH_1,ARCH_2,ARCHerr_1,ARCHerr_2,GARCH_1
@@ -12459,9 +13017,10 @@ class HCTSAOperations(object):
     # outs: stde_p1_5,stde_p2_5,stde_p3_5,stde_p4_5,stde_p5_5
     # outs: stde_popt,stde_propbth,stde_rmse,stde_sbc1,stde_stde
     # outs: stdsigma,summaryexitflag
-    # tags: aic,bic,econometricstoolbox,garch,model,stochastic
+    # tags: aic,bic,econometricstoolbox,garch,model
     MF_GARCHfit_ar_P1_Q2 = (
         'MF_GARCHfit_ar_P1_Q2',
+        "MF_GARCHfit(y,'ar',1,2)",
         MF_GARCHfit(preproc='ar', P=1, Q=2))
 
     # outs: h_lonN,logh1,logh2,logh3,meanS
@@ -12469,18 +13028,8 @@ class HCTSAOperations(object):
     # tags: gaussianprocess
     MF_GP_FitAcross_covSEiso_covNoise_20 = (
         'MF_GP_FitAcross_covSEiso_covNoise_20',
+        "MF_GP_FitAcross(y,{'covSum',{'covSEiso','covNoise'}},20)",
         MF_GP_FitAcross(covFunc=('covSum', ('covSEiso', 'covNoise')), npoints=20))
-
-    # outs: maxabserr,maxabserr_run,maxerrbar,maxmlik,maxstderr
-    # outs: maxstderr_run,meanabserr,meanabserr_run,meanerrbar,meanlogh1
-    # outs: meanlogh2,meanlogh3,meanstderr,meanstderr_run,minabserr
-    # outs: minabserr_run,minerrbar,minmlik,minstderr,minstderr_run
-    # outs: stdlogh1,stdlogh2,stdlogh3,stdmlik
-    # tags: gaussianprocess
-    MF_GP_LocalPrediction_covSEiso_covNoise_10_3_20_frombefore = (
-        'MF_GP_LocalPrediction_covSEiso_covNoise_10_3_20_frombefore',
-        MF_GP_LocalPrediction(covFunc=('covSum', ('covSEiso', 'covNoise')), ntrain=10, ntest=3,
-                              npreds=20, pmode='frombefore'))
 
     # outs: maxabserr,maxabserr_run,maxerrbar,maxmlik,maxstderr
     # outs: maxstderr_run,meanabserr,meanabserr_run,meanerrbar,meanlogh1
@@ -12490,19 +13039,33 @@ class HCTSAOperations(object):
     # tags: gaussianprocess
     MF_GP_LocalPrediction_covSEiso_covNoise_5_3_10_beforeafter = (
         'MF_GP_LocalPrediction_covSEiso_covNoise_5_3_10_beforeafter',
-        MF_GP_LocalPrediction(covFunc=('covSum', ('covSEiso', 'covNoise')), ntrain=5, ntest=3, npreds=10,
-                              pmode='beforeafter'))
+        "MF_GP_LocalPrediction(y,{'covSum',{'covSEiso','covNoise'}},5,3,10,'beforeafter')",
+        MF_GP_LocalPrediction(covFunc=('covSum', ('covSEiso', 'covNoise')), numTrain=5, numTest=3,
+                              numPreds=10, pmode='beforeafter'))
 
     # outs: maxabserr,maxabserr_run,maxerrbar,maxmlik,maxstderr
     # outs: maxstderr_run,meanabserr,meanabserr_run,meanerrbar,meanlogh1
     # outs: meanlogh2,meanlogh3,meanstderr,meanstderr_run,minabserr
     # outs: minabserr_run,minerrbar,minmlik,minstderr,minstderr_run
     # outs: stdlogh1,stdlogh2,stdlogh3,stdmlik
-    # tags: gaussianprocess,stochastic
+    # tags: gaussianprocess
+    MF_GP_LocalPrediction_covSEiso_covNoise_10_3_20_frombefore = (
+        'MF_GP_LocalPrediction_covSEiso_covNoise_10_3_20_frombefore',
+        "MF_GP_LocalPrediction(y,{'covSum',{'covSEiso','covNoise'}},10,3,20,'frombefore')",
+        MF_GP_LocalPrediction(covFunc=('covSum', ('covSEiso', 'covNoise')), numTrain=10, numTest=3,
+                              numPreds=20, pmode='frombefore'))
+
+    # outs: maxabserr,maxabserr_run,maxerrbar,maxmlik,maxstderr
+    # outs: maxstderr_run,meanabserr,meanabserr_run,meanerrbar,meanlogh1
+    # outs: meanlogh2,meanlogh3,meanstderr,meanstderr_run,minabserr
+    # outs: minabserr_run,minerrbar,minmlik,minstderr,minstderr_run
+    # outs: stdlogh1,stdlogh2,stdlogh3,stdmlik
+    # tags: gaussianprocess
     MF_GP_LocalPrediction_covSEiso_covNoise_10_3_20_randomgap = (
         'MF_GP_LocalPrediction_covSEiso_covNoise_10_3_20_randomgap',
-        MF_GP_LocalPrediction(covFunc=('covSum', ('covSEiso', 'covNoise')), ntrain=10, ntest=3,
-                              npreds=20, pmode='randomgap'))
+        "MF_GP_LocalPrediction(y,{'covSum',{'covSEiso','covNoise'}},10,3,20,'randomgap','default')",
+        MF_GP_LocalPrediction(covFunc=('covSum', ('covSEiso', 'covNoise')), numTrain=10, numTest=3,
+                              numPreds=20, pmode='randomgap', randomSeed='default'))
 
     # outs: h1,h2,h3,logh1,logh2
     # outs: logh3,mabserr_std,maxS,meanS,minS
@@ -12510,8 +13073,9 @@ class HCTSAOperations(object):
     # tags: gaussianprocess
     MF_GP_hyperparameters_covSEiso_covNoise_1_200_first = (
         'MF_GP_hyperparameters_covSEiso_covNoise_1_200_first',
+        "MF_GP_hyperparameters(y,{'covSum',{'covSEiso','covNoise'}},1,200,'first')",
         MF_GP_hyperparameters(covFunc=('covSum', ('covSEiso', 'covNoise')), squishorsquash=1, maxN=200,
-                              methds='first'))
+                              resampleHow='first'))
 
     # outs: h1,h2,h3,h4,h5
     # outs: logh1,logh2,logh3,logh4,logh5
@@ -12520,8 +13084,9 @@ class HCTSAOperations(object):
     # tags: gaussianprocess
     MF_GP_hyperparameters_covSEiso_covPeriodic_covNoise_1_200_first = (
         'MF_GP_hyperparameters_covSEiso_covPeriodic_covNoise_1_200_first',
+        "MF_GP_hyperparameters(y,{'covSum',{'covSEiso','covPeriodic','covNoise'}},1,200,'first')",
         MF_GP_hyperparameters(covFunc=('covSum', ('covSEiso', 'covPeriodic', 'covNoise')), squishorsquash=1,
-                              maxN=200, methds='first'))
+                              maxN=200, resampleHow='first'))
 
     # outs: h1,h2,h3,logh1,logh2
     # outs: logh3,mabserr_std,maxS,meanS,minS
@@ -12529,8 +13094,9 @@ class HCTSAOperations(object):
     # tags: gaussianprocess
     MF_GP_hyperparameters_covSEiso_covNoise_1_200_resample = (
         'MF_GP_hyperparameters_covSEiso_covNoise_1_200_resample',
+        "MF_GP_hyperparameters(y,{'covSum',{'covSEiso','covNoise'}},1,200,'resample')",
         MF_GP_hyperparameters(covFunc=('covSum', ('covSEiso', 'covNoise')), squishorsquash=1, maxN=200,
-                              methds='resample'))
+                              resampleHow='resample'))
 
     # outs: h1,h2,h3,h4,h5
     # outs: logh1,logh2,logh3,logh4,logh5
@@ -12539,17 +13105,19 @@ class HCTSAOperations(object):
     # tags: gaussianprocess
     MF_GP_hyperparameters_covSEiso_covPeriodic_covNoise_1_200_resample = (
         'MF_GP_hyperparameters_covSEiso_covPeriodic_covNoise_1_200_resample',
+        "MF_GP_hyperparameters(y,{'covSum',{'covSEiso','covPeriodic','covNoise'}},1,200,'resample')",
         MF_GP_hyperparameters(covFunc=('covSum', ('covSEiso', 'covPeriodic', 'covNoise')), squishorsquash=1,
-                              maxN=200, methds='resample'))
+                              maxN=200, resampleHow='resample'))
 
     # outs: h1,h2,h3,logh1,logh2
     # outs: logh3,mabserr_std,maxS,meanS,minS
     # outs: mlikelihood,rmserr,std_S_data,std_mu_data
-    # tags: gaussianprocess,stochastic
+    # tags: gaussianprocess
     MF_GP_hyperparameters_covSEiso_covNoise_1_50_random_i = (
         'MF_GP_hyperparameters_covSEiso_covNoise_1_50_random_i',
+        "MF_GP_hyperparameters(y,{'covSum',{'covSEiso','covNoise'}},1,50,'random_i','default')",
         MF_GP_hyperparameters(covFunc=('covSum', ('covSEiso', 'covNoise')), squishorsquash=1, maxN=50,
-                              methds='random_i'))
+                              resampleHow='random_i', randomSeed='default'))
 
     # outs: aic2,aicopt,fpe2,lossfn2,lossfnopt
     # outs: maxdiffaic,meandiffaic,minaic,mindiffaic,minlossfn
@@ -12557,6 +13125,7 @@ class HCTSAOperations(object):
     # tags: model,statespace,systemidentificationtoolbox
     MF_StateSpaceCompOrder_8 = (
         'MF_StateSpaceCompOrder_8',
+        'MF_StateSpaceCompOrder(y,8)',
         MF_StateSpaceCompOrder(maxorder=8))
 
     # outs: A_1,A_2,A_3,A_4,A_5
@@ -12572,6 +13141,7 @@ class HCTSAOperations(object):
     # tags: model,statespace,systemidentificationtoolbox
     MF_StateSpace_n4sid_3_05_1 = (
         'MF_StateSpace_n4sid_3_05_1',
+        'MF_StateSpace_n4sid(y,3,0.5,1)',
         MF_StateSpace_n4sid(ordd=3, ptrain=0.5, steps=1))
 
     # outs: A_1,A_2,A_3,A_4,ac1
@@ -12586,6 +13156,7 @@ class HCTSAOperations(object):
     # tags: model,statespace,systemidentificationtoolbox
     MF_StateSpace_n4sid_2_05_1 = (
         'MF_StateSpace_n4sid_2_05_1',
+        'MF_StateSpace_n4sid(y,2,0.5,1)',
         MF_StateSpace_n4sid(ordd=2, ptrain=0.5, steps=1))
 
     # outs: A_1,ac1,ac1diff,ac1n,ac2
@@ -12599,6 +13170,7 @@ class HCTSAOperations(object):
     # tags: model,statespace,systemidentificationtoolbox
     MF_StateSpace_n4sid_1_05_1 = (
         'MF_StateSpace_n4sid_1_05_1',
+        'MF_StateSpace_n4sid(y,1,0.5,1)',
         MF_StateSpace_n4sid(ordd=1, ptrain=0.5, steps=1))
 
     # outs: A1,A2,A3,A4,A5
@@ -12617,6 +13189,7 @@ class HCTSAOperations(object):
     # tags: arfit,modelfit
     MF_arfit_1_8_sbc = (
         'MF_arfit_1_8_sbc',
+        "MF_arfit(y,1,8,'sbc')",
         MF_arfit(pmin=1, pmax=8, selector='sbc'))
 
     # outs: AR_1,AR_2,MA_1,MA_2,ac1
@@ -12630,6 +13203,7 @@ class HCTSAOperations(object):
     # tags: arma,model,systemidentificationtoolbox
     MF_armax_2_2_05_1 = (
         'MF_armax_2_2_05_1',
+        'MF_armax(y,[2,2],0.5,1)',
         MF_armax(orders=(2.0, 2.0), ptrain=0.5, nsteps=1))
 
     # outs: AR_1,AR_2,AR_3,MA_1,ac1
@@ -12643,6 +13217,7 @@ class HCTSAOperations(object):
     # tags: arma,model,systemidentificationtoolbox
     MF_armax_3_1_05_1 = (
         'MF_armax_3_1_05_1',
+        'MF_armax(y,[3,1],0.5,1)',
         MF_armax(orders=(3.0, 1.0), ptrain=0.5, nsteps=1))
 
     # outs: AR_1,MA_1,ac1,ac1n,ac2
@@ -12656,6 +13231,7 @@ class HCTSAOperations(object):
     # tags: arma,model,systemidentificationtoolbox
     MF_armax_1_1_05_1 = (
         'MF_armax_1_1_05_1',
+        'MF_armax(y,[1,1],0.5,1)',
         MF_armax(orders=(1.0, 1.0), ptrain=0.5, nsteps=1))
 
     # outs: LLtestdiff1,LLtestdiff2,chLLtest,chLLtrain,maxLLtest
@@ -12663,6 +13239,7 @@ class HCTSAOperations(object):
     # tags: gharamani,hmm,model
     MF_hmm_CompareNStates_06_24 = (
         'MF_hmm_CompareNStates_06_24',
+        'MF_hmm_CompareNStates(y,0.6,2:4)',
         MF_hmm_CompareNStates(trainp=0.6, nstater=MatlabSequence('2:4')))
 
     # outs: Cov,LLdifference,LLtestpersample,LLtrainpersample,Mu_1
@@ -12671,6 +13248,7 @@ class HCTSAOperations(object):
     # tags: gharamani,hmm,model
     MF_hmm_07_3 = (
         'MF_hmm_07_3',
+        'MF_hmm_fit(y,0.7,3)',
         MF_hmm_fit(trainp=0.7, numStates=3))
 
     # outs: Cov,LLdifference,LLtestpersample,LLtrainpersample,Mu_1
@@ -12679,6 +13257,7 @@ class HCTSAOperations(object):
     # tags: gharamani,hmm,model
     MF_hmm_08_2 = (
         'MF_hmm_08_2',
+        'MF_hmm_fit(y,0.8,2)',
         MF_hmm_fit(trainp=0.8, numStates=2))
 
     # outs: ac1_1,ac1_2,ac1_3,ac1_4,ac1_5
@@ -12689,17 +13268,8 @@ class HCTSAOperations(object):
     # tags: ar,arfit,model,prediction,systemidentificationtoolbox
     MF_steps_ahead_ar_best_6 = (
         'MF_steps_ahead_ar_best_6',
-        MF_steps_ahead(model='ar', order='best', maxsteps=6))
-
-    # outs: ac1_1,ac1_2,ac1_3,ac1_4,ac1_5
-    # outs: ac1_6,mabserr_1,mabserr_2,mabserr_3,mabserr_4
-    # outs: mabserr_5,mabserr_6,maxdiffrms,meandiffrms,meandiffrmsabs
-    # outs: ndown,rmserr_1,rmserr_2,rmserr_3,rmserr_4
-    # outs: rmserr_5,rmserr_6,stddiffrms
-    # tags: ar,model,prediction,systemidentificationtoolbox
-    MF_steps_ahead_ar_2_6 = (
-        'MF_steps_ahead_ar_2_6',
-        MF_steps_ahead(model='ar', order=2, maxsteps=6))
+        "MF_steps_ahead(y,'ar','best',6)",
+        MF_steps_ahead(model='ar', order='best', maxSteps=6))
 
     # outs: ac1_1,ac1_2,ac1_3,ac1_4,ac1_5
     # outs: ac1_6,mabserr_1,mabserr_2,mabserr_3,mabserr_4
@@ -12709,7 +13279,19 @@ class HCTSAOperations(object):
     # tags: model,prediction,statespace,systemidentificationtoolbox
     MF_steps_ahead_ss_best_6 = (
         'MF_steps_ahead_ss_best_6',
-        MF_steps_ahead(model='ss', order='best', maxsteps=6))
+        "MF_steps_ahead(y,'ss','best',6)",
+        MF_steps_ahead(model='ss', order='best', maxSteps=6))
+
+    # outs: ac1_1,ac1_2,ac1_3,ac1_4,ac1_5
+    # outs: ac1_6,mabserr_1,mabserr_2,mabserr_3,mabserr_4
+    # outs: mabserr_5,mabserr_6,maxdiffrms,meandiffrms,meandiffrmsabs
+    # outs: ndown,rmserr_1,rmserr_2,rmserr_3,rmserr_4
+    # outs: rmserr_5,rmserr_6,stddiffrms
+    # tags: ar,model,prediction,systemidentificationtoolbox
+    MF_steps_ahead_ar_2_6 = (
+        'MF_steps_ahead_ar_2_6',
+        "MF_steps_ahead(y,'ar',2,6)",
+        MF_steps_ahead(model='ar', order=2, maxSteps=6))
 
     # outs: ac1_1,ac1_2,ac1_3,ac1_4,ac1_5
     # outs: ac1_6,mabserr_1,mabserr_2,mabserr_3,mabserr_4
@@ -12719,7 +13301,8 @@ class HCTSAOperations(object):
     # tags: arma,model,prediction,systemidentificationtoolbox
     MF_steps_ahead_arma_3_1_6 = (
         'MF_steps_ahead_arma_3_1_6',
-        MF_steps_ahead(model='arma', order=(3.0, 1.0), maxsteps=6))
+        "MF_steps_ahead(y,'arma',[3,1],6)",
+        MF_steps_ahead(model='arma', order=(3.0, 1.0), maxSteps=6))
 
     # outs: iqrstretch,meanchr10,meanchr11,meanchr12,meanchr13
     # outs: meanchr14,meanchr15,meanchr16,meanchr17,meanchr18
@@ -12741,6 +13324,7 @@ class HCTSAOperations(object):
     # tags: corrdim,correlation,nonlinear,tstool
     NL_BoxCorrDim_50_ac_5 = (
         'NL_BoxCorrDim_50_ac_5',
+        "NL_BoxCorrDim(y,50,{'ac',5})",
         NL_BoxCorrDim(nbins=50, embedparams=('ac', 5)))
 
     # outs: caoo1_1,caoo1_10,caoo1_2,caoo1_3,caoo1_4
@@ -12756,6 +13340,7 @@ class HCTSAOperations(object):
     # tags: cao,dimension,nonlinear,stochastic,tstool
     NL_CaosMethod_10_mi_2_100 = (
         'NL_CaosMethod_10_mi_2_100',
+        "NL_CaosMethod(y,10,'mi',2,100)",
         NL_CaosMethod(maxdim=10, tau='mi', NNR=2, Nref=100))
 
     # outs: caoo1_1,caoo1_10,caoo1_2,caoo1_3,caoo1_4
@@ -12771,6 +13356,7 @@ class HCTSAOperations(object):
     # tags: cao,dimension,nonlinear,stochastic,tstool
     NL_CaosMethod_10_mi_2_02 = (
         'NL_CaosMethod_10_mi_2_02',
+        "NL_CaosMethod(y,10,'mi',2,0.2)",
         NL_CaosMethod(maxdim=10, tau='mi', NNR=2, Nref=0.2))
 
     # outs: caoo1_1,caoo1_10,caoo1_2,caoo1_3,caoo1_4
@@ -12786,115 +13372,134 @@ class HCTSAOperations(object):
     # tags: cao,dimension,nonlinear,stochastic,tstool
     NL_CaosMethod_10_mi_3_500 = (
         'NL_CaosMethod_10_mi_3_500',
+        "NL_CaosMethod(y,10,'mi',3,500)",
         NL_CaosMethod(maxdim=10, tau='mi', NNR=3, Nref=500))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_7_diff = (
         'NL_MS_LZcomplexity_7_diff',
+        "NL_MS_LZcomplexity(y,7,'diff')",
         NL_MS_LZcomplexity(n=7, PreProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_9 = (
         'NL_MS_LZcomplexity_9',
+        'NL_MS_LZcomplexity(y,9,[])',
         NL_MS_LZcomplexity(n=9, PreProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_8 = (
         'NL_MS_LZcomplexity_8',
+        'NL_MS_LZcomplexity(y,8,[])',
         NL_MS_LZcomplexity(n=8, PreProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_2 = (
         'NL_MS_LZcomplexity_2',
+        'NL_MS_LZcomplexity(y,2,[])',
         NL_MS_LZcomplexity(n=2, PreProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_7 = (
         'NL_MS_LZcomplexity_7',
+        'NL_MS_LZcomplexity(y,7,[])',
         NL_MS_LZcomplexity(n=7, PreProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_6 = (
         'NL_MS_LZcomplexity_6',
+        'NL_MS_LZcomplexity(y,6,[])',
         NL_MS_LZcomplexity(n=6, PreProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_5 = (
         'NL_MS_LZcomplexity_5',
+        'NL_MS_LZcomplexity(y,5,[])',
         NL_MS_LZcomplexity(n=5, PreProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_3 = (
         'NL_MS_LZcomplexity_3',
+        'NL_MS_LZcomplexity(y,3,[])',
         NL_MS_LZcomplexity(n=3, PreProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_8_diff = (
         'NL_MS_LZcomplexity_8_diff',
+        "NL_MS_LZcomplexity(y,8,'diff')",
         NL_MS_LZcomplexity(n=8, PreProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_10 = (
         'NL_MS_LZcomplexity_10',
+        'NL_MS_LZcomplexity(y,10,[])',
         NL_MS_LZcomplexity(n=10, PreProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
-    NL_MS_LZcomplexity_6_diff = (
-        'NL_MS_LZcomplexity_6_diff',
-        NL_MS_LZcomplexity(n=6, PreProc='diff'))
+    NL_MS_LZcomplexity_10_diff = (
+        'NL_MS_LZcomplexity_10_diff',
+        "NL_MS_LZcomplexity(y,10,'diff')",
+        NL_MS_LZcomplexity(n=10, PreProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_9_diff = (
         'NL_MS_LZcomplexity_9_diff',
+        "NL_MS_LZcomplexity(y,9,'diff')",
         NL_MS_LZcomplexity(n=9, PreProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_4 = (
         'NL_MS_LZcomplexity_4',
+        'NL_MS_LZcomplexity(y,4,[])',
         NL_MS_LZcomplexity(n=4, PreProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_3_diff = (
         'NL_MS_LZcomplexity_3_diff',
+        "NL_MS_LZcomplexity(y,3,'diff')",
         NL_MS_LZcomplexity(n=3, PreProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_2_diff = (
         'NL_MS_LZcomplexity_2_diff',
+        "NL_MS_LZcomplexity(y,2,'diff')",
         NL_MS_LZcomplexity(n=2, PreProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_4_diff = (
         'NL_MS_LZcomplexity_4_diff',
+        "NL_MS_LZcomplexity(y,4,'diff')",
         NL_MS_LZcomplexity(n=4, PreProc='diff'))
+
+    # outs: None
+    # tags: LempelZiv,MichaelSmall,complexity,mex
+    NL_MS_LZcomplexity_6_diff = (
+        'NL_MS_LZcomplexity_6_diff',
+        "NL_MS_LZcomplexity(y,6,'diff')",
+        NL_MS_LZcomplexity(n=6, PreProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_5_diff = (
         'NL_MS_LZcomplexity_5_diff',
+        "NL_MS_LZcomplexity(y,5,'diff')",
         NL_MS_LZcomplexity(n=5, PreProc='diff'))
-
-    # outs: None
-    # tags: LempelZiv,MichaelSmall,complexity,mex
-    NL_MS_LZcomplexity_10_diff = (
-        'NL_MS_LZcomplexity_10_diff',
-        NL_MS_LZcomplexity(n=10, PreProc='diff'))
 
     # outs: firstunder001,firstunder002,firstunder005,firstunder01,firstunder02
     # outs: max1stepchange,meanpfnn,pfnn_1,pfnn_10,pfnn_2
@@ -12903,6 +13508,7 @@ class HCTSAOperations(object):
     # tags: MichaelSmall,fnn,nonlinear,slow
     NL_MS_fnn_1_10_mi_5_1 = (
         'NL_MS_fnn_1_10_mi_5_1',
+        "NL_MS_fnn(y,1:10,'mi',5,1)",
         NL_MS_fnn(de=MatlabSequence('1:10'), tau='mi', th=5, kth=1))
 
     # outs: ac1,ac1n,ac2,ac2n,ac3
@@ -12914,6 +13520,7 @@ class HCTSAOperations(object):
     # tags: MichaelSmall,model,nlpe,nonlinear,slow
     NL_MS_nlpe_fnn_mi = (
         'NL_MS_nlpe_fnn_mi',
+        "NL_MS_nlpe(y,'fnn','mi')",
         NL_MS_nlpe(de='fnn', tau='mi'))
 
     # outs: ac1,ac1n,ac2,ac2n,ac3
@@ -12925,6 +13532,7 @@ class HCTSAOperations(object):
     # tags: MichaelSmall,model,nlpe,nonlinear
     NL_MS_nlpe_2_mi = (
         'NL_MS_nlpe_2_mi',
+        "NL_MS_nlpe(y,2,'mi')",
         NL_MS_nlpe(de=2, tau='mi'))
 
     # outs: ac1,ac1n,ac2,ac2n,ac3
@@ -12936,6 +13544,7 @@ class HCTSAOperations(object):
     # tags: MichaelSmall,model,nlpe,nonlinear
     NL_MS_nlpe_3_ac = (
         'NL_MS_nlpe_3_ac',
+        "NL_MS_nlpe(y,3,'ac')",
         NL_MS_nlpe(de=3, tau='ac'))
 
     # outs: bestestd,bestestdstd,bestgoodness,bestscrd,longestscr
@@ -12944,6 +13553,7 @@ class HCTSAOperations(object):
     # tags: dimension,entropy,nonlinear,tisean
     NL_TISEAN_c1_1_1_7_002_05 = (
         'NL_TISEAN_c1_1_1_7_002_05',
+        'NL_TISEAN_c1(y,1,[1,7],0.02,0.5)',
         NL_TISEAN_c1(tau=1, mmm=(1.0, 7.0), tsep=0.02, Nref=0.5))
 
     # outs: bestestd,bestestdstd,bestgoodness,bestscrd,longestscr
@@ -12952,6 +13562,7 @@ class HCTSAOperations(object):
     # tags: dimension,entropy,nonlinear,tisean
     NL_TISEAN_c1_1_2_6_25_01 = (
         'NL_TISEAN_c1_1_2_6_25_01',
+        'NL_TISEAN_c1(y,1,[2,6],25,0.1)',
         NL_TISEAN_c1(tau=1, mmm=(2.0, 6.0), tsep=25, Nref=0.1))
 
     # outs: bend2_maxdim,bend2_meandim,bend2_meangoodness,bend2_mindim,bend2g_maxdim
@@ -12968,7 +13579,8 @@ class HCTSAOperations(object):
     # tags: dimension,nonlinear,tisean
     NL_TISEAN_d2_1_10_0 = (
         'NL_TISEAN_d2_1_10_0',
-        NL_TISEAN_d2(tau=1, maxm=10, theilerwin=0))
+        'NL_TISEAN_d2(y,1,10,0)',
+        NL_TISEAN_d2(tau=1, maxm=10, theilerWin=0))
 
     # outs: bend2_maxdim,bend2_meandim,bend2_meangoodness,bend2_mindim,bend2g_maxdim
     # outs: bend2g_meandim,bend2g_meangoodness,bend2g_mindim,benmmind2_goodness,benmmind2_linrmserr
@@ -12984,7 +13596,48 @@ class HCTSAOperations(object):
     # tags: dimension,nonlinear,tisean
     NL_TISEAN_d2_ac_10_001 = (
         'NL_TISEAN_d2_ac_10_001',
-        NL_TISEAN_d2(tau='ac', maxm=10, theilerwin=0.01))
+        "NL_TISEAN_d2(y,'ac',10,0.01)",
+        NL_TISEAN_d2(tau='ac', maxm=10, theilerWin=0.01))
+
+    # outs: firstunder005,firstunder01,firstunder02,firstunder03,firstunder04
+    # outs: firstunder05,firstunder06,firstunder07,firstunder08,firstunder09
+    # outs: max1stepchange,maxnHood2,meannHood2,meanpfnn,minpfnn
+    # outs: nHood2_1,nHood2_10,nHood2_2,nHood2_3,nHood2_4
+    # outs: nHood2_5,nHood2_6,nHood2_7,nHood2_8,nHood2_9
+    # outs: pfnn_1,pfnn_10,pfnn_2,pfnn_3,pfnn_4
+    # outs: pfnn_5,pfnn_6,pfnn_7,pfnn_8,pfnn_9
+    # outs: stdpfnn
+    # tags: dimension,nonlinear,tisean
+    NL_TISEAN_fnn_mi_10_005 = (
+        'NL_TISEAN_fnn_mi_10_005',
+        "NL_TISEAN_fnn(y,'mi',10,0.05,0)",
+        NL_TISEAN_fnn(tau='mi', maxm=10, theilerWin=0.05, justBest=0))
+
+    # outs: firstunder005,firstunder01,firstunder02,firstunder03,firstunder04
+    # outs: firstunder05,firstunder06,firstunder07,firstunder08,firstunder09
+    # outs: max1stepchange,maxnHood2,meannHood2,meanpfnn,minpfnn
+    # outs: nHood2_1,nHood2_10,nHood2_2,nHood2_3,nHood2_4
+    # outs: nHood2_5,nHood2_6,nHood2_7,nHood2_8,nHood2_9
+    # outs: pfnn_1,pfnn_10,pfnn_2,pfnn_3,pfnn_4
+    # outs: pfnn_5,pfnn_6,pfnn_7,pfnn_8,pfnn_9
+    # outs: stdpfnn
+    # tags: dimension,nonlinear,tisean
+    NL_TISEAN_fnn_ac_10_005 = (
+        'NL_TISEAN_fnn_ac_10_005',
+        "NL_TISEAN_fnn(y,'ac',10,0.05,0)",
+        NL_TISEAN_fnn(tau='ac', maxm=10, theilerWin=0.05, justBest=0))
+
+    # outs: firstunder005,firstunder01,firstunder02,firstunder03,firstunder04
+    # outs: firstunder05,firstunder06,firstunder07,firstunder08,firstunder09
+    # outs: max1stepchange,maxnHood2,meannHood2,meanpfnn,minpfnn
+    # outs: nHood2_1,nHood2_10,nHood2_2,nHood2_3,nHood2_4
+    # outs: nHood2_5,nHood2_6,nHood2_7,nHood2_8,nHood2_9
+    # outs: stdpfnn
+    # tags: dimension,nonlinear,tisean
+    NL_TISEAN_fnn_1_10_005 = (
+        'NL_TISEAN_fnn_1_10_005',
+        'NL_TISEAN_fnn(y,1,10,0.05,0)',
+        NL_TISEAN_fnn(tau=1, maxm=10, theilerWin=0.05, justBest=0))
 
     # outs: expfit_a,expfit_adjr2,expfit_b,expfit_c,expfit_r2
     # outs: expfit_rmse,linfit_a,linfit_b,linfit_rmsqres,maxDq
@@ -12993,8 +13646,9 @@ class HCTSAOperations(object):
     # tags: correlation,dimension,nonlinear,stochastic,tstool
     NL_TSTL_FractalDimensions_2_100_02_1_5_10_32_1_5 = (
         'NL_TSTL_FractalDimensions_2_100_02_1_5_10_32_1_5',
+        'NL_TSTL_FractalDimensions(y,2,100,0.2,1,5,10,32,{1,5})',
         NL_TSTL_FractalDimensions(kmin=2, kmax=100, Nref=0.2, gstart=1, gend=5, past=10, steps=32,
-                                  embedparams=(1.0, 5.0)))
+                                  embedparams=(1, 5, '_celltrick_')))
 
     # outs: expfit_a,expfit_adjr2,expfit_b,expfit_c,expfit_r2
     # outs: expfit_rmse,linfit_a,linfit_b,linfit_rmsqres,maxDq
@@ -13003,6 +13657,7 @@ class HCTSAOperations(object):
     # tags: correlation,dimension,nonlinear,stochastic,tstool
     NL_TSTL_FractalDimensions_5_100_02_1_10_0_32_ac_3 = (
         'NL_TSTL_FractalDimensions_5_100_02_1_10_0_32_ac_3',
+        "NL_TSTL_FractalDimensions(y,5,100,0.2,1,10,0,32,{'ac',3})",
         NL_TSTL_FractalDimensions(kmin=5, kmax=100, Nref=0.2, gstart=1, gend=10, past=0, steps=32,
                                   embedparams=('ac', 3)))
 
@@ -13013,8 +13668,9 @@ class HCTSAOperations(object):
     # tags: correlation,dimension,nonlinear,tstool
     NL_TSTL_FractalDimensions_2_10_n1_1_5_10_32_1_5 = (
         'NL_TSTL_FractalDimensions_2_10_n1_1_5_10_32_1_5',
+        'NL_TSTL_FractalDimensions(y,2,10,-1,1,5,10,32,{1,5})',
         NL_TSTL_FractalDimensions(kmin=2, kmax=10, Nref=-1, gstart=1, gend=5, past=10, steps=32,
-                                  embedparams=(1.0, 5.0)))
+                                  embedparams=(1, 5, '_celltrick_')))
 
     # outs: expfit_a,expfit_adjr2,expfit_b,expfit_c,expfit_r2
     # outs: expfit_rmse,linfit_a,linfit_b,linfit_rmsqres,maxDq
@@ -13023,6 +13679,7 @@ class HCTSAOperations(object):
     # tags: correlation,dimension,nonlinear,stochastic,tstool
     NL_TSTL_FractalDimensions_2_100_02_1_5_10_32_ac_5 = (
         'NL_TSTL_FractalDimensions_2_100_02_1_5_10_32_ac_5',
+        "NL_TSTL_FractalDimensions(y,2,100,0.2,1,5,10,32,{'ac',5})",
         NL_TSTL_FractalDimensions(kmin=2, kmax=100, Nref=0.2, gstart=1, gend=5, past=10, steps=32,
                                   embedparams=('ac', 5)))
 
@@ -13033,6 +13690,7 @@ class HCTSAOperations(object):
     # tags: correlation,dimension,nonlinear,stochastic,tstool
     NL_TSTL_FractalDimensions_5_20_02_1_10_0_32_ac_cao = (
         'NL_TSTL_FractalDimensions_5_20_02_1_10_0_32_ac_cao',
+        "NL_TSTL_FractalDimensions(y,5,20,0.2,1,10,0,32,{'ac','cao'})",
         NL_TSTL_FractalDimensions(kmin=5, kmax=20, Nref=0.2, gstart=1, gend=10, past=0, steps=32,
                                   embedparams=('ac', 'cao')))
 
@@ -13042,7 +13700,8 @@ class HCTSAOperations(object):
     # tags: correlation,corrsum2,nonlinear,stochastic,tstool
     NL_TSTL_GPCorrSum2_n1_01_40_20_ac_cao = (
         'NL_TSTL_GPCorrSum2_n1_01_40_20_ac_cao',
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedparams=('ac', 'cao'), dotwo=2))
+        "NL_TSTL_GPCorrSum(y,-1,0.1,40,20,{'ac','cao'},2)",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedparams=('ac', 'cao'), doTwo=2))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
@@ -13050,6 +13709,7 @@ class HCTSAOperations(object):
     # tags: correlation,corrsum,nonlinear,stochastic,tstool
     NL_TSTL_GPCorrSum_n1_05_40_20_ac_cao = (
         'NL_TSTL_GPCorrSum_n1_05_40_20_ac_cao',
+        "NL_TSTL_GPCorrSum(y,-1,0.5,40,20,{'ac','cao'})",
         NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedparams=('ac', 'cao')))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
@@ -13058,6 +13718,7 @@ class HCTSAOperations(object):
     # tags: correlation,corrsum,nonlinear,stochastic,tstool
     NL_TSTL_GPCorrSum_n1_01_40_20_ac_cao = (
         'NL_TSTL_GPCorrSum_n1_01_40_20_ac_cao',
+        "NL_TSTL_GPCorrSum(y,-1,0.1,40,20,{'ac','cao'})",
         NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedparams=('ac', 'cao')))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
@@ -13066,6 +13727,7 @@ class HCTSAOperations(object):
     # tags: correlation,corrsum,nonlinear,stochastic,tstool
     NL_TSTL_GPCorrSum_n1_01_40_40_ac_cao = (
         'NL_TSTL_GPCorrSum_n1_01_40_40_ac_cao',
+        "NL_TSTL_GPCorrSum(y,-1,0.1,40,40,{'ac','cao'})",
         NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedparams=('ac', 'cao')))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
@@ -13074,7 +13736,8 @@ class HCTSAOperations(object):
     # tags: correlation,corrsum2,nonlinear,stochastic,tstool
     NL_TSTL_GPCorrSum2_n1_05_100_20_ac_cao = (
         'NL_TSTL_GPCorrSum2_n1_05_100_20_ac_cao',
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedparams=('ac', 'cao'), dotwo=2))
+        "NL_TSTL_GPCorrSum(y,-1,0.5,100,20,{'ac','cao'},2)",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedparams=('ac', 'cao'), doTwo=2))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
@@ -13082,6 +13745,7 @@ class HCTSAOperations(object):
     # tags: correlation,corrsum,nonlinear,stochastic,tstool
     NL_TSTL_GPCorrSum_n1_05_100_20_ac_cao = (
         'NL_TSTL_GPCorrSum_n1_05_100_20_ac_cao',
+        "NL_TSTL_GPCorrSum(y,-1,0.5,100,20,{'ac','cao'})",
         NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedparams=('ac', 'cao')))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
@@ -13090,7 +13754,8 @@ class HCTSAOperations(object):
     # tags: correlation,corrsum2,nonlinear,stochastic,tstool
     NL_TSTL_GPCorrSum2_n1_05_40_20_ac_cao = (
         'NL_TSTL_GPCorrSum2_n1_05_40_20_ac_cao',
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedparams=('ac', 'cao'), dotwo=2))
+        "NL_TSTL_GPCorrSum(y,-1,0.5,40,20,{'ac','cao'},2)",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedparams=('ac', 'cao'), doTwo=2))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
@@ -13098,7 +13763,8 @@ class HCTSAOperations(object):
     # tags: correlation,corrsum2,nonlinear,stochastic,tstool
     NL_TSTL_GPCorrSum2_n1_01_40_40_ac_cao = (
         'NL_TSTL_GPCorrSum2_n1_01_40_40_ac_cao',
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedparams=('ac', 'cao'), dotwo=2))
+        "NL_TSTL_GPCorrSum(y,-1,0.1,40,40,{'ac','cao'},2)",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedparams=('ac', 'cao'), doTwo=2))
 
     # outs: expfit_a,expfit_adjr2,expfit_b,expfit_r2,expfit_rmse
     # outs: maxp,ncross08max,ncross09max,p2,p3
@@ -13109,6 +13775,7 @@ class HCTSAOperations(object):
     # tags: largelyap,nonlinear,stochastic,tstool
     NL_TSTL_LargestLyap_05_01_001_3_mi_cao = (
         'NL_TSTL_LargestLyap_05_01_001_3_mi_cao',
+        "NL_TSTL_LargestLyap(y,0.5,0.1,0.01,3,{'mi','cao'})",
         NL_TSTL_LargestLyap(Nref=0.5, maxtstep=0.1, past=0.01, NNR=3, embedparams=('mi', 'cao')))
 
     # outs: expfit_a,expfit_adjr2,expfit_b,expfit_r2,expfit_rmse
@@ -13120,7 +13787,8 @@ class HCTSAOperations(object):
     # tags: largelyap,nonlinear,tstool
     NL_TSTL_LargestLyap_n1_01_001_3_1_4 = (
         'NL_TSTL_LargestLyap_n1_01_001_3_1_4',
-        NL_TSTL_LargestLyap(Nref=-1, maxtstep=0.1, past=0.01, NNR=3, embedparams=(1.0, 4.0)))
+        'NL_TSTL_LargestLyap(y,-1,0.1,0.01,3,{1,4})',
+        NL_TSTL_LargestLyap(Nref=-1, maxtstep=0.1, past=0.01, NNR=3, embedparams=(1, 4, '_celltrick_')))
 
     # outs: ac1D,ac1x,ac1y,ac2D,ac2x
     # outs: ac2y,boxarea,hboxcounts10,hboxcounts5,iqrD
@@ -13135,6 +13803,7 @@ class HCTSAOperations(object):
     # tags: nonlinear,poincare,tstool
     NL_TSTL_PoincareSection_max_ac = (
         'NL_TSTL_PoincareSection_max_ac',
+        "NL_TSTL_PoincareSection(y,'max',{'ac',3})",
         NL_TSTL_PoincareSection(ref='max', embedparams=('ac', 3)))
 
     # outs: ac1D,ac1x,ac1y,ac2D,ac2x
@@ -13150,7 +13819,8 @@ class HCTSAOperations(object):
     # tags: nonlinear,poincare,tstool
     NL_TSTL_PoincareSection_max_1 = (
         'NL_TSTL_PoincareSection_max_1',
-        NL_TSTL_PoincareSection(ref='max', embedparams=(1.0, 3.0)))
+        "NL_TSTL_PoincareSection(y,'max',{1,3})",
+        NL_TSTL_PoincareSection(ref='max', embedparams=(1, 3, '_celltrick_')))
 
     # outs: ac1D,ac1x,ac1y,ac2D,ac2x
     # outs: ac2y,boxarea,hboxcounts10,hboxcounts5,iqrD
@@ -13165,6 +13835,7 @@ class HCTSAOperations(object):
     # tags: nonlinear,poincare,tstool
     NL_TSTL_PoincareSection_max_mi = (
         'NL_TSTL_PoincareSection_max_mi',
+        "NL_TSTL_PoincareSection(y,'max',{'mi',3})",
         NL_TSTL_PoincareSection(ref='max', embedparams=('mi', 3)))
 
     # outs: hcgdist,hhist,hhisthist,iqr,max
@@ -13174,7 +13845,8 @@ class HCTSAOperations(object):
     # tags: nonlinear,returntime,tstool
     NL_TSTL_ReturnTime_005_1_005_n1_1_3 = (
         'NL_TSTL_ReturnTime_005_1_005_n1_1_3',
-        NL_TSTL_ReturnTime(NNR=0.05, maxT=1, past=0.05, Nref=-1, embedparams=(1.0, 3.0)))
+        'NL_TSTL_ReturnTime(y,0.05,1,0.05,-1,{1,3})',
+        NL_TSTL_ReturnTime(NNR=0.05, maxT=1, past=0.05, Nref=-1, embedparams=(1, 3, '_celltrick_')))
 
     # outs: hcgdist,hhist,hhisthist,iqr,max
     # outs: maxhisthist,maxpeaksep,meanpeaksep,minpeaksep,pg05
@@ -13183,6 +13855,7 @@ class HCTSAOperations(object):
     # tags: nonlinear,returntime,tstool
     NL_TSTL_ReturnTime_10_1_1_n1_ac_8 = (
         'NL_TSTL_ReturnTime_10_1_1_n1_ac_8',
+        "NL_TSTL_ReturnTime(y,10,1,1,-1,{'ac',8})",
         NL_TSTL_ReturnTime(NNR=10, maxT=1, past=1, Nref=-1, embedparams=('ac', 8)))
 
     # outs: hcgdist,hhist,hhisthist,iqr,max
@@ -13192,61 +13865,72 @@ class HCTSAOperations(object):
     # tags: nonlinear,returntime,tstool
     NL_TSTL_ReturnTime_5_1_40_n1_1_8 = (
         'NL_TSTL_ReturnTime_5_1_40_n1_1_8',
-        NL_TSTL_ReturnTime(NNR=5, maxT=1, past=40, Nref=-1, embedparams=(1.0, 8.0)))
+        'NL_TSTL_ReturnTime(y,5,1,40,-1,{1,8})',
+        NL_TSTL_ReturnTime(NNR=5, maxT=1, past=40, Nref=-1, embedparams=(1, 8, '_celltrick_')))
 
     # outs: None
     # tags: dimension,nonlinear,scaling,takens,tstool
     NL_TSTL_TakensEstimator_n1_005_005_ac_3 = (
         'NL_TSTL_TakensEstimator_n1_005_005_ac_3',
-        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedparams=('ac', 3)))
+        "NL_TSTL_TakensEstimator(y,-1,0.05,0.05,{'ac',3})",
+        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedParams=('ac', 3)))
 
     # outs: None
     # tags: dimension,nonlinear,scaling,takens,tstool
     NL_TSTL_TakensEstimator_n1_005_005_mi_8 = (
         'NL_TSTL_TakensEstimator_n1_005_005_mi_8',
-        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedparams=('mi', 8)))
+        "NL_TSTL_TakensEstimator(y,-1,0.05,0.05,{'mi',8})",
+        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedParams=('mi', 8)))
 
     # outs: None
     # tags: dimension,nonlinear,scaling,takens,tstool
     NL_TSTL_TakensEstimator_n1_005_005_mi_3 = (
         'NL_TSTL_TakensEstimator_n1_005_005_mi_3',
-        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedparams=('mi', 3)))
+        "NL_TSTL_TakensEstimator(y,-1,0.05,0.05,{'mi',3})",
+        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedParams=('mi', 3)))
 
     # outs: None
     # tags: dimension,nonlinear,scaling,takens,tstool
     NL_TSTL_TakensEstimator_n1_005_005_ac_8 = (
         'NL_TSTL_TakensEstimator_n1_005_005_ac_8',
-        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedparams=('ac', 8)))
+        "NL_TSTL_TakensEstimator(y,-1,0.05,0.05,{'ac',8})",
+        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedParams=('ac', 8)))
 
     # outs: None
-    # tags: dimension,nonlinear,scaling,takens,tstool
+    # tags: dimension,nonlinear,scaling,stochastic,takens,tstool
     NL_TSTL_TakensEstimator_n1_005_005_mi_cao = (
         'NL_TSTL_TakensEstimator_n1_005_005_mi_cao',
-        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedparams=('mi', 'cao')))
+        "NL_TSTL_TakensEstimator(y,-1,0.05,0.05,{'mi','cao'})",
+        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedParams=('mi', 'cao')))
 
     # outs: None
     # tags: dimension,nonlinear,scaling,takens,tstool
     NL_TSTL_TakensEstimator_n1_01_005_1_10 = (
         'NL_TSTL_TakensEstimator_n1_01_005_1_10',
-        NL_TSTL_TakensEstimator(Nref=-1, rad=0.1, past=0.05, embedparams=(1.0, 10.0)))
+        'NL_TSTL_TakensEstimator(y,-1,0.1,0.05,{1,10})',
+        NL_TSTL_TakensEstimator(Nref=-1, rad=0.1, past=0.05, embedParams=(1, 10, '_celltrick_')))
 
     # outs: None
-    # tags: crptool,dimension,nonlinear,scaling,stochastic,takens,tstool
+    # tags: crptool,dimension,nonlinear,scaling,takens,tstool
     NL_TSTL_TakensEstimator_n1_005_005_mi_fnnmar = (
         'NL_TSTL_TakensEstimator_n1_005_005_mi_fnnmar',
-        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedparams=('mi', 'fnnmar')))
+        "NL_TSTL_TakensEstimator(y,-1,0.05,0.05,{'mi','fnnmar'},'default')",
+    
+                                   NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedParams=('mi', 'fnnmar'), randomSeed='default'))
 
     # outs: None
     # tags: dimension,nonlinear,scaling,takens,tstool
     NL_TSTL_TakensEstimator_n1_005_005_1_3 = (
         'NL_TSTL_TakensEstimator_n1_005_005_1_3',
-        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedparams=(1.0, 3.0)))
+        'NL_TSTL_TakensEstimator(y,-1,0.05,0.05,{1,3})',
+        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedParams=(1, 3, '_celltrick_')))
 
     # outs: None
     # tags: dimension,nonlinear,scaling,takens,tstool
     NL_TSTL_TakensEstimator_n1_005_005_1_8 = (
         'NL_TSTL_TakensEstimator_n1_005_005_1_8',
-        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedparams=(1.0, 8.0)))
+        'NL_TSTL_TakensEstimator(y,-1,0.05,0.05,{1,8})',
+        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedParams=(1, 8, '_celltrick_')))
 
     # outs: ac1_acpf_1,ac1_acpf_10,ac1_acpf_2,ac1_acpf_3,ac1_acpf_4
     # outs: ac1_acpf_5,ac1_acpf_6,ac1_acpf_7,ac1_acpf_8,ac1_acpf_9
@@ -13259,10 +13943,11 @@ class HCTSAOperations(object):
     # outs: propdecmacpf,sacpf_1,sacpf_10,sacpf_2,sacpf_3
     # outs: sacpf_4,sacpf_5,sacpf_6,sacpf_7,sacpf_8
     # outs: sacpf_9,stdmacpfdiff
-    # tags: acp,correlation,nonlinear,stochastic,tstool
+    # tags: acp,correlation,nonlinear
     NL_TSTL_acp_mi_1__10 = (
         'NL_TSTL_acp_mi_1__10',
-        NL_TSTL_acp(tau='mi', past=1, maxdelay=(), maxdim=10, Nref=()))
+        "NL_TSTL_acp(y,'mi',1,[],10,[])",
+        NL_TSTL_acp(tau='mi', past=1, maxDelay=(), maxDim=10, Nref=()))
 
     # outs: ac1_acpf_1,ac1_acpf_10,ac1_acpf_2,ac1_acpf_3,ac1_acpf_4
     # outs: ac1_acpf_5,ac1_acpf_6,ac1_acpf_7,ac1_acpf_8,ac1_acpf_9
@@ -13275,10 +13960,11 @@ class HCTSAOperations(object):
     # outs: propdecmacpf,sacpf_1,sacpf_10,sacpf_2,sacpf_3
     # outs: sacpf_4,sacpf_5,sacpf_6,sacpf_7,sacpf_8
     # outs: sacpf_9,stdmacpfdiff
-    # tags: acp,correlation,nonlinear,slow,stochastic,tstool
+    # tags: acp,correlation,nonlinear,slow
     NL_TSTL_acp_1_001_025_10_05 = (
         'NL_TSTL_acp_1_001_025_10_05',
-        NL_TSTL_acp(tau=1, past=0.01, maxdelay=0.25, maxdim=10, Nref=0.5))
+        'NL_TSTL_acp(y,1,0.01,0.25,10,0.5)',
+        NL_TSTL_acp(tau=1, past=0.01, maxDelay=0.25, maxDim=10, Nref=0.5))
 
     # outs: bc_lfitb1,bc_lfitb2,bc_lfitb3,bc_lfitbmax,bc_lfitm1
     # outs: bc_lfitm2,bc_lfitm3,bc_lfitmeansqdev1,bc_lfitmeansqdev2,bc_lfitmeansqdev3
@@ -13323,37 +14009,45 @@ class HCTSAOperations(object):
     # tags: dimension,nonlinear,scaling,stochastic,tstool
     NL_TSTL_dimensions_50_ac_cao = (
         'NL_TSTL_dimensions_50_ac_cao',
+        "NL_TSTL_dimensions(y,50,{'ac','cao'})",
         NL_TSTL_dimensions(nbins=50, embedParams=('ac', 'cao')))
 
-    # outs: fnn10,fnn2,fnn3,fnn4,fnn5
-    # outs: fnn6,fnn7,fnn8,fnn9,m005
-    # outs: m01,m02,m05,mdrop,pdrop
-    # tags: crptool,dimension,nonlinear,stochastic
+    # outs: firstunder005,firstunder01,firstunder02,firstunder05,firstunder07
+    # outs: firstunder08,fnn10,fnn2,fnn3,fnn4
+    # outs: fnn5,fnn6,fnn7,fnn8,fnn9
+    # outs: mdrop,pdrop
+    # tags: crptool,dimension,nonlinear
     NL_crptool_fnn_10_2_ac = (
         'NL_crptool_fnn_10_2_ac',
-        NL_crptool_fnn(maxm=10, r=2, taum='ac'))
+        "NL_crptool_fnn(y,10,2,'ac',[],'default')",
+        NL_crptool_fnn(maxm=10, r=2, taum='ac', th=(), randomSeed='default'))
 
-    # outs: fnn10,fnn2,fnn3,fnn4,fnn5
-    # outs: fnn6,fnn7,fnn8,fnn9,m005
-    # outs: m01,m02,m05,mdrop,pdrop
-    # tags: crptool,dimension,nonlinear,stochastic
+    # outs: firstunder005,firstunder01,firstunder02,firstunder05,firstunder07
+    # outs: firstunder08,fnn10,fnn2,fnn3,fnn4
+    # outs: fnn5,fnn6,fnn7,fnn8,fnn9
+    # outs: mdrop,pdrop
+    # tags: crptool,dimension,nonlinear
     NL_crptool_fnn_10_2_1 = (
         'NL_crptool_fnn_10_2_1',
-        NL_crptool_fnn(maxm=10, r=2, taum=1))
+        "NL_crptool_fnn(y,10,2,1,[],'default')",
+        NL_crptool_fnn(maxm=10, r=2, taum=1, th=(), randomSeed='default'))
 
-    # outs: fnn10,fnn2,fnn3,fnn4,fnn5
-    # outs: fnn6,fnn7,fnn8,fnn9,m005
-    # outs: m01,m02,m05,mdrop,pdrop
-    # tags: crptool,dimension,nonlinear,stochastic
+    # outs: firstunder005,firstunder01,firstunder02,firstunder05,firstunder07
+    # outs: firstunder08,fnn10,fnn2,fnn3,fnn4
+    # outs: fnn5,fnn6,fnn7,fnn8,fnn9
+    # outs: mdrop,pdrop
+    # tags: crptool,dimension,nonlinear
     NL_crptool_fnn_10_2_mi = (
         'NL_crptool_fnn_10_2_mi',
-        NL_crptool_fnn(maxm=10, r=2, taum='mi'))
+        "NL_crptool_fnn(y,10,2,'mi',[],'default')",
+        NL_crptool_fnn(maxm=10, r=2, taum='mi', th=(), randomSeed='default'))
 
     # outs: fb001,fb01,max,min,nto80
     # outs: nto90,range,std,top2
     # tags: pca,tdembedding
     NL_embed_PCA_mi_10 = (
         'NL_embed_PCA_mi_10',
+        "NL_embed_PCA(y,'mi',10)",
         NL_embed_PCA(tau='mi', m=10))
 
     # outs: fb001,fb01,max,min,nto80
@@ -13361,6 +14055,7 @@ class HCTSAOperations(object):
     # tags: pca,tdembedding
     NL_embed_PCA_1_10 = (
         'NL_embed_PCA_1_10',
+        'NL_embed_PCA(y,1,10)',
         NL_embed_PCA(tau=1, m=10))
 
     # outs: dexpk_adjr2,dexpk_r2,dexpk_resAC1,dexpk_resAC2,dexpk_resruns
@@ -13376,6 +14071,7 @@ class HCTSAOperations(object):
     # tags: lengthdep,network,visibilitygraph
     NW_VisibilityGraph_horiz = (
         'NW_VisibilityGraph_horiz',
+        "NW_VisibilityGraph(y,'horiz')",
         NW_VisibilityGraph(meth='horiz'))
 
     # outs: th1,th2,th3,th4,th5
@@ -13383,6 +14079,7 @@ class HCTSAOperations(object):
     # tags: periodicity,spline
     PD_PeriodicityWang = (
         'PD_PeriodicityWang',
+        'PD_PeriodicityWang(y)',
         PD_PeriodicityWang())
 
     # outs: ac1,ac10,ac50,finaldev,mean
@@ -13391,6 +14088,7 @@ class HCTSAOperations(object):
     # tags: dblwell,dynsys
     PH_ForcePotential_dblwell_1_02_01 = (
         'PH_ForcePotential_dblwell_1_02_01',
+        "PH_ForcePotential(y,'dblwell',[1,0.2,0.1])",
         PH_ForcePotential(whatpot='dblwell', params=(1.0, 0.20000000000000001, 0.10000000000000001)))
 
     # outs: ac1,ac10,ac50,finaldev,mean
@@ -13399,6 +14097,7 @@ class HCTSAOperations(object):
     # tags: dblwell,dynsys
     PH_ForcePotential_dblwell_3_001_01 = (
         'PH_ForcePotential_dblwell_3_001_01',
+        "PH_ForcePotential(y,'dblwell',[3,0.01,0.1])",
         PH_ForcePotential(whatpot='dblwell', params=(3.0, 0.01, 0.10000000000000001)))
 
     # outs: ac1,ac10,ac50,finaldev,mean
@@ -13407,6 +14106,7 @@ class HCTSAOperations(object):
     # tags: dynsys,sine
     PH_ForcePotential_sine_3_05_1 = (
         'PH_ForcePotential_sine_3_05_1',
+        "PH_ForcePotential(y,'sine',[3,0.5,1])",
         PH_ForcePotential(whatpot='sine', params=(3.0, 0.5, 1.0)))
 
     # outs: ac1,ac10,ac50,finaldev,mean
@@ -13415,6 +14115,7 @@ class HCTSAOperations(object):
     # tags: dblwell,dynsys
     PH_ForcePotential_dblwell_1_05_02 = (
         'PH_ForcePotential_dblwell_1_05_02',
+        "PH_ForcePotential(y,'dblwell',[1,0.5,0.2])",
         PH_ForcePotential(whatpot='dblwell', params=(1.0, 0.5, 0.20000000000000001)))
 
     # outs: ac1,ac10,ac50,finaldev,mean
@@ -13423,6 +14124,7 @@ class HCTSAOperations(object):
     # tags: dynsys,sine
     PH_ForcePotential_sine_1_1_1 = (
         'PH_ForcePotential_sine_1_1_1',
+        "PH_ForcePotential(y,'sine',[1,1,1])",
         PH_ForcePotential(whatpot='sine', params=(1.0, 1.0, 1.0)))
 
     # outs: ac1,ac10,ac50,finaldev,mean
@@ -13431,6 +14133,7 @@ class HCTSAOperations(object):
     # tags: dblwell,dynsys
     PH_ForcePotential_dblwell_2_005_02 = (
         'PH_ForcePotential_dblwell_2_005_02',
+        "PH_ForcePotential(y,'dblwell',[2,0.05,0.2])",
         PH_ForcePotential(whatpot='dblwell', params=(2.0, 0.050000000000000003, 0.20000000000000001)))
 
     # outs: ac1,ac10,ac50,finaldev,mean
@@ -13439,6 +14142,7 @@ class HCTSAOperations(object):
     # tags: dynsys,sine
     PH_ForcePotential_sine_10_004_10 = (
         'PH_ForcePotential_sine_10_004_10',
+        "PH_ForcePotential(y,'sine',[10,0.04,10])",
         PH_ForcePotential(whatpot='sine', params=(10.0, 0.040000000000000001, 10.0)))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
@@ -13449,6 +14153,7 @@ class HCTSAOperations(object):
     # tags: trend
     PH_Walker_prop_09 = (
         'PH_Walker_prop_09',
+        "PH_Walker(y,'prop',0.9)",
         PH_Walker(walkerrule='prop', wparam=0.9))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
@@ -13459,6 +14164,7 @@ class HCTSAOperations(object):
     # tags: trend
     PH_Walker_momentum_5 = (
         'PH_Walker_momentum_5',
+        "PH_Walker(y,'momentum',5)",
         PH_Walker(walkerrule='momentum', wparam=5))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
@@ -13469,6 +14175,7 @@ class HCTSAOperations(object):
     # tags: trend
     PH_Walker_biasprop_01_05 = (
         'PH_Walker_biasprop_01_05',
+        "PH_Walker(y,'biasprop',[0.1,0.5])",
         PH_Walker(walkerrule='biasprop', wparam=(0.10000000000000001, 0.5)))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
@@ -13479,17 +14186,8 @@ class HCTSAOperations(object):
     # tags: trend
     PH_Walker_runningvar_15_50 = (
         'PH_Walker_runningvar_15_50',
+        "PH_Walker(y,'runningvar',[1.5,50])",
         PH_Walker(walkerrule='runningvar', wparam=(1.5, 50.0)))
-
-    # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
-    # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
-    # outs: sw_stdrat,sw_taudiff,w_ac1,w_ac2,w_max
-    # outs: w_mean,w_median,w_min,w_propzcross,w_std
-    # outs: w_tau
-    # tags: trend
-    PH_Walker_momentum_2 = (
-        'PH_Walker_momentum_2',
-        PH_Walker(walkerrule='momentum', wparam=2))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
     # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
@@ -13499,6 +14197,7 @@ class HCTSAOperations(object):
     # tags: trend
     PH_Walker_prop_05 = (
         'PH_Walker_prop_05',
+        "PH_Walker(y,'prop',0.5)",
         PH_Walker(walkerrule='prop', wparam=0.5))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
@@ -13509,6 +14208,7 @@ class HCTSAOperations(object):
     # tags: trend
     PH_Walker_biasprop_05_01 = (
         'PH_Walker_biasprop_05_01',
+        "PH_Walker(y,'biasprop',[0.5,0.1])",
         PH_Walker(walkerrule='biasprop', wparam=(0.5, 0.10000000000000001)))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
@@ -13519,6 +14219,7 @@ class HCTSAOperations(object):
     # tags: trend
     PH_Walker_prop_11 = (
         'PH_Walker_prop_11',
+        "PH_Walker(y,'prop',1.1)",
         PH_Walker(walkerrule='prop', wparam=1.1))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
@@ -13529,7 +14230,19 @@ class HCTSAOperations(object):
     # tags: trend
     PH_Walker_prop_01 = (
         'PH_Walker_prop_01',
+        "PH_Walker(y,'prop',0.1)",
         PH_Walker(walkerrule='prop', wparam=0.1))
+
+    # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
+    # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
+    # outs: sw_stdrat,sw_taudiff,w_ac1,w_ac2,w_max
+    # outs: w_mean,w_median,w_min,w_propzcross,w_std
+    # outs: w_tau
+    # tags: trend
+    PH_Walker_momentum_2 = (
+        'PH_Walker_momentum_2',
+        "PH_Walker(y,'momentum',2)",
+        PH_Walker(walkerrule='momentum', wparam=2))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -13542,7 +14255,22 @@ class HCTSAOperations(object):
     # tags: locdep,preprocessing,raw
     PP_Compare_medianf4 = (
         'PP_Compare_medianf4',
+        "PP_Compare(x,'medianf4')",
         PP_Compare(detrndmeth='medianf4'))
+
+    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
+    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
+    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
+    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
+    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
+    # outs: statav2,statav4,statav6,statav8,swms10_1
+    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
+    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
+    # tags: locdep,preprocessing,raw
+    PP_Compare_medianf2 = (
+        'PP_Compare_medianf2',
+        "PP_Compare(x,'medianf2')",
+        PP_Compare(detrndmeth='medianf2'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -13555,6 +14283,7 @@ class HCTSAOperations(object):
     # tags: locdep,preprocessing,raw
     PP_Compare_medianf3 = (
         'PP_Compare_medianf3',
+        "PP_Compare(x,'medianf3')",
         PP_Compare(detrndmeth='medianf3'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
@@ -13568,6 +14297,7 @@ class HCTSAOperations(object):
     # tags: locdep,preprocessing,raw
     PP_Compare_rav4 = (
         'PP_Compare_rav4',
+        "PP_Compare(x,'rav4')",
         PP_Compare(detrndmeth='rav4'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
@@ -13581,6 +14311,7 @@ class HCTSAOperations(object):
     # tags: locdep,preprocessing,raw
     PP_Compare_rav3 = (
         'PP_Compare_rav3',
+        "PP_Compare(x,'rav3')",
         PP_Compare(detrndmeth='rav3'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
@@ -13594,6 +14325,7 @@ class HCTSAOperations(object):
     # tags: preprocessing,raw
     PP_Compare_poly1 = (
         'PP_Compare_poly1',
+        "PP_Compare(x,'poly1')",
         PP_Compare(detrndmeth='poly1'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
@@ -13607,6 +14339,7 @@ class HCTSAOperations(object):
     # tags: preprocessing,raw,spline
     PP_Compare_spline24 = (
         'PP_Compare_spline24',
+        "PP_Compare(x,'spline24')",
         PP_Compare(detrndmeth='spline24'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
@@ -13620,20 +14353,8 @@ class HCTSAOperations(object):
     # tags: locdep,preprocessing,raw
     PP_Compare_resample_2_1 = (
         'PP_Compare_resample_2_1',
+        "PP_Compare(x,'resample_2_1')",
         PP_Compare(detrndmeth='resample_2_1'))
-
-    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
-    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
-    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
-    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
-    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
-    # outs: statav2,statav4,statav6,statav8,swms10_1
-    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
-    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
-    # tags: preprocessing,raw
-    PP_Compare_poly2 = (
-        'PP_Compare_poly2',
-        PP_Compare(detrndmeth='poly2'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -13646,7 +14367,22 @@ class HCTSAOperations(object):
     # tags: locdep,preprocessing,raw
     PP_Compare_resample_1_2 = (
         'PP_Compare_resample_1_2',
+        "PP_Compare(x,'resample_1_2')",
         PP_Compare(detrndmeth='resample_1_2'))
+
+    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
+    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
+    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
+    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
+    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
+    # outs: statav2,statav4,statav6,statav8,swms10_1
+    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
+    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
+    # tags: locdep,preprocessing,raw
+    PP_Compare_medianf10 = (
+        'PP_Compare_medianf10',
+        "PP_Compare(x,'medianf10')",
+        PP_Compare(detrndmeth='medianf10'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -13659,6 +14395,7 @@ class HCTSAOperations(object):
     # tags: preprocessing,raw,spline
     PP_Compare_spline44 = (
         'PP_Compare_spline44',
+        "PP_Compare(x,'spline44')",
         PP_Compare(detrndmeth='spline44'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
@@ -13670,9 +14407,10 @@ class HCTSAOperations(object):
     # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
     # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
     # tags: locdep,preprocessing,raw
-    PP_Compare_medianf2 = (
-        'PP_Compare_medianf2',
-        PP_Compare(detrndmeth='medianf2'))
+    PP_Compare_rav2 = (
+        'PP_Compare_rav2',
+        "PP_Compare(x,'rav2')",
+        PP_Compare(detrndmeth='rav2'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -13685,6 +14423,7 @@ class HCTSAOperations(object):
     # tags: preprocessing,raw,spline
     PP_Compare_spline64 = (
         'PP_Compare_spline64',
+        "PP_Compare(x,'spline64')",
         PP_Compare(detrndmeth='spline64'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
@@ -13698,33 +14437,8 @@ class HCTSAOperations(object):
     # tags: locdep,preprocessing,raw
     PP_Compare_sin1 = (
         'PP_Compare_sin1',
+        "PP_Compare(x,'sin1')",
         PP_Compare(detrndmeth='sin1'))
-
-    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
-    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
-    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
-    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
-    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
-    # outs: statav2,statav4,statav6,statav8,swms10_1
-    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
-    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
-    # tags: locdep,preprocessing,raw
-    PP_Compare_rav2 = (
-        'PP_Compare_rav2',
-        PP_Compare(detrndmeth='rav2'))
-
-    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
-    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
-    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
-    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
-    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
-    # outs: statav2,statav4,statav6,statav8,swms10_1
-    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
-    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
-    # tags: locdep,preprocessing,raw
-    PP_Compare_medianf10 = (
-        'PP_Compare_medianf10',
-        PP_Compare(detrndmeth='medianf10'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -13737,6 +14451,7 @@ class HCTSAOperations(object):
     # tags: locdep,preprocessing,raw
     PP_Compare_sin2 = (
         'PP_Compare_sin2',
+        "PP_Compare(x,'sin2')",
         PP_Compare(detrndmeth='sin2'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
@@ -13750,6 +14465,7 @@ class HCTSAOperations(object):
     # tags: locdep,preprocessing,raw
     PP_Compare_rav10 = (
         'PP_Compare_rav10',
+        "PP_Compare(x,'rav10')",
         PP_Compare(detrndmeth='rav10'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
@@ -13763,7 +14479,22 @@ class HCTSAOperations(object):
     # tags: preprocessing,raw
     PP_Compare_diff2 = (
         'PP_Compare_diff2',
+        "PP_Compare(x,'diff2')",
         PP_Compare(detrndmeth='diff2'))
+
+    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
+    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
+    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
+    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
+    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
+    # outs: statav2,statav4,statav6,statav8,swms10_1
+    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
+    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
+    # tags: preprocessing,raw
+    PP_Compare_poly2 = (
+        'PP_Compare_poly2',
+        "PP_Compare(x,'poly2')",
+        PP_Compare(detrndmeth='poly2'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -13776,6 +14507,7 @@ class HCTSAOperations(object):
     # tags: preprocessing,raw
     PP_Compare_diff1 = (
         'PP_Compare_diff1',
+        "PP_Compare(x,'diff1')",
         PP_Compare(detrndmeth='diff1'))
 
     # outs: gauss1_h10_exp,gauss1_h10_jump,gauss1_h10_lin,gauss1_h10_trend,gauss1_kd_exp
@@ -13789,68 +14521,18 @@ class HCTSAOperations(object):
     # tags: preprocessing,raw
     PP_Iterate_diff = (
         'PP_Iterate_diff',
+        "PP_Iterate(x,'diff')",
         PP_Iterate(dtMeth='diff'))
-
-    # outs: gauss1_h10_exp,gauss1_h10_jump,gauss1_h10_lin,gauss1_h10_trend,gauss1_kd_exp
-    # outs: gauss1_kd_jump,gauss1_kd_lin,gauss1_kd_trend,norm_kscomp_exp,norm_kscomp_jump
-    # outs: norm_kscomp_lin,norm_kscomp_trend,normdiff_exp,normdiff_jump,normdiff_lin
-    # outs: normdiff_trend,ol_exp,ol_jump,ol_lin,ol_trend
-    # outs: statav5_exp,statav5_jump,statav5_lin,statav5_trend,swms5_2_exp
-    # outs: swms5_2_jump,swms5_2_lin,swms5_2_trend,swss5_2_exp,swss5_2_jump
-    # outs: swss5_2_lin,swss5_2_trend,xc1_exp,xc1_jump,xc1_lin
-    # outs: xc1_trend,xcn1_exp,xcn1_jump,xcn1_lin,xcn1_trend
-    # tags: locdep,preprocessing,raw
-    PP_Iterate_resampledown = (
-        'PP_Iterate_resampledown',
-        PP_Iterate(dtMeth='resampledown'))
-
-    # outs: gauss1_h10_exp,gauss1_h10_jump,gauss1_h10_lin,gauss1_h10_trend,gauss1_kd_exp
-    # outs: gauss1_kd_jump,gauss1_kd_lin,gauss1_kd_trend,norm_kscomp_exp,norm_kscomp_jump
-    # outs: norm_kscomp_lin,norm_kscomp_trend,normdiff_exp,normdiff_jump,normdiff_lin
-    # outs: normdiff_trend,ol_exp,ol_jump,ol_lin,ol_trend
-    # outs: statav5_exp,statav5_jump,statav5_lin,statav5_trend,swms5_2_exp
-    # outs: swms5_2_jump,swms5_2_lin,swms5_2_trend,swss5_2_exp,swss5_2_jump
-    # outs: swss5_2_lin,swss5_2_trend,xc1_exp,xc1_jump,xc1_lin
-    # outs: xc1_trend,xcn1_exp,xcn1_jump,xcn1_lin,xcn1_trend
-    # tags: locdep,preprocessing,raw
-    PP_Iterate_medianf = (
-        'PP_Iterate_medianf',
-        PP_Iterate(dtMeth='medianf'))
-
-    # outs: gauss1_h10_exp,gauss1_h10_jump,gauss1_h10_lin,gauss1_h10_trend,gauss1_kd_exp
-    # outs: gauss1_kd_jump,gauss1_kd_lin,gauss1_kd_trend,norm_kscomp_exp,norm_kscomp_jump
-    # outs: norm_kscomp_lin,norm_kscomp_trend,normdiff_exp,normdiff_jump,normdiff_lin
-    # outs: normdiff_trend,ol_exp,ol_jump,ol_lin,ol_trend
-    # outs: statav5_exp,statav5_jump,statav5_lin,statav5_trend,swms5_2_exp
-    # outs: swms5_2_jump,swms5_2_lin,swms5_2_trend,swss5_2_exp,swss5_2_jump
-    # outs: swss5_2_lin,swss5_2_trend,xc1_exp,xc1_jump,xc1_lin
-    # outs: xc1_trend,xcn1_exp,xcn1_jump,xcn1_lin,xcn1_trend
-    # tags: locdep,preprocessing,raw
-    PP_Iterate_resampleup = (
-        'PP_Iterate_resampleup',
-        PP_Iterate(dtMeth='resampleup'))
-
-    # outs: gauss1_h10_exp,gauss1_h10_jump,gauss1_h10_lin,gauss1_h10_trend,gauss1_kd_exp
-    # outs: gauss1_kd_jump,gauss1_kd_lin,gauss1_kd_trend,norm_kscomp_exp,norm_kscomp_jump
-    # outs: norm_kscomp_lin,norm_kscomp_trend,normdiff_exp,normdiff_jump,normdiff_lin
-    # outs: normdiff_trend,ol_exp,ol_jump,ol_lin,ol_trend
-    # outs: statav5_exp,statav5_jump,statav5_lin,statav5_trend,swms5_2_exp
-    # outs: swms5_2_jump,swms5_2_lin,swms5_2_trend,swss5_2_exp,swss5_2_jump
-    # outs: swss5_2_lin,swss5_2_trend,xc1_exp,xc1_jump,xc1_lin
-    # outs: xc1_trend,xcn1_exp,xcn1_jump,xcn1_lin,xcn1_trend
-    # tags: locdep,preprocessing,raw
-    PP_Iterate_rav = (
-        'PP_Iterate_rav',
-        PP_Iterate(dtMeth='rav'))
 
     # outs: rmserrrat_d1,rmserrrat_d2,rmserrrat_d3,rmserrrat_lf_02,rmserrrat_lf_02_d1
     # outs: rmserrrat_p1_10,rmserrrat_p1_20,rmserrrat_p1_40,rmserrrat_p1_5,rmserrrat_p2_10
     # outs: rmserrrat_p2_20,rmserrrat_p2_40,rmserrrat_p2_5,rmserrrat_peaks_08,rmserrrat_peaks_08_d1
     # outs: rmserrrat_rmgd
-    # tags: preprocessing,stochastic,trend
+    # tags: preprocessing,trend
     PP_ModelFit_ar_2 = (
         'PP_ModelFit_ar_2',
-        PP_ModelFit(model='ar', order=2))
+        "PP_ModelFit(y,'ar',2,'default')",
+        PP_ModelFit(model='ar', order=2, randomSeed='default'))
 
     # outs: h,longstretch0,longstretch1,meanstretch0,meanstretch1
     # outs: meanstretchrat,pstretch0,pstretch1,pstretches,pup
@@ -13859,6 +14541,7 @@ class HCTSAOperations(object):
     # tags: distribution,stationarity
     SB_BinaryStats_diff = (
         'SB_BinaryStats_diff',
+        "SB_BinaryStats(y,'diff')",
         SB_BinaryStats(binarymeth='diff'))
 
     # outs: h,longstretch0,longstretch1,meanstretch0,meanstretch1
@@ -13868,6 +14551,7 @@ class HCTSAOperations(object):
     # tags: distribution,stationarity
     SB_BinaryStats_mean = (
         'SB_BinaryStats_mean',
+        "SB_BinaryStats(y,'mean')",
         SB_BinaryStats(binarymeth='mean'))
 
     # outs: h,longstretch0,longstretch1,meanstretch0,meanstretch1
@@ -13877,48 +14561,22 @@ class HCTSAOperations(object):
     # tags: distribution,stationarity
     SB_BinaryStats_iqr = (
         'SB_BinaryStats_iqr',
+        "SB_BinaryStats(y,'iqr')",
         SB_BinaryStats(binarymeth='iqr'))
 
     # outs: None
     # tags: binary
     SB_BinaryStretch_lseq0 = (
         'SB_BinaryStretch_lseq0',
+        "SB_BinaryStretch(y,'lseq0')",
         SB_BinaryStretch(stretchwhat='lseq0'))
 
     # outs: None
     # tags: binary
     SB_BinaryStretch_lseq1 = (
         'SB_BinaryStretch_lseq1',
+        "SB_BinaryStretch(y,'lseq1')",
         SB_BinaryStretch(stretchwhat='lseq1'))
-
-    # outs: aa,aaa,aaaa,aaab,aaac
-    # outs: aab,aaba,aabb,aabc,aac
-    # outs: aaca,aacb,aacc,ab,aba
-    # outs: abaa,abab,abac,abb,abba
-    # outs: abbb,abbc,abc,abca,abcb
-    # outs: abcc,ac,aca,acaa,acab
-    # outs: acac,acb,acba,acbb,acbc
-    # outs: acc,acca,accb,accc,ba
-    # outs: baa,baaa,baab,baac,bab
-    # outs: baba,babb,babc,bac,baca
-    # outs: bacb,bacc,bb,bba,bbaa
-    # outs: bbab,bbac,bbb,bbba,bbbb
-    # outs: bbbc,bbc,bbca,bbcb,bbcc
-    # outs: bc,bca,bcaa,bcab,bcac
-    # outs: bcb,bcba,bcbb,bcbc,bcc
-    # outs: bcca,bccb,bccc,ca,caa
-    # outs: caaa,caab,caac,cab,caba
-    # outs: cabb,cabc,cac,caca,cacb
-    # outs: cacc,cb,cba,cbaa,cbab
-    # outs: cbac,cbb,cbba,cbbb,cbbc
-    # outs: cbc,cbca,cbcb,cbcc,cc
-    # outs: cca,ccaa,ccab,ccac,ccb
-    # outs: ccba,ccbb,ccbc,ccc,ccca
-    # outs: cccb,cccc,hh,hhh,hhhh
-    # tags: motifs
-    SB_MotifThree_diffquant = (
-        'SB_MotifThree_diffquant',
-        SB_MotifThree(trit='diffquant'))
 
     # outs: aa,aaa,aaaa,aaab,aaac
     # outs: aab,aaba,aabb,aabc,aac
@@ -13947,7 +14605,38 @@ class HCTSAOperations(object):
     # tags: motifs
     SB_MotifThree_quantile = (
         'SB_MotifThree_quantile',
+        "SB_MotifThree(y,'quantile')",
         SB_MotifThree(trit='quantile'))
+
+    # outs: aa,aaa,aaaa,aaab,aaac
+    # outs: aab,aaba,aabb,aabc,aac
+    # outs: aaca,aacb,aacc,ab,aba
+    # outs: abaa,abab,abac,abb,abba
+    # outs: abbb,abbc,abc,abca,abcb
+    # outs: abcc,ac,aca,acaa,acab
+    # outs: acac,acb,acba,acbb,acbc
+    # outs: acc,acca,accb,accc,ba
+    # outs: baa,baaa,baab,baac,bab
+    # outs: baba,babb,babc,bac,baca
+    # outs: bacb,bacc,bb,bba,bbaa
+    # outs: bbab,bbac,bbb,bbba,bbbb
+    # outs: bbbc,bbc,bbca,bbcb,bbcc
+    # outs: bc,bca,bcaa,bcab,bcac
+    # outs: bcb,bcba,bcbb,bcbc,bcc
+    # outs: bcca,bccb,bccc,ca,caa
+    # outs: caaa,caab,caac,cab,caba
+    # outs: cabb,cabc,cac,caca,cacb
+    # outs: cacc,cb,cba,cbaa,cbab
+    # outs: cbac,cbb,cbba,cbbb,cbbc
+    # outs: cbc,cbca,cbcb,cbcc,cc
+    # outs: cca,ccaa,ccab,ccac,ccb
+    # outs: ccba,ccbb,ccbc,ccc,ccca
+    # outs: cccb,cccc,hh,hhh,hhhh
+    # tags: motifs
+    SB_MotifThree_diffquant = (
+        'SB_MotifThree_diffquant',
+        "SB_MotifThree(y,'diffquant')",
+        SB_MotifThree(trit='diffquant'))
 
     # outs: d,dd,ddd,dddd,dddu
     # outs: ddu,ddud,dduu,du,dud
@@ -13959,6 +14648,7 @@ class HCTSAOperations(object):
     # tags: motifs
     SB_MotifTwo_mean = (
         'SB_MotifTwo_mean',
+        "SB_MotifTwo(y,'mean')",
         SB_MotifTwo(bint='mean'))
 
     # outs: d,dd,ddd,dddd,dddu
@@ -13971,6 +14661,7 @@ class HCTSAOperations(object):
     # tags: motifs
     SB_MotifTwo_median = (
         'SB_MotifTwo_median',
+        "SB_MotifTwo(y,'median')",
         SB_MotifTwo(bint='median'))
 
     # outs: d,dd,ddd,dddd,dddu
@@ -13983,62 +14674,8 @@ class HCTSAOperations(object):
     # tags: motifs
     SB_MotifTwo_diff = (
         'SB_MotifTwo_diff',
+        "SB_MotifTwo(y,'diff')",
         SB_MotifTwo(bint='diff'))
-
-    # outs: T1,T2,T3,T4,maxeig
-    # outs: maxeigcov,meaneig,meaneigcov,mineig,mineigcov
-    # outs: ondiag,stddiag,stdeig,stdeigcov,sumdiagcov
-    # outs: symdiff,symsumdiff
-    # tags: transitionmat
-    SB_TransitionMatrix_21 = (
-        'SB_TransitionMatrix_21',
-        SB_TransitionMatrix(howtocg='quantile', numGroups=2, tau=1))
-
-    # outs: T1,T2,T3,T4,T5
-    # outs: T6,T7,T8,T9,maxeig
-    # outs: maxeigcov,maximeig,meaneig,meaneigcov,mineig
-    # outs: mineigcov,ondiag,stddiag,stdeig,stdeigcov
-    # outs: sumdiagcov,symdiff,symsumdiff
-    # tags: transitionmat
-    SB_TransitionMatrix_31 = (
-        'SB_TransitionMatrix_31',
-        SB_TransitionMatrix(howtocg='quantile', numGroups=3, tau=1))
-
-    # outs: TD1,TD2,TD3,TD4,maxeig
-    # outs: maxeigcov,maximeig,meaneig,meaneigcov,mineig
-    # outs: mineigcov,ondiag,stddiag,stdeig,stdeigcov
-    # outs: sumdiagcov,symdiff,symsumdiff
-    # tags: transitionmat
-    SB_TransitionMatrix_4ac = (
-        'SB_TransitionMatrix_4ac',
-        SB_TransitionMatrix(howtocg='quantile', numGroups=4, tau='ac'))
-
-    # outs: TD1,TD2,TD3,TD4,TD5
-    # outs: maxeig,maxeigcov,maximeig,meaneig,meaneigcov
-    # outs: mineig,mineigcov,ondiag,stddiag,stdeig
-    # outs: stdeigcov,sumdiagcov,symdiff,symsumdiff
-    # tags: transitionmat
-    SB_TransitionMatrix_51 = (
-        'SB_TransitionMatrix_51',
-        SB_TransitionMatrix(howtocg='quantile', numGroups=5, tau=1))
-
-    # outs: TD1,TD2,TD3,TD4,maxeig
-    # outs: maxeigcov,maximeig,meaneig,meaneigcov,mineig
-    # outs: mineigcov,ondiag,stddiag,stdeig,stdeigcov
-    # outs: sumdiagcov,symdiff,symsumdiff
-    # tags: transitionmat
-    SB_TransitionMatrix_41 = (
-        'SB_TransitionMatrix_41',
-        SB_TransitionMatrix(howtocg='quantile', numGroups=4, tau=1))
-
-    # outs: T1,T2,T3,T4,maxeig
-    # outs: maxeigcov,meaneig,meaneigcov,mineig,mineigcov
-    # outs: ondiag,stddiag,stdeig,stdeigcov,sumdiagcov
-    # outs: symdiff,symsumdiff
-    # tags: transitionmat
-    SB_TransitionMatrix_2ac = (
-        'SB_TransitionMatrix_2ac',
-        SB_TransitionMatrix(howtocg='quantile', numGroups=2, tau='ac'))
 
     # outs: T1,T2,T3,T4,T5
     # outs: T6,T7,T8,T9,maxeig
@@ -14048,7 +14685,59 @@ class HCTSAOperations(object):
     # tags: transitionmat
     SB_TransitionMatrix_3ac = (
         'SB_TransitionMatrix_3ac',
+        "SB_TransitionMatrix(y,'quantile',3,'ac')",
         SB_TransitionMatrix(howtocg='quantile', numGroups=3, tau='ac'))
+
+    # outs: TD1,TD2,TD3,TD4,maxeig
+    # outs: maxeigcov,maximeig,meaneig,meaneigcov,mineig
+    # outs: mineigcov,ondiag,stddiag,stdeig,stdeigcov
+    # outs: sumdiagcov,symdiff,symsumdiff
+    # tags: transitionmat
+    SB_TransitionMatrix_4ac = (
+        'SB_TransitionMatrix_4ac',
+        "SB_TransitionMatrix(y,'quantile',4,'ac')",
+        SB_TransitionMatrix(howtocg='quantile', numGroups=4, tau='ac'))
+
+    # outs: T1,T2,T3,T4,T5
+    # outs: T6,T7,T8,T9,maxeig
+    # outs: maxeigcov,maximeig,meaneig,meaneigcov,mineig
+    # outs: mineigcov,ondiag,stddiag,stdeig,stdeigcov
+    # outs: sumdiagcov,symdiff,symsumdiff
+    # tags: transitionmat
+    SB_TransitionMatrix_31 = (
+        'SB_TransitionMatrix_31',
+        "SB_TransitionMatrix(y,'quantile',3,1)",
+        SB_TransitionMatrix(howtocg='quantile', numGroups=3, tau=1))
+
+    # outs: TD1,TD2,TD3,TD4,TD5
+    # outs: maxeig,maxeigcov,maximeig,meaneig,meaneigcov
+    # outs: mineig,mineigcov,ondiag,stddiag,stdeig
+    # outs: stdeigcov,sumdiagcov,symdiff,symsumdiff
+    # tags: transitionmat
+    SB_TransitionMatrix_51 = (
+        'SB_TransitionMatrix_51',
+        "SB_TransitionMatrix(y,'quantile',5,1)",
+        SB_TransitionMatrix(howtocg='quantile', numGroups=5, tau=1))
+
+    # outs: TD1,TD2,TD3,TD4,maxeig
+    # outs: maxeigcov,maximeig,meaneig,meaneigcov,mineig
+    # outs: mineigcov,ondiag,stddiag,stdeig,stdeigcov
+    # outs: sumdiagcov,symdiff,symsumdiff
+    # tags: transitionmat
+    SB_TransitionMatrix_41 = (
+        'SB_TransitionMatrix_41',
+        "SB_TransitionMatrix(y,'quantile',4,1)",
+        SB_TransitionMatrix(howtocg='quantile', numGroups=4, tau=1))
+
+    # outs: T1,T2,T3,T4,maxeig
+    # outs: maxeigcov,meaneig,meaneigcov,mineig,mineigcov
+    # outs: ondiag,stddiag,stdeig,stdeigcov,sumdiagcov
+    # outs: symdiff,symsumdiff
+    # tags: transitionmat
+    SB_TransitionMatrix_2ac = (
+        'SB_TransitionMatrix_2ac',
+        "SB_TransitionMatrix(y,'quantile',2,'ac')",
+        SB_TransitionMatrix(howtocg='quantile', numGroups=2, tau='ac'))
 
     # outs: TD1,TD2,TD3,TD4,TD5
     # outs: maxeig,maxeigcov,maximeig,meaneig,meaneigcov
@@ -14057,7 +14746,18 @@ class HCTSAOperations(object):
     # tags: transitionmat
     SB_TransitionMatrix_5ac = (
         'SB_TransitionMatrix_5ac',
+        "SB_TransitionMatrix(y,'quantile',5,'ac')",
         SB_TransitionMatrix(howtocg='quantile', numGroups=5, tau='ac'))
+
+    # outs: T1,T2,T3,T4,maxeig
+    # outs: maxeigcov,meaneig,meaneigcov,mineig,mineigcov
+    # outs: ondiag,stddiag,stdeig,stdeigcov,sumdiagcov
+    # outs: symdiff,symsumdiff
+    # tags: transitionmat
+    SB_TransitionMatrix_21 = (
+        'SB_TransitionMatrix_21',
+        "SB_TransitionMatrix(y,'quantile',2,1)",
+        SB_TransitionMatrix(howtocg='quantile', numGroups=2, tau=1))
 
     # outs: maxdiagfexp_a,maxdiagfexp_adjr2,maxdiagfexp_b,maxdiagfexp_r2,maxdiagfexp_rmse
     # outs: maxeig_fexpa,maxeig_fexpadjr2,maxeig_fexpb,maxeig_fexpr2,maxeig_fexprmse
@@ -14071,6 +14771,7 @@ class HCTSAOperations(object):
     # tags: transitionmat
     SB_TransitionpAlphabet_40_1 = (
         'SB_TransitionpAlphabet_40_1',
+        'SB_TransitionpAlphabet(y,2:40,1)',
         SB_TransitionpAlphabet(ng=MatlabSequence('2:40'), tau=1))
 
     # outs: maxdiagfexp_a,maxdiagfexp_adjr2,maxdiagfexp_b,maxdiagfexp_r2,maxdiagfexp_rmse
@@ -14085,6 +14786,7 @@ class HCTSAOperations(object):
     # tags: transitionmat
     SB_TransitionpAlphabet_20_ac = (
         'SB_TransitionpAlphabet_20_ac',
+        "SB_TransitionpAlphabet(y,2:20,'ac')",
         SB_TransitionpAlphabet(ng=MatlabSequence('2:20'), tau='ac'))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14095,6 +14797,7 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,lini,scaling
     SC_FluctAnal_sign_2_dfa_2_2 = (
         'SC_FluctAnal_sign_2_dfa_2_2',
+        "SC_FluctAnal(zscore(sign(y)),2,'dfa',2,2,[],0)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=2, lag=(), loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14102,10 +14805,22 @@ class HCTSAOperations(object):
     # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
     # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
     # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: fa,lengthdep,scaling
-    SC_FluctAnal_2_nothing_25_logi = (
-        'SC_FluctAnal_2_nothing_25_logi',
-        SC_FluctAnal(q=2, wtf='nothing', taustep=25, k=(), lag=(), loginc=1))
+    # tags: fa,lengthdep,lini,scaling
+    SC_FluctAnal_2_endptdiff_1 = (
+        'SC_FluctAnal_2_endptdiff_1',
+        "SC_FluctAnal(y,2,'endptdiff',1,[],[],0)",
+        SC_FluctAnal(q=2, wtf='endptdiff', taustep=1, k=(), lag=(), loginc=0))
+
+    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
+    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
+    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
+    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
+    # outs: se1,se2,ssr,stats_coeffcorr
+    # tags: fa,lengthdep,lini,scaling
+    SC_FluctAnal_2_std_1 = (
+        'SC_FluctAnal_2_std_1',
+        "SC_FluctAnal(y,2,'std',1,[],[],0)",
+        SC_FluctAnal(q=2, wtf='std', taustep=1, k=(), lag=(), loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14115,6 +14830,7 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,scaling
     SC_FluctAnal_2_dfa_25_2_logi = (
         'SC_FluctAnal_2_dfa_25_2_logi',
+        "SC_FluctAnal(y,2,'dfa',25,2,[],1)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=2, lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14125,7 +14841,19 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,scaling
     SC_FluctAnal_2_dfa_25_1_2_logi = (
         'SC_FluctAnal_2_dfa_25_1_2_logi',
+        "SC_FluctAnal(y,2,'dfa',25,1,2,1)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=1, lag=2, loginc=1))
+
+    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
+    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
+    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
+    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
+    # outs: se1,se2,ssr,stats_coeffcorr
+    # tags: dfa,lengthdep,lini,scaling
+    SC_FluctAnal_2_dfa_2_3 = (
+        'SC_FluctAnal_2_dfa_2_3',
+        "SC_FluctAnal(y,2,'dfa',2,3,[],0)",
+        SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=3, lag=(), loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14135,6 +14863,7 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,lini,scaling
     SC_FluctAnal_2_dfa_2_1_2 = (
         'SC_FluctAnal_2_dfa_2_1_2',
+        "SC_FluctAnal(y,2,'dfa',2,1,2,0)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=1, lag=2, loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14145,6 +14874,7 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,lini,scaling
     SC_FluctAnal_2_dfa_2_1_3 = (
         'SC_FluctAnal_2_dfa_2_1_3',
+        "SC_FluctAnal(y,2,'dfa',2,1,3,0)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=1, lag=3, loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14155,6 +14885,7 @@ class HCTSAOperations(object):
     # tags: fa,lengthdep,scaling
     SC_FluctAnal_2_range_25_logi = (
         'SC_FluctAnal_2_range_25_logi',
+        "SC_FluctAnal(y,2,'range',25,[],[],1)",
         SC_FluctAnal(q=2, wtf='range', taustep=25, k=(), lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14165,6 +14896,7 @@ class HCTSAOperations(object):
     # tags: lengthdep,lini,rsrange,scaling
     SC_FluctAnal_2_rsrange_1 = (
         'SC_FluctAnal_2_rsrange_1',
+        "SC_FluctAnal(y,2,'rsrange',1,[],[],0)",
         SC_FluctAnal(q=2, wtf='rsrange', taustep=1, k=(), lag=(), loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14175,6 +14907,7 @@ class HCTSAOperations(object):
     # tags: fa,lengthdep,scaling
     SC_FluctAnal_2_endptdiff_25_logi = (
         'SC_FluctAnal_2_endptdiff_25_logi',
+        "SC_FluctAnal(y,2,'endptdiff',25,[],[],1)",
         SC_FluctAnal(q=2, wtf='endptdiff', taustep=25, k=(), lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14185,17 +14918,8 @@ class HCTSAOperations(object):
     # tags: fa,lengthdep,scaling
     SC_FluctAnal_2_iqr_25_logi = (
         'SC_FluctAnal_2_iqr_25_logi',
+        "SC_FluctAnal(y,2,'iqr',25,[],[],1)",
         SC_FluctAnal(q=2, wtf='iqr', taustep=25, k=(), lag=(), loginc=1))
-
-    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
-    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
-    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
-    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
-    # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: fa,lengthdep,lini,scaling
-    SC_FluctAnal_2_std_1 = (
-        'SC_FluctAnal_2_std_1',
-        SC_FluctAnal(q=2, wtf='std', taustep=1, k=(), lag=(), loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14205,6 +14929,7 @@ class HCTSAOperations(object):
     # tags: lengthdep,lini,rsrange,scaling
     SC_FluctAnal_2_rsrangefit_2_1 = (
         'SC_FluctAnal_2_rsrangefit_2_1',
+        "SC_FluctAnal(y,2,'rsrangefit',2,1,[],0)",
         SC_FluctAnal(q=2, wtf='rsrangefit', taustep=2, k=1, lag=(), loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14215,6 +14940,7 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,scaling
     SC_FluctAnal_2_dfa_25_1_logi = (
         'SC_FluctAnal_2_dfa_25_1_logi',
+        "SC_FluctAnal(y,2,'dfa',25,1,[],1)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=1, lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14225,6 +14951,7 @@ class HCTSAOperations(object):
     # tags: fa,lengthdep,lini,scaling
     SC_FluctAnal_2_iqr_1 = (
         'SC_FluctAnal_2_iqr_1',
+        "SC_FluctAnal(y,2,'iqr',1,[],[],0)",
         SC_FluctAnal(q=2, wtf='iqr', taustep=1, k=(), lag=(), loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14235,6 +14962,7 @@ class HCTSAOperations(object):
     # tags: fa,lengthdep,lini,scaling
     SC_FluctAnal_2_nothing_1 = (
         'SC_FluctAnal_2_nothing_1',
+        "SC_FluctAnal(y,2,'nothing',1,[],[],0)",
         SC_FluctAnal(q=2, wtf='nothing', taustep=1, k=(), lag=(), loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14245,6 +14973,7 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,scaling
     SC_FluctAnal_2_dfa_25_3_logi = (
         'SC_FluctAnal_2_dfa_25_3_logi',
+        "SC_FluctAnal(y,2,'dfa',25,3,[],1)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=3, lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14255,17 +14984,8 @@ class HCTSAOperations(object):
     # tags: lengthdep,rsrange,scaling
     SC_FluctAnal_2_rsrangefit_25_1_logi = (
         'SC_FluctAnal_2_rsrangefit_25_1_logi',
+        "SC_FluctAnal(y,2,'rsrangefit',25,1,[],1)",
         SC_FluctAnal(q=2, wtf='rsrangefit', taustep=25, k=1, lag=(), loginc=1))
-
-    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
-    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
-    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
-    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
-    # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: dfa,lengthdep,scaling
-    SC_FluctAnal_2_dfa_25_0_logi = (
-        'SC_FluctAnal_2_dfa_25_0_logi',
-        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=0, lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14275,7 +14995,19 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,lini,scaling
     SC_FluctAnal_2_dfa_2_0 = (
         'SC_FluctAnal_2_dfa_2_0',
+        "SC_FluctAnal(y,2,'dfa',2,0,[],0)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=0, lag=(), loginc=0))
+
+    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
+    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
+    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
+    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
+    # outs: se1,se2,ssr,stats_coeffcorr
+    # tags: dfa,lengthdep,scaling
+    SC_FluctAnal_mag_2_dfa_25_2_logi = (
+        'SC_FluctAnal_mag_2_dfa_25_2_logi',
+        "SC_FluctAnal(zscore(abs(y)),2,'dfa',25,2,[],1)",
+        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=2, lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14285,6 +15017,7 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,lini,scaling
     SC_FluctAnal_2_dfa_2_2 = (
         'SC_FluctAnal_2_dfa_2_2',
+        "SC_FluctAnal(y,2,'dfa',2,2,[],0)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=2, lag=(), loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14295,7 +15028,19 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,lini,scaling
     SC_FluctAnal_2_dfa_2_1 = (
         'SC_FluctAnal_2_dfa_2_1',
+        "SC_FluctAnal(y,2,'dfa',2,1,[],0)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=1, lag=(), loginc=0))
+
+    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
+    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
+    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
+    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
+    # outs: se1,se2,ssr,stats_coeffcorr
+    # tags: dfa,lengthdep,scaling
+    SC_FluctAnal_2_dfa_25_0_logi = (
+        'SC_FluctAnal_2_dfa_25_0_logi',
+        "SC_FluctAnal(y,2,'dfa',25,0,[],1)",
+        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=0, lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14305,6 +15050,7 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,lini,scaling
     SC_FluctAnal_mag_2_dfa_2_2 = (
         'SC_FluctAnal_mag_2_dfa_2_2',
+        "SC_FluctAnal(zscore(abs(y)),2,'dfa',2,2,[],0)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=2, lag=(), loginc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14315,6 +15061,7 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,scaling
     SC_FluctAnal_2_dfa_25_1_3_logi = (
         'SC_FluctAnal_2_dfa_25_1_3_logi',
+        "SC_FluctAnal(y,2,'dfa',25,1,3,1)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=1, lag=3, loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14325,6 +15072,7 @@ class HCTSAOperations(object):
     # tags: lengthdep,rsrange,scaling
     SC_FluctAnal_2_rsrange_25_logi = (
         'SC_FluctAnal_2_rsrange_25_logi',
+        "SC_FluctAnal(y,2,'rsrange',25,[],[],1)",
         SC_FluctAnal(q=2, wtf='rsrange', taustep=25, k=(), lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14332,20 +15080,11 @@ class HCTSAOperations(object):
     # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
     # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
     # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: fa,lengthdep,lini,scaling
-    SC_FluctAnal_2_endptdiff_1 = (
-        'SC_FluctAnal_2_endptdiff_1',
-        SC_FluctAnal(q=2, wtf='endptdiff', taustep=1, k=(), lag=(), loginc=0))
-
-    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
-    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
-    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
-    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
-    # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: dfa,lengthdep,scaling
-    SC_FluctAnal_mag_2_dfa_25_2_logi = (
-        'SC_FluctAnal_mag_2_dfa_25_2_logi',
-        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=2, lag=(), loginc=1))
+    # tags: fa,lengthdep,scaling
+    SC_FluctAnal_2_nothing_25_logi = (
+        'SC_FluctAnal_2_nothing_25_logi',
+        "SC_FluctAnal(y,2,'nothing',25,[],[],1)",
+        SC_FluctAnal(q=2, wtf='nothing', taustep=25, k=(), lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14355,6 +15094,7 @@ class HCTSAOperations(object):
     # tags: dfa,lengthdep,scaling
     SC_FluctAnal_sign_2_dfa_25_2_logi = (
         'SC_FluctAnal_sign_2_dfa_25_2_logi',
+        "SC_FluctAnal(zscore(sign(y)),2,'dfa',25,2,[],1)",
         SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=2, lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14365,6 +15105,7 @@ class HCTSAOperations(object):
     # tags: fa,lengthdep,scaling
     SC_FluctAnal_2_std_25_logi = (
         'SC_FluctAnal_2_std_25_logi',
+        "SC_FluctAnal(y,2,'std',25,[],[],1)",
         SC_FluctAnal(q=2, wtf='std', taustep=25, k=(), lag=(), loginc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
@@ -14375,116 +15116,122 @@ class HCTSAOperations(object):
     # tags: fa,lengthdep,lini,scaling
     SC_FluctAnal_2_range_1 = (
         'SC_FluctAnal_2_range_1',
+        "SC_FluctAnal(y,2,'range',1,[],[],0)",
         SC_FluctAnal(q=2, wtf='range', taustep=1, k=(), lag=(), loginc=0))
-
-    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
-    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
-    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
-    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
-    # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: dfa,lengthdep,lini,scaling
-    SC_FluctAnal_2_dfa_2_3 = (
-        'SC_FluctAnal_2_dfa_2_3',
-        SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=3, lag=(), loginc=0))
 
     # outs: None
     # tags: dfa,mex,scaling
     SC_fastdfa = (
         'SC_fastdfa',
+        'SC_fastdfa(y)',
         SC_fastdfa())
 
     # outs: ami_f,ami_mediqr,ami_p,ami_prank,ami_zscore
     # outs: fmmi_f,fmmi_mediqr,fmmi_p,fmmi_prank,fmmi_zscore
     # outs: o3_f,o3_mediqr,o3_p,o3_prank,o3_zscore
     # outs: tc3_f,tc3_mediqr,tc3_p,tc3_prank,tc3_zscore
-    # tags: nonlinearity,stochastic,surrogatedata
+    # tags: nonlinearity,surrogatedata
     SD_SurrogateTest_RP_99 = (
         'SD_SurrogateTest_RP_99',
-        SD_SurrogateTest(surrmeth='RP', nsurrs=99, extrap=(), teststat=('ami1', 'fmmi', 'o3', 'tc3')))
+        "SD_SurrogateTest(y,'RP',99,[],{'ami1','fmmi','o3','tc3'},'default')",
+        SD_SurrogateTest(surrMeth='RP', numSurrs=99, extrap=(), theTestStat=('ami1', 'fmmi', 'o3',
+                         'tc3'), randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_tc3_mi_100_1 = (
-        'TSTL_tc3_mi_100_1',
-        SD_TSTL_surrogates(tau='mi', nsurr=100, surrmethod=1, surrfn='tc3'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_1_100_2_tc3 = (
+        'SD_TSTL_surrogates_1_100_2_tc3',
+        "SD_TSTL_surrogates(y,1,100,2,'tc3','default')",
+        SD_TSTL_surrogates(tau=1, nsurr=100, surrMethod=2, surrfn='tc3', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_tc3_mi_100_3 = (
-        'TSTL_tc3_mi_100_3',
-        SD_TSTL_surrogates(tau='mi', nsurr=100, surrmethod=3, surrfn='tc3'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_mi_100_1_tc3 = (
+        'SD_TSTL_surrogates_mi_100_1_tc3',
+        "SD_TSTL_surrogates(y,'mi',100,1,'tc3','default')",
+        SD_TSTL_surrogates(tau='mi', nsurr=100, surrMethod=1, surrfn='tc3', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_tc3_mi_100_2 = (
-        'TSTL_tc3_mi_100_2',
-        SD_TSTL_surrogates(tau='mi', nsurr=100, surrmethod=2, surrfn='tc3'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_1_100_1_tc3 = (
+        'SD_TSTL_surrogates_1_100_1_tc3',
+        "SD_TSTL_surrogates(y,1,100,1,'tc3','default')",
+        SD_TSTL_surrogates(tau=1, nsurr=100, surrMethod=1, surrfn='tc3', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_trev_1_100_3 = (
-        'TSTL_trev_1_100_3',
-        SD_TSTL_surrogates(tau=1, nsurr=100, surrmethod=3, surrfn='trev'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_1_100_1_trev = (
+        'SD_TSTL_surrogates_1_100_1_trev',
+        "SD_TSTL_surrogates(y,1,100,1,'trev','default')",
+        SD_TSTL_surrogates(tau=1, nsurr=100, surrMethod=1, surrfn='trev', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_tc3_1_100_1 = (
-        'TSTL_tc3_1_100_1',
-        SD_TSTL_surrogates(tau=1, nsurr=100, surrmethod=1, surrfn='tc3'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_mi_100_2_tc3 = (
+        'SD_TSTL_surrogates_mi_100_2_tc3',
+        "SD_TSTL_surrogates(y,'mi',100,2,'tc3','default')",
+        SD_TSTL_surrogates(tau='mi', nsurr=100, surrMethod=2, surrfn='tc3', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_trev_mi_100_1 = (
-        'TSTL_trev_mi_100_1',
-        SD_TSTL_surrogates(tau='mi', nsurr=100, surrmethod=1, surrfn='trev'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_mi_100_3_tc3 = (
+        'SD_TSTL_surrogates_mi_100_3_tc3',
+        "SD_TSTL_surrogates(y,'mi',100,3,'tc3','default')",
+        SD_TSTL_surrogates(tau='mi', nsurr=100, surrMethod=3, surrfn='tc3', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_trev_mi_100_2 = (
-        'TSTL_trev_mi_100_2',
-        SD_TSTL_surrogates(tau='mi', nsurr=100, surrmethod=2, surrfn='trev'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_1_100_2_trev = (
+        'SD_TSTL_surrogates_1_100_2_trev',
+        "SD_TSTL_surrogates(y,1,100,2,'trev','default')",
+        SD_TSTL_surrogates(tau=1, nsurr=100, surrMethod=2, surrfn='trev', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_tc3_1_100_3 = (
-        'TSTL_tc3_1_100_3',
-        SD_TSTL_surrogates(tau=1, nsurr=100, surrmethod=3, surrfn='tc3'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_1_100_3_trev = (
+        'SD_TSTL_surrogates_1_100_3_trev',
+        "SD_TSTL_surrogates(y,1,100,3,'trev','default')",
+        SD_TSTL_surrogates(tau=1, nsurr=100, surrMethod=3, surrfn='trev', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_tc3_1_100_2 = (
-        'TSTL_tc3_1_100_2',
-        SD_TSTL_surrogates(tau=1, nsurr=100, surrmethod=2, surrfn='tc3'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_mi_100_2_trev = (
+        'SD_TSTL_surrogates_mi_100_2_trev',
+        "SD_TSTL_surrogates(y,'mi',100,2,'trev','default')",
+        SD_TSTL_surrogates(tau='mi', nsurr=100, surrMethod=2, surrfn='trev', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_trev_mi_100_3 = (
-        'TSTL_trev_mi_100_3',
-        SD_TSTL_surrogates(tau='mi', nsurr=100, surrmethod=3, surrfn='trev'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_mi_100_3_trev = (
+        'SD_TSTL_surrogates_mi_100_3_trev',
+        "SD_TSTL_surrogates(y,'mi',100,3,'trev','default')",
+        SD_TSTL_surrogates(tau='mi', nsurr=100, surrMethod=3, surrfn='trev', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_trev_1_100_1 = (
-        'TSTL_trev_1_100_1',
-        SD_TSTL_surrogates(tau=1, nsurr=100, surrmethod=1, surrfn='trev'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_mi_100_1_trev = (
+        'SD_TSTL_surrogates_mi_100_1_trev',
+        "SD_TSTL_surrogates(y,'mi',100,1,'trev','default')",
+        SD_TSTL_surrogates(tau='mi', nsurr=100, surrMethod=1, surrfn='trev', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,stochastic,surrogate,tstool
-    TSTL_trev_1_100_2 = (
-        'TSTL_trev_1_100_2',
-        SD_TSTL_surrogates(tau=1, nsurr=100, surrmethod=2, surrfn='trev'))
+    # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_1_100_3_tc3 = (
+        'SD_TSTL_surrogates_1_100_3_tc3',
+        "SD_TSTL_surrogates(y,1,100,3,'tc3','default')",
+        SD_TSTL_surrogates(tau=1, nsurr=100, surrMethod=3, surrfn='tc3', randomSeed='default'))
 
     # outs: ac1,ac2,ac3,ac4,area_2_1
     # outs: area_2_2,area_3_1,area_3_2,area_3_3,area_4_1
@@ -14504,22 +15251,22 @@ class HCTSAOperations(object):
     # outs: logiqr,logmaxonlogmean1e,logmean,logstd,logtau
     # outs: maxS,maxSlog,maxw,maxwidth,mean
     # outs: meanlog,median,medianlog,melmax,mom3
-    # outs: mom4,mom5,mom6,mom7,mom8
-    # outs: mom9,ncross01,ncross02,ncross05,ncross1
-    # outs: ncross10,ncross2,ncross20,ncross5,q1
-    # outs: q10,q10mel,q1mel,q25,q25log
-    # outs: q25mel,q5,q50,q50mel,q5mel
-    # outs: q75,q75log,q75mel,q90,q90mel
-    # outs: q95,q95mel,q99,q99mel,rawstatav2_m
-    # outs: rawstatav3_m,rawstatav4_m,rawstatav5_m,sfm,spect_shann_ent
-    # outs: spect_shann_ent_norm,statav2_m,statav2_s,statav3_m,statav3_s
-    # outs: statav4_m,statav4_s,statav5_m,statav5_s,std
-    # outs: stdlog,tau,w10_90,w10_90mel,w1_99
-    # outs: w1_99mel,w25_75,w25_75mel,w5_95,w5_95mel
-    # outs: ylogareatopeak
+    # outs: mom4,mom5,ncross01,ncross02,ncross05
+    # outs: ncross1,ncross10,ncross2,ncross20,ncross5
+    # outs: q1,q10,q10mel,q1mel,q25
+    # outs: q25log,q25mel,q5,q50,q50mel
+    # outs: q5mel,q75,q75log,q75mel,q90
+    # outs: q90mel,q95,q95mel,q99,q99mel
+    # outs: rawstatav2_m,rawstatav3_m,rawstatav4_m,rawstatav5_m,sfm
+    # outs: spect_shann_ent,spect_shann_ent_norm,statav2_m,statav2_s,statav3_m
+    # outs: statav3_s,statav4_m,statav4_s,statav5_m,statav5_s
+    # outs: std,stdlog,tau,w10_90,w10_90mel
+    # outs: w1_99,w1_99mel,w25_75,w25_75mel,w5_95
+    # outs: w5_95mel,ylogareatopeak
     # tags: powerspectrum
     SP_basic_fft_logdev_power = (
         'SP_basic_fft_logdev_power',
+        "SP_Summaries(y,'fft',[],[],1,1)",
         SP_Summaries(psdmeth='fft', wmeth=(), nf=(), dologabs=1, doPower=1))
 
     # outs: ac1,ac2,ac3,ac4,area_2_1
@@ -14540,22 +15287,22 @@ class HCTSAOperations(object):
     # outs: logiqr,logmaxonlogmean1e,logmean,logstd,logtau
     # outs: maxS,maxSlog,maxw,maxwidth,mean
     # outs: meanlog,median,medianlog,melmax,mom3
-    # outs: mom4,mom5,mom6,mom7,mom8
-    # outs: mom9,ncross01,ncross02,ncross05,ncross1
-    # outs: ncross10,ncross2,ncross20,ncross5,q1
-    # outs: q10,q10mel,q1mel,q25,q25log
-    # outs: q25mel,q5,q50,q50mel,q5mel
-    # outs: q75,q75log,q75mel,q90,q90mel
-    # outs: q95,q95mel,q99,q99mel,rawstatav2_m
-    # outs: rawstatav3_m,rawstatav4_m,rawstatav5_m,sfm,spect_shann_ent
-    # outs: spect_shann_ent_norm,statav2_m,statav2_s,statav3_m,statav3_s
-    # outs: statav4_m,statav4_s,statav5_m,statav5_s,std
-    # outs: stdlog,tau,w10_90,w10_90mel,w1_99
-    # outs: w1_99mel,w25_75,w25_75mel,w5_95,w5_95mel
-    # outs: ylogareatopeak
+    # outs: mom4,mom5,ncross01,ncross02,ncross05
+    # outs: ncross1,ncross10,ncross2,ncross20,ncross5
+    # outs: q1,q10,q10mel,q1mel,q25
+    # outs: q25log,q25mel,q5,q50,q50mel
+    # outs: q5mel,q75,q75log,q75mel,q90
+    # outs: q90mel,q95,q95mel,q99,q99mel
+    # outs: rawstatav2_m,rawstatav3_m,rawstatav4_m,rawstatav5_m,sfm
+    # outs: spect_shann_ent,spect_shann_ent_norm,statav2_m,statav2_s,statav3_m
+    # outs: statav3_s,statav4_m,statav4_s,statav5_m,statav5_s
+    # outs: std,stdlog,tau,w10_90,w10_90mel
+    # outs: w1_99,w1_99mel,w25_75,w25_75mel,w5_95
+    # outs: w5_95mel,ylogareatopeak
     # tags: powerspectrum
     SP_basic_pgram_hamm_power = (
         'SP_basic_pgram_hamm_power',
+        "SP_Summaries(y,'periodogram','hamming',[],0,1)",
         SP_Summaries(psdmeth='periodogram', wmeth='hamming', nf=(), dologabs=0, doPower=1))
 
     # outs: ac1,ac2,ac3,ac4,area_2_1
@@ -14576,88 +15323,99 @@ class HCTSAOperations(object):
     # outs: logiqr,logmaxonlogmean1e,logmean,logstd,logtau
     # outs: maxS,maxSlog,maxw,maxwidth,mean
     # outs: meanlog,median,medianlog,melmax,mom3
-    # outs: mom4,mom5,mom6,mom7,mom8
-    # outs: mom9,ncross01,ncross02,ncross05,ncross1
-    # outs: ncross10,ncross2,ncross20,ncross5,q1
-    # outs: q10,q10mel,q1mel,q25,q25log
-    # outs: q25mel,q5,q50,q50mel,q5mel
-    # outs: q75,q75log,q75mel,q90,q90mel
-    # outs: q95,q95mel,q99,q99mel,rawstatav2_m
-    # outs: rawstatav3_m,rawstatav4_m,rawstatav5_m,sfm,spect_shann_ent
-    # outs: spect_shann_ent_norm,statav2_m,statav2_s,statav3_m,statav3_s
-    # outs: statav4_m,statav4_s,statav5_m,statav5_s,std
-    # outs: stdlog,tau,w10_90,w10_90mel,w1_99
-    # outs: w1_99mel,w25_75,w25_75mel,w5_95,w5_95mel
-    # outs: ylogareatopeak
+    # outs: mom4,mom5,ncross01,ncross02,ncross05
+    # outs: ncross1,ncross10,ncross2,ncross20,ncross5
+    # outs: q1,q10,q10mel,q1mel,q25
+    # outs: q25log,q25mel,q5,q50,q50mel
+    # outs: q5mel,q75,q75log,q75mel,q90
+    # outs: q90mel,q95,q95mel,q99,q99mel
+    # outs: rawstatav2_m,rawstatav3_m,rawstatav4_m,rawstatav5_m,sfm
+    # outs: spect_shann_ent,spect_shann_ent_norm,statav2_m,statav2_s,statav3_m
+    # outs: statav3_s,statav4_m,statav4_s,statav5_m,statav5_s
+    # outs: std,stdlog,tau,w10_90,w10_90mel
+    # outs: w1_99,w1_99mel,w25_75,w25_75mel,w5_95
+    # outs: w5_95mel,ylogareatopeak
     # tags: powerspectrum
     SP_basic_fft_power = (
         'SP_basic_fft_power',
+        "SP_Summaries(y,'fft',[],[],0,1)",
         SP_Summaries(psdmeth='fft', wmeth=(), nf=(), dologabs=0, doPower=1))
 
     # outs: None
     # tags: raw,spreaddep,trend
     ST_FitPolynomial_10 = (
         'ST_FitPolynomial_10',
+        'ST_FitPolynomial(x,10)',
         ST_FitPolynomial(k=10))
-
-    # outs: None
-    # tags: raw,spreaddep,trend
-    ST_FitPolynomial_7 = (
-        'ST_FitPolynomial_7',
-        ST_FitPolynomial(k=7))
 
     # outs: None
     # tags: raw,spreaddep,trend
     ST_FitPolynomial_8 = (
         'ST_FitPolynomial_8',
+        'ST_FitPolynomial(x,8)',
         ST_FitPolynomial(k=8))
+
+    # outs: None
+    # tags: raw,spreaddep,trend
+    ST_FitPolynomial_9 = (
+        'ST_FitPolynomial_9',
+        'ST_FitPolynomial(x,9)',
+        ST_FitPolynomial(k=9))
 
     # outs: None
     # tags: raw,spreaddep,trend
     ST_FitPolynomial_1 = (
         'ST_FitPolynomial_1',
+        'ST_FitPolynomial(x,1)',
         ST_FitPolynomial(k=1))
 
     # outs: None
     # tags: raw,spreaddep,trend
     ST_FitPolynomial_2 = (
         'ST_FitPolynomial_2',
+        'ST_FitPolynomial(x,2)',
         ST_FitPolynomial(k=2))
 
     # outs: None
     # tags: raw,spreaddep,trend
     ST_FitPolynomial_3 = (
         'ST_FitPolynomial_3',
+        'ST_FitPolynomial(x,3)',
         ST_FitPolynomial(k=3))
 
     # outs: None
     # tags: raw,spreaddep,trend
     ST_FitPolynomial_4 = (
         'ST_FitPolynomial_4',
+        'ST_FitPolynomial(x,4)',
         ST_FitPolynomial(k=4))
 
     # outs: None
     # tags: raw,spreaddep,trend
     ST_FitPolynomial_5 = (
         'ST_FitPolynomial_5',
+        'ST_FitPolynomial(x,5)',
         ST_FitPolynomial(k=5))
 
     # outs: None
     # tags: raw,spreaddep,trend
     ST_FitPolynomial_6 = (
         'ST_FitPolynomial_6',
+        'ST_FitPolynomial(x,6)',
         ST_FitPolynomial(k=6))
 
     # outs: None
     # tags: raw,spreaddep,trend
-    ST_FitPolynomial_9 = (
-        'ST_FitPolynomial_9',
-        ST_FitPolynomial(k=9))
+    ST_FitPolynomial_7 = (
+        'ST_FitPolynomial_7',
+        'ST_FitPolynomial(x,7)',
+        ST_FitPolynomial(k=7))
 
     # outs: None
     # tags: lengthdep,misc,raw
     ST_length = (
         'ST_length',
+        'ST_Length(x)',
         ST_Length())
 
     # outs: diffmaxabsmin,maxabsext,maxmaxmed,meanabsext,meanabsmin
@@ -14668,6 +15426,7 @@ class HCTSAOperations(object):
     # tags: distribution,stationarity
     ST_LocalExtrema_l50 = (
         'ST_LocalExtrema_l50',
+        "ST_LocalExtrema(y,'l',50)",
         ST_LocalExtrema(lorf='l', n=50))
 
     # outs: diffmaxabsmin,maxabsext,maxmaxmed,meanabsext,meanabsmin
@@ -14678,6 +15437,7 @@ class HCTSAOperations(object):
     # tags: distribution,stationarity
     ST_LocalExtrema_n100 = (
         'ST_LocalExtrema_n100',
+        "ST_LocalExtrema(y,'n',100)",
         ST_LocalExtrema(lorf='n', n=100))
 
     # outs: diffmaxabsmin,maxabsext,maxmaxmed,meanabsext,meanabsmin
@@ -14688,6 +15448,7 @@ class HCTSAOperations(object):
     # tags: distribution,stationarity
     ST_LocalExtrema_l100 = (
         'ST_LocalExtrema_l100',
+        "ST_LocalExtrema(y,'l',100)",
         ST_LocalExtrema(lorf='l', n=100))
 
     # outs: diffmaxabsmin,maxabsext,maxmaxmed,meanabsext,meanabsmin
@@ -14698,6 +15459,7 @@ class HCTSAOperations(object):
     # tags: distribution,stationarity
     ST_LocalExtrema_n50 = (
         'ST_LocalExtrema_n50',
+        "ST_LocalExtrema(y,'n',50)",
         ST_LocalExtrema(lorf='n', n=50))
 
     # outs: diffmaxabsmin,maxabsext,maxmaxmed,meanabsext,meanabsmin
@@ -14708,96 +15470,112 @@ class HCTSAOperations(object):
     # tags: distribution,stationarity
     ST_LocalExtrema_n25 = (
         'ST_LocalExtrema_n25',
+        "ST_LocalExtrema(y,'n',25)",
         ST_LocalExtrema(lorf='n', n=25))
-
-    # outs: R,absR,density,mi
-    # tags: statistics
-    ST_MomentCorr_002_02_median_iqr_abs = (
-        'ST_MomentCorr_002_02_median_iqr_abs',
-        ST_MomentCorr(wl=0.02, olap=0.2, mom1='median', mom2='iqr', transf='abs'))
-
-    # outs: R,absR,density,mi
-    # tags: statistics
-    ST_MomentCorr_002_02_median_iqr_sqrt = (
-        'ST_MomentCorr_002_02_median_iqr_sqrt',
-        ST_MomentCorr(wl=0.02, olap=0.2, mom1='median', mom2='iqr', transf='sqrt'))
 
     # outs: R,absR,density,mi
     # tags: statistics
     ST_MomentCorr_002_02_mean_std_none = (
         'ST_MomentCorr_002_02_mean_std_none',
-        ST_MomentCorr(wl=0.02, olap=0.2, mom1='mean', mom2='std', transf='none'))
+        "ST_MomentCorr(y,0.02,0.2,'mean','std','none')",
+        ST_MomentCorr(windowLength=0.02, wOverlap=0.2, mom1='mean', mom2='std', whatTransform='none'))
+
+    # outs: R,absR,density,mi
+    # tags: statistics
+    ST_MomentCorr_002_02_median_iqr_abs = (
+        'ST_MomentCorr_002_02_median_iqr_abs',
+        "ST_MomentCorr(y,0.02,0.2,'median','iqr','abs')",
+        ST_MomentCorr(windowLength=0.02, wOverlap=0.2, mom1='median', mom2='iqr', whatTransform='abs'))
 
     # outs: R,absR,density,mi
     # tags: statistics
     ST_MomentCorr_002_02_mean_std_abs = (
         'ST_MomentCorr_002_02_mean_std_abs',
-        ST_MomentCorr(wl=0.02, olap=0.2, mom1='mean', mom2='std', transf='abs'))
+        "ST_MomentCorr(y,0.02,0.2,'mean','std','abs')",
+        ST_MomentCorr(windowLength=0.02, wOverlap=0.2, mom1='mean', mom2='std', whatTransform='abs'))
+
+    # outs: R,absR,density,mi
+    # tags: statistics
+    ST_MomentCorr_002_02_median_iqr_sqrt = (
+        'ST_MomentCorr_002_02_median_iqr_sqrt',
+        "ST_MomentCorr(y,0.02,0.2,'median','iqr','sqrt')",
+        ST_MomentCorr(windowLength=0.02, wOverlap=0.2, mom1='median', mom2='iqr', whatTransform='sqrt'))
 
     # outs: R,absR,density,mi
     # tags: statistics
     ST_MomentCorr_002_02_median_iqr_none = (
         'ST_MomentCorr_002_02_median_iqr_none',
-        ST_MomentCorr(wl=0.02, olap=0.2, mom1='median', mom2='iqr', transf='none'))
+        "ST_MomentCorr(y,0.02,0.2,'median','iqr','none')",
+        ST_MomentCorr(windowLength=0.02, wOverlap=0.2, mom1='median', mom2='iqr', whatTransform='none'))
 
     # outs: R,absR,density,mi
     # tags: statistics
     ST_MomentCorr_002_02_mean_std_sqrt = (
         'ST_MomentCorr_002_02_mean_std_sqrt',
-        ST_MomentCorr(wl=0.02, olap=0.2, mom1='mean', mom2='std', transf='sqrt'))
+        "ST_MomentCorr(y,0.02,0.2,'mean','std','sqrt')",
+        ST_MomentCorr(windowLength=0.02, wOverlap=0.2, mom1='mean', mom2='std', whatTransform='sqrt'))
 
     # outs: None
     # tags: distribution
     ST_SimpleStats_pmcross = (
         'ST_SimpleStats_pmcross',
+        "ST_SimpleStats(y,'pmcross')",
         ST_SimpleStats(whatstat='pmcross'))
 
     # outs: None
     # tags: noisiness
     ST_SimpleStats_zcross = (
         'ST_SimpleStats_zcross',
+        "ST_SimpleStats(y,'zcross')",
         ST_SimpleStats(whatstat='zcross'))
 
     # outs: None
     # tags: noisiness
     ST_SimpleStats_min = (
         'ST_SimpleStats_min',
+        "ST_SimpleStats(y,'minima')",
         ST_SimpleStats(whatstat='minima'))
 
     # outs: None
     # tags: noisiness
     ST_SimpleStats_max = (
         'ST_SimpleStats_max',
+        "ST_SimpleStats(y,'maxima')",
         ST_SimpleStats(whatstat='maxima'))
 
     # outs: max,mean,meanabsmaxmin,meanmaxmin,min
     # tags: stationarity
     SY_DriftingMeann10 = (
         'SY_DriftingMeann10',
+        "SY_DriftingMean(y,'num',10)",
         SY_DriftingMean(howl='num', l=10))
 
     # outs: max,mean,meanabsmaxmin,meanmaxmin,min
     # tags: stationarity
     SY_DriftingMeann5 = (
         'SY_DriftingMeann5',
+        "SY_DriftingMean(y,'num',5)",
         SY_DriftingMean(howl='num', l=5))
 
     # outs: max,mean,meanabsmaxmin,meanmaxmin,min
     # tags: stationarity
     SY_DriftingMean100 = (
         'SY_DriftingMean100',
+        "SY_DriftingMean(y,'fix',100)",
         SY_DriftingMean(howl='fix', l=100))
 
     # outs: max,mean,meanabsmaxmin,meanmaxmin,min
     # tags: stationarity
     SY_DriftingMean20 = (
         'SY_DriftingMean20',
+        "SY_DriftingMean(y,'fix',20)",
         SY_DriftingMean(howl='fix', l=20))
 
     # outs: max,mean,meanabsmaxmin,meanmaxmin,min
     # tags: stationarity
     SY_DriftingMean50 = (
         'SY_DriftingMean50',
+        "SY_DriftingMean(y,'fix',50)",
         SY_DriftingMean(howl='fix', l=50))
 
     # outs: stdac1,stdac2,stdactaug,stdactaul,stdapen1_02
@@ -14806,6 +15584,7 @@ class HCTSAOperations(object):
     # tags: stationarity
     SY_DynWin10 = (
         'SY_DynWin10',
+        'SY_DynWin(y,10)',
         SY_DynWin(maxnseg=10))
 
     # outs: lagmaxstat,lagminstat,maxpValue,maxstat,minpValue
@@ -14813,78 +15592,91 @@ class HCTSAOperations(object):
     # tags: econometricstoolbox,hypothesistest,kpsstest,pvalue,stationarity
     SY_KPSStest_0_10 = (
         'SY_KPSStest_0_10',
+        'SY_KPSStest(y,0:10)',
         SY_KPSStest(lags=MatlabSequence('0:10')))
 
     # outs: pValue,stat
     # tags: econometricstoolbox,hypothesistest,kpsstest,pvalue,stationarity
     SY_KPSStest_1 = (
         'SY_KPSStest_1',
+        'SY_KPSStest(y,1)',
         SY_KPSStest(lags=1))
 
     # outs: pValue,stat
     # tags: econometricstoolbox,hypothesistest,kpsstest,pvalue,stationarity
     SY_KPSStest_0 = (
         'SY_KPSStest_0',
+        'SY_KPSStest(y,0)',
         SY_KPSStest(lags=0))
 
     # outs: pValue,stat
     # tags: econometricstoolbox,hypothesistest,kpsstest,pvalue,stationarity
     SY_KPSStest_2 = (
         'SY_KPSStest_2',
+        'SY_KPSStest(y,2)',
         SY_KPSStest(lags=2))
 
     # outs: None
     # tags: raw,stationarity
     SY_LinearTrend = (
         'SY_LinearTrend',
+        'SY_LinearTrend(x)',
         SY_LinearTrend())
 
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_4_each = (
         'SY_LocalDistributions_4_each',
+        "SY_LocalDistributions(y,4,'each')",
         SY_LocalDistributions(nseg=4, eachorpar='each'))
 
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_5_each = (
         'SY_LocalDistributions_5_each',
+        "SY_LocalDistributions(y,5,'each')",
         SY_LocalDistributions(nseg=5, eachorpar='each'))
 
     # outs: meandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_2_par = (
         'SY_LocalDistributions_2_par',
+        "SY_LocalDistributions(y,2,'par')",
         SY_LocalDistributions(nseg=2, eachorpar='par'))
 
     # outs: None
     # tags: stationarity
     SY_LocalDistributions_2_each = (
         'SY_LocalDistributions_2_each',
+        "SY_LocalDistributions(y,2,'each')",
         SY_LocalDistributions(nseg=2, eachorpar='each'))
+
+    # outs: meandiv,mediandiv,mindiv,stddiv
+    # tags: stationarity
+    SY_LocalDistributions_3_par = (
+        'SY_LocalDistributions_3_par',
+        "SY_LocalDistributions(y,3,'par')",
+        SY_LocalDistributions(nseg=3, eachorpar='par'))
 
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_3_each = (
         'SY_LocalDistributions_3_each',
+        "SY_LocalDistributions(y,3,'each')",
         SY_LocalDistributions(nseg=3, eachorpar='each'))
 
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_5_par = (
         'SY_LocalDistributions_5_par',
+        "SY_LocalDistributions(y,5,'par')",
         SY_LocalDistributions(nseg=5, eachorpar='par'))
-
-    # outs: meandiv,mediandiv,mindiv,stddiv
-    # tags: stationarity
-    SY_LocalDistributions_3_par = (
-        'SY_LocalDistributions_3_par',
-        SY_LocalDistributions(nseg=3, eachorpar='par'))
 
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_4_par = (
         'SY_LocalDistributions_4_par',
+        "SY_LocalDistributions(y,4,'par')",
         SY_LocalDistributions(nseg=4, eachorpar='par'))
 
     # outs: absmean,ac1,iqr,kurtosis,median
@@ -14892,34 +15684,15 @@ class HCTSAOperations(object):
     # tags: stationarity
     SY_LocalGlobal_l50 = (
         'SY_LocalGlobal_l50',
+        "SY_LocalGlobal(y,'l',50)",
         SY_LocalGlobal(lorp='l', n=50))
-
-    # outs: absmean,ac1,iqr,kurtosis,median
-    # outs: skewness,std
-    # tags: stationarity,stochastic
-    SY_LocalGlobal_randcg10 = (
-        'SY_LocalGlobal_randcg10',
-        SY_LocalGlobal(lorp='randcg', n=10))
-
-    # outs: absmean,ac1,iqr,kurtosis,median
-    # outs: skewness,std
-    # tags: stationarity,stochastic
-    SY_LocalGlobal_randcg100 = (
-        'SY_LocalGlobal_randcg100',
-        SY_LocalGlobal(lorp='randcg', n=100))
-
-    # outs: absmean,ac1,iqr,kurtosis,median
-    # outs: skewness,std
-    # tags: stationarity,stochastic
-    SY_LocalGlobal_randcg50 = (
-        'SY_LocalGlobal_randcg50',
-        SY_LocalGlobal(lorp='randcg', n=50))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
     # tags: stationarity
     SY_LocalGlobal_l10 = (
         'SY_LocalGlobal_l10',
+        "SY_LocalGlobal(y,'l',10)",
         SY_LocalGlobal(lorp='l', n=10))
 
     # outs: absmean,ac1,iqr,kurtosis,median
@@ -14927,6 +15700,7 @@ class HCTSAOperations(object):
     # tags: stationarity
     SY_LocalGlobal_p05 = (
         'SY_LocalGlobal_p05',
+        "SY_LocalGlobal(y,'p',0.05)",
         SY_LocalGlobal(lorp='p', n=0.05))
 
     # outs: absmean,ac1,iqr,kurtosis,median
@@ -14934,6 +15708,7 @@ class HCTSAOperations(object):
     # tags: stationarity
     SY_LocalGlobal_p1 = (
         'SY_LocalGlobal_p1',
+        "SY_LocalGlobal(y,'p',0.1)",
         SY_LocalGlobal(lorp='p', n=0.1))
 
     # outs: absmean,ac1,iqr,kurtosis,median
@@ -14941,27 +15716,31 @@ class HCTSAOperations(object):
     # tags: stationarity
     SY_LocalGlobal_p5 = (
         'SY_LocalGlobal_p5',
+        "SY_LocalGlobal(y,'p',0.5)",
         SY_LocalGlobal(lorp='p', n=0.5))
-
-    # outs: absmean,ac1,iqr,kurtosis,median
-    # outs: skewness,std
-    # tags: stationarity,stochastic
-    SY_LocalGlobal_randcg20 = (
-        'SY_LocalGlobal_randcg20',
-        SY_LocalGlobal(lorp='randcg', n=20))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
     # tags: stationarity
     SY_LocalGlobal_unicg500 = (
         'SY_LocalGlobal_unicg500',
+        "SY_LocalGlobal(y,'unicg',500)",
         SY_LocalGlobal(lorp='unicg', n=500))
+
+    # outs: absmean,ac1,iqr,kurtosis,median
+    # outs: skewness,std
+    # tags: stationarity
+    SY_LocalGlobal_l100 = (
+        'SY_LocalGlobal_l100',
+        "SY_LocalGlobal(y,'l',100)",
+        SY_LocalGlobal(lorp='l', n=100))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
     # tags: stationarity
     SY_LocalGlobal_unicg20 = (
         'SY_LocalGlobal_unicg20',
+        "SY_LocalGlobal(y,'unicg',20)",
         SY_LocalGlobal(lorp='unicg', n=20))
 
     # outs: absmean,ac1,iqr,kurtosis,median
@@ -14969,20 +15748,15 @@ class HCTSAOperations(object):
     # tags: stationarity
     SY_LocalGlobal_p01 = (
         'SY_LocalGlobal_p01',
+        "SY_LocalGlobal(y,'p',0.01)",
         SY_LocalGlobal(lorp='p', n=0.01))
-
-    # outs: absmean,ac1,iqr,kurtosis,median
-    # outs: skewness,std
-    # tags: stationarity,stochastic
-    SY_LocalGlobal_randcg500 = (
-        'SY_LocalGlobal_randcg500',
-        SY_LocalGlobal(lorp='randcg', n=500))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
     # tags: stationarity
     SY_LocalGlobal_l500 = (
         'SY_LocalGlobal_l500',
+        "SY_LocalGlobal(y,'l',500)",
         SY_LocalGlobal(lorp='l', n=500))
 
     # outs: absmean,ac1,iqr,kurtosis,median
@@ -14990,6 +15764,7 @@ class HCTSAOperations(object):
     # tags: stationarity
     SY_LocalGlobal_l20 = (
         'SY_LocalGlobal_l20',
+        "SY_LocalGlobal(y,'l',20)",
         SY_LocalGlobal(lorp='l', n=20))
 
     # outs: absmean,ac1,iqr,kurtosis,median
@@ -14997,20 +15772,15 @@ class HCTSAOperations(object):
     # tags: stationarity
     SY_LocalGlobal_unicg10 = (
         'SY_LocalGlobal_unicg10',
+        "SY_LocalGlobal(y,'unicg',10)",
         SY_LocalGlobal(lorp='unicg', n=10))
-
-    # outs: absmean,ac1,iqr,kurtosis,median
-    # outs: skewness,std
-    # tags: stationarity
-    SY_LocalGlobal_l100 = (
-        'SY_LocalGlobal_l100',
-        SY_LocalGlobal(lorp='l', n=100))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
     # tags: stationarity
     SY_LocalGlobal_unicg100 = (
         'SY_LocalGlobal_unicg100',
+        "SY_LocalGlobal(y,'unicg',100)",
         SY_LocalGlobal(lorp='unicg', n=100))
 
     # outs: absmean,ac1,iqr,kurtosis,median
@@ -15018,6 +15788,7 @@ class HCTSAOperations(object):
     # tags: stationarity
     SY_LocalGlobal_unicg50 = (
         'SY_LocalGlobal_unicg50',
+        "SY_LocalGlobal(y,'unicg',50)",
         SY_LocalGlobal(lorp='unicg', n=50))
 
     # outs: lagmaxp,lagminp,maxpValue,maxrmse,maxstat
@@ -15026,6 +15797,7 @@ class HCTSAOperations(object):
     # tags: aic,bic,econometricstoolbox,hqc,pptest,pvalue,rmse,unitroot
     SY_PPtest_0_5_ts_t1 = (
         'SY_PPtest_0_5_ts_t1',
+        "SY_PPtest(y,0:5,'ts','t1')",
         SY_PPtest(lags=MatlabSequence('0:5'), model='ts', teststat='t1'))
 
     # outs: lagmaxp,lagminp,maxpValue,maxrmse,maxstat
@@ -15034,6 +15806,7 @@ class HCTSAOperations(object):
     # tags: aic,bic,econometricstoolbox,hqc,pptest,pvalue,rmse,unitroot
     SY_PPtest_0_5_ard_t1 = (
         'SY_PPtest_0_5_ard_t1',
+        "SY_PPtest(y,0:5,'ard','t1')",
         SY_PPtest(lags=MatlabSequence('0:5'), model='ard', teststat='t1'))
 
     # outs: lagmaxp,lagminp,maxpValue,maxrmse,maxstat
@@ -15042,6 +15815,7 @@ class HCTSAOperations(object):
     # tags: aic,bic,econometricstoolbox,hqc,pptest,pvalue,rmse,unitroot
     SY_PPtest_0_5_ar_t1 = (
         'SY_PPtest_0_5_ar_t1',
+        "SY_PPtest(y,0:5,'ar','t1')",
         SY_PPtest(lags=MatlabSequence('0:5'), model='ar', teststat='t1'))
 
     # outs: l10,l100,l1000,l50,nuql10
@@ -15051,1521 +15825,1772 @@ class HCTSAOperations(object):
     # tags: stationarity
     SY_RangeEvolve = (
         'SY_RangeEvolve',
+        'SY_RangeEvolve(y)',
         SY_RangeEvolve())
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent5_2 = (
         'SY_SlidingWindow_ent_ent5_2',
+        "SY_SlidingWindow(y,'ent','ent',5,2)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent5_1 = (
         'SY_SlidingWindow_ent_ent5_1',
+        "SY_SlidingWindow(y,'ent','ent',5,1)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent10_2 = (
         'SY_SlidingWindow_m_ent10_2',
+        "SY_SlidingWindow(y,'mean','ent',10,2)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
-    SY_SlidingWindow_s_ent5_10 = (
-        'SY_SlidingWindow_s_ent5_10',
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=5, nmov=10))
+    SY_SlidingWindow_ac1_apen5_1 = (
+        'SY_SlidingWindow_ac1_apen5_1',
+        "SY_SlidingWindow(y,'AC1','apen',5,1)",
+        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s10_1 = (
         'SY_SlidingWindow_s_s10_1',
+        "SY_SlidingWindow(y,'std','std',10,1)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen2_10 = (
         'SY_SlidingWindow_ac1_apen2_10',
+        "SY_SlidingWindow(y,'AC1','apen',2,10)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=2, nmov=10))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_lil_ent10_2 = (
-        'SY_SlidingWindow_lil_ent10_2',
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen10_2 = (
         'SY_SlidingWindow_apen_apen10_2',
+        "SY_SlidingWindow(y,'apen','apen',10,2)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s10_1 = (
         'SY_SlidingWindow_lil_s10_1',
+        "SY_SlidingWindow(y,'lillie','std',10,1)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent10_10 = (
         'SY_SlidingWindow_ac1_ent10_10',
+        "SY_SlidingWindow(y,'AC1','ent',10,10)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=10, nmov=10))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_s_s2_1 = (
+        'SY_SlidingWindow_s_s2_1',
+        "SY_SlidingWindow(y,'std','std',2,1)",
+        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s10_10 = (
         'SY_SlidingWindow_s_s10_10',
+        "SY_SlidingWindow(y,'std','std',10,10)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen2_10 = (
         'SY_SlidingWindow_s_apen2_10',
+        "SY_SlidingWindow(y,'std','apen',2,10)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
-    SY_SlidingWindow_m_apen10_2 = (
-        'SY_SlidingWindow_m_apen10_2',
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=10, nmov=2))
+    SY_SlidingWindow_s_s2_2 = (
+        'SY_SlidingWindow_s_s2_2',
+        "SY_SlidingWindow(y,'std','std',2,2)",
+        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s5_1 = (
         'SY_SlidingWindow_m_s5_1',
+        "SY_SlidingWindow(y,'mean','std',5,1)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s5_2 = (
         'SY_SlidingWindow_m_s5_2',
+        "SY_SlidingWindow(y,'mean','std',5,2)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s5_10 = (
         'SY_SlidingWindow_ent_s5_10',
+        "SY_SlidingWindow(y,'ent','std',5,10)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent5_10 = (
         'SY_SlidingWindow_apen_ent5_10',
+        "SY_SlidingWindow(y,'apen','ent',5,10)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen2_1 = (
         'SY_SlidingWindow_apen_apen2_1',
+        "SY_SlidingWindow(y,'apen','apen',2,1)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen5_2 = (
         'SY_SlidingWindow_ac1_apen5_2',
+        "SY_SlidingWindow(y,'AC1','apen',5,2)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen5_2 = (
         'SY_SlidingWindow_m_apen5_2',
+        "SY_SlidingWindow(y,'mean','apen',5,2)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen5_1 = (
         'SY_SlidingWindow_m_apen5_1',
+        "SY_SlidingWindow(y,'mean','apen',5,1)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen2_10 = (
         'SY_SlidingWindow_lil_apen2_10',
+        "SY_SlidingWindow(y,'lillie','apen',2,10)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=2, nmov=10))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_mom3_apen10_2 = (
+        'SY_SlidingWindow_mom3_apen10_2',
+        "SY_SlidingWindow(y,'mom3','apen',10,2)",
+        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen10_1 = (
         'SY_SlidingWindow_mom3_apen10_1',
+        "SY_SlidingWindow(y,'mom3','apen',10,1)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s10_10 = (
         'SY_SlidingWindow_mom4_s10_10',
+        "SY_SlidingWindow(y,'mom4','std',10,10)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen5_10 = (
         'SY_SlidingWindow_s_apen5_10',
+        "SY_SlidingWindow(y,'std','apen',5,10)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen2_10 = (
         'SY_SlidingWindow_m_apen2_10',
+        "SY_SlidingWindow(y,'mean','apen',2,10)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen2_1 = (
         'SY_SlidingWindow_mom4_apen2_1',
+        "SY_SlidingWindow(y,'mom4','apen',2,1)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen2_2 = (
         'SY_SlidingWindow_mom4_apen2_2',
+        "SY_SlidingWindow(y,'mom4','apen',2,2)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent2_10 = (
         'SY_SlidingWindow_m_ent2_10',
+        "SY_SlidingWindow(y,'mean','ent',2,10)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=2, nmov=10))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_mom3_apen10_2 = (
-        'SY_SlidingWindow_mom3_apen10_2',
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen5_10 = (
         'SY_SlidingWindow_apen_apen5_10',
+        "SY_SlidingWindow(y,'apen','apen',5,10)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent2_1 = (
         'SY_SlidingWindow_mom3_ent2_1',
+        "SY_SlidingWindow(y,'mom3','ent',2,1)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s10_2 = (
         'SY_SlidingWindow_mom4_s10_2',
+        "SY_SlidingWindow(y,'mom4','std',10,2)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s2_2 = (
         'SY_SlidingWindow_lil_s2_2',
+        "SY_SlidingWindow(y,'lillie','std',2,2)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent5_10 = (
         'SY_SlidingWindow_mom3_ent5_10',
+        "SY_SlidingWindow(y,'mom3','ent',5,10)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s5_10 = (
         'SY_SlidingWindow_mom3_s5_10',
+        "SY_SlidingWindow(y,'mom3','std',5,10)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=5, nmov=10))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_mom4_s2_10 = (
-        'SY_SlidingWindow_mom4_s2_10',
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent2_1 = (
         'SY_SlidingWindow_apen_ent2_1',
+        "SY_SlidingWindow(y,'apen','ent',2,1)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent2_2 = (
         'SY_SlidingWindow_apen_ent2_2',
+        "SY_SlidingWindow(y,'apen','ent',2,2)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent10_10 = (
         'SY_SlidingWindow_m_ent10_10',
+        "SY_SlidingWindow(y,'mean','ent',10,10)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent2_10 = (
         'SY_SlidingWindow_s_ent2_10',
+        "SY_SlidingWindow(y,'std','ent',2,10)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen2_2 = (
         'SY_SlidingWindow_ac1_apen2_2',
+        "SY_SlidingWindow(y,'AC1','apen',2,2)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen2_1 = (
         'SY_SlidingWindow_ac1_apen2_1',
+        "SY_SlidingWindow(y,'AC1','apen',2,1)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s10_10 = (
         'SY_SlidingWindow_lil_s10_10',
+        "SY_SlidingWindow(y,'lillie','std',10,10)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent5_10 = (
         'SY_SlidingWindow_mom4_ent5_10',
+        "SY_SlidingWindow(y,'mom4','ent',5,10)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen2_1 = (
         'SY_SlidingWindow_ent_apen2_1',
+        "SY_SlidingWindow(y,'ent','apen',2,1)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen2_2 = (
         'SY_SlidingWindow_ent_apen2_2',
+        "SY_SlidingWindow(y,'ent','apen',2,2)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent10_1 = (
         'SY_SlidingWindow_ent_ent10_1',
+        "SY_SlidingWindow(y,'ent','ent',10,1)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen2_10 = (
         'SY_SlidingWindow_ent_apen2_10',
+        "SY_SlidingWindow(y,'ent','apen',2,10)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent10_2 = (
         'SY_SlidingWindow_ent_ent10_2',
+        "SY_SlidingWindow(y,'ent','ent',10,2)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen2_1 = (
         'SY_SlidingWindow_m_apen2_1',
+        "SY_SlidingWindow(y,'mean','apen',2,1)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen2_2 = (
         'SY_SlidingWindow_m_apen2_2',
+        "SY_SlidingWindow(y,'mean','apen',2,2)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s10_2 = (
         'SY_SlidingWindow_lil_s10_2',
+        "SY_SlidingWindow(y,'lillie','std',10,2)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s10_1 = (
         'SY_SlidingWindow_mom3_s10_1',
+        "SY_SlidingWindow(y,'mom3','std',10,1)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s10_2 = (
         'SY_SlidingWindow_mom3_s10_2',
+        "SY_SlidingWindow(y,'mom3','std',10,2)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent5_1 = (
         'SY_SlidingWindow_m_ent5_1',
+        "SY_SlidingWindow(y,'mean','ent',5,1)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen5_10 = (
         'SY_SlidingWindow_ac1_apen5_10',
+        "SY_SlidingWindow(y,'AC1','apen',5,10)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s10_10 = (
         'SY_SlidingWindow_m_s10_10',
+        "SY_SlidingWindow(y,'mean','std',10,10)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s5_1 = (
         'SY_SlidingWindow_apen_s5_1',
+        "SY_SlidingWindow(y,'apen','std',5,1)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=5, nmov=1))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_apen_s5_2 = (
-        'SY_SlidingWindow_apen_s5_2',
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen2_10 = (
         'SY_SlidingWindow_mom4_apen2_10',
+        "SY_SlidingWindow(y,'mom4','apen',2,10)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen5_1 = (
         'SY_SlidingWindow_apen_apen5_1',
+        "SY_SlidingWindow(y,'apen','apen',5,1)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen10_1 = (
         'SY_SlidingWindow_lil_apen10_1',
+        "SY_SlidingWindow(y,'lillie','apen',10,1)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen5_2 = (
         'SY_SlidingWindow_lil_apen5_2',
+        "SY_SlidingWindow(y,'lillie','apen',5,2)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen10_10 = (
         'SY_SlidingWindow_ent_apen10_10',
+        "SY_SlidingWindow(y,'ent','apen',10,10)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent10_1 = (
         'SY_SlidingWindow_mom3_ent10_1',
+        "SY_SlidingWindow(y,'mom3','ent',10,1)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen5_1 = (
         'SY_SlidingWindow_lil_apen5_1',
+        "SY_SlidingWindow(y,'lillie','apen',5,1)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen10_2 = (
         'SY_SlidingWindow_lil_apen10_2',
+        "SY_SlidingWindow(y,'lillie','apen',10,2)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent10_1 = (
         'SY_SlidingWindow_m_ent10_1',
+        "SY_SlidingWindow(y,'mean','ent',10,1)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=10, nmov=1))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_s_ent5_2 = (
+        'SY_SlidingWindow_s_ent5_2',
+        "SY_SlidingWindow(y,'std','ent',5,2)",
+        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s5_10 = (
         'SY_SlidingWindow_m_s5_10',
+        "SY_SlidingWindow(y,'mean','std',5,10)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=5, nmov=10))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_m_ent5_10 = (
-        'SY_SlidingWindow_m_ent5_10',
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent10_10 = (
         'SY_SlidingWindow_s_ent10_10',
+        "SY_SlidingWindow(y,'std','ent',10,10)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent2_2 = (
         'SY_SlidingWindow_mom3_ent2_2',
+        "SY_SlidingWindow(y,'mom3','ent',2,2)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen10_10 = (
         'SY_SlidingWindow_m_apen10_10',
+        "SY_SlidingWindow(y,'mean','apen',10,10)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent10_10 = (
         'SY_SlidingWindow_apen_ent10_10',
+        "SY_SlidingWindow(y,'apen','ent',10,10)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=10, nmov=10))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_mom4_ent5_1 = (
-        'SY_SlidingWindow_mom4_ent5_1',
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s5_10 = (
         'SY_SlidingWindow_ac1_s5_10',
+        "SY_SlidingWindow(y,'AC1','std',5,10)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen2_2 = (
         'SY_SlidingWindow_s_apen2_2',
+        "SY_SlidingWindow(y,'std','apen',2,2)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=2, nmov=2))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_s_apen2_1 = (
+        'SY_SlidingWindow_s_apen2_1',
+        "SY_SlidingWindow(y,'std','apen',2,1)",
+        SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent2_2 = (
         'SY_SlidingWindow_mom4_ent2_2',
+        "SY_SlidingWindow(y,'mom4','ent',2,2)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent2_10 = (
         'SY_SlidingWindow_ent_ent2_10',
+        "SY_SlidingWindow(y,'ent','ent',2,10)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent2_1 = (
         'SY_SlidingWindow_mom4_ent2_1',
+        "SY_SlidingWindow(y,'mom4','ent',2,1)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent2_1 = (
         'SY_SlidingWindow_m_ent2_1',
+        "SY_SlidingWindow(y,'mean','ent',2,1)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent2_2 = (
         'SY_SlidingWindow_m_ent2_2',
+        "SY_SlidingWindow(y,'mean','ent',2,2)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen5_2 = (
         'SY_SlidingWindow_ent_apen5_2',
+        "SY_SlidingWindow(y,'ent','apen',5,2)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen10_2 = (
         'SY_SlidingWindow_s_apen10_2',
+        "SY_SlidingWindow(y,'std','apen',10,2)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen10_1 = (
         'SY_SlidingWindow_s_apen10_1',
+        "SY_SlidingWindow(y,'std','apen',10,1)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s5_2 = (
         'SY_SlidingWindow_ac1_s5_2',
+        "SY_SlidingWindow(y,'AC1','std',5,2)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s5_1 = (
         'SY_SlidingWindow_ac1_s5_1',
+        "SY_SlidingWindow(y,'AC1','std',5,1)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent2_1 = (
         'SY_SlidingWindow_s_ent2_1',
+        "SY_SlidingWindow(y,'std','ent',2,1)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s10_1 = (
         'SY_SlidingWindow_ent_s10_1',
+        "SY_SlidingWindow(y,'ent','std',10,1)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen5_1 = (
         'SY_SlidingWindow_s_apen5_1',
+        "SY_SlidingWindow(y,'std','apen',5,1)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen5_2 = (
         'SY_SlidingWindow_s_apen5_2',
+        "SY_SlidingWindow(y,'std','apen',5,2)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s10_10 = (
         'SY_SlidingWindow_ent_s10_10',
+        "SY_SlidingWindow(y,'ent','std',10,10)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent2_2 = (
         'SY_SlidingWindow_lil_ent2_2',
+        "SY_SlidingWindow(y,'lillie','ent',2,2)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent10_1 = (
         'SY_SlidingWindow_mom4_ent10_1',
+        "SY_SlidingWindow(y,'mom4','ent',10,1)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent10_2 = (
         'SY_SlidingWindow_mom4_ent10_2',
+        "SY_SlidingWindow(y,'mom4','ent',10,2)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=10, nmov=2))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_apen_s5_2 = (
+        'SY_SlidingWindow_apen_s5_2',
+        "SY_SlidingWindow(y,'apen','std',5,2)",
+        SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s5_2 = (
         'SY_SlidingWindow_mom4_s5_2',
+        "SY_SlidingWindow(y,'mom4','std',5,2)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s5_1 = (
         'SY_SlidingWindow_mom4_s5_1',
+        "SY_SlidingWindow(y,'mom4','std',5,1)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=5, nmov=1))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_s_s2_1 = (
-        'SY_SlidingWindow_s_s2_1',
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s2_10 = (
         'SY_SlidingWindow_s_s2_10',
+        "SY_SlidingWindow(y,'std','std',2,10)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent2_10 = (
         'SY_SlidingWindow_lil_ent2_10',
+        "SY_SlidingWindow(y,'lillie','ent',2,10)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent2_1 = (
         'SY_SlidingWindow_lil_ent2_1',
+        "SY_SlidingWindow(y,'lillie','ent',2,1)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s10_10 = (
         'SY_SlidingWindow_mom3_s10_10',
+        "SY_SlidingWindow(y,'mom3','std',10,10)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen5_10 = (
         'SY_SlidingWindow_m_apen5_10',
+        "SY_SlidingWindow(y,'mean','apen',5,10)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s2_2 = (
         'SY_SlidingWindow_apen_s2_2',
+        "SY_SlidingWindow(y,'apen','std',2,2)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s2_1 = (
         'SY_SlidingWindow_apen_s2_1',
+        "SY_SlidingWindow(y,'apen','std',2,1)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s10_2 = (
         'SY_SlidingWindow_s_s10_2',
+        "SY_SlidingWindow(y,'std','std',10,2)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent2_10 = (
         'SY_SlidingWindow_apen_ent2_10',
+        "SY_SlidingWindow(y,'apen','ent',2,10)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s2_2 = (
         'SY_SlidingWindow_ent_s2_2',
+        "SY_SlidingWindow(y,'ent','std',2,2)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s2_1 = (
         'SY_SlidingWindow_ent_s2_1',
+        "SY_SlidingWindow(y,'ent','std',2,1)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen10_1 = (
         'SY_SlidingWindow_m_apen10_1',
+        "SY_SlidingWindow(y,'mean','apen',10,1)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=10, nmov=1))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_m_apen10_2 = (
+        'SY_SlidingWindow_m_apen10_2',
+        "SY_SlidingWindow(y,'mean','apen',10,2)",
+        SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen2_1 = (
         'SY_SlidingWindow_lil_apen2_1',
+        "SY_SlidingWindow(y,'lillie','apen',2,1)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen2_2 = (
         'SY_SlidingWindow_lil_apen2_2',
+        "SY_SlidingWindow(y,'lillie','apen',2,2)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=2, nmov=2))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_s_s2_2 = (
-        'SY_SlidingWindow_s_s2_2',
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen2_2 = (
         'SY_SlidingWindow_apen_apen2_2',
+        "SY_SlidingWindow(y,'apen','apen',2,2)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent2_10 = (
         'SY_SlidingWindow_mom4_ent2_10',
+        "SY_SlidingWindow(y,'mom4','ent',2,10)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s2_10 = (
         'SY_SlidingWindow_mom3_s2_10',
+        "SY_SlidingWindow(y,'mom3','std',2,10)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent5_10 = (
         'SY_SlidingWindow_ac1_ent5_10',
+        "SY_SlidingWindow(y,'AC1','ent',5,10)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s2_1 = (
         'SY_SlidingWindow_ac1_s2_1',
+        "SY_SlidingWindow(y,'AC1','std',2,1)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s2_2 = (
         'SY_SlidingWindow_ac1_s2_2',
+        "SY_SlidingWindow(y,'AC1','std',2,2)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen5_1 = (
         'SY_SlidingWindow_ent_apen5_1',
+        "SY_SlidingWindow(y,'ent','apen',5,1)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent5_1 = (
         'SY_SlidingWindow_mom3_ent5_1',
+        "SY_SlidingWindow(y,'mom3','ent',5,1)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent5_2 = (
         'SY_SlidingWindow_mom3_ent5_2',
+        "SY_SlidingWindow(y,'mom3','ent',5,2)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=5, nmov=2))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_m_ent5_10 = (
+        'SY_SlidingWindow_m_ent5_10',
+        "SY_SlidingWindow(y,'mean','ent',5,10)",
+        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=5, nmov=10))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_lil_ent10_2 = (
+        'SY_SlidingWindow_lil_ent10_2',
+        "SY_SlidingWindow(y,'lillie','ent',10,2)",
+        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen2_10 = (
         'SY_SlidingWindow_mom3_apen2_10',
+        "SY_SlidingWindow(y,'mom3','apen',2,10)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s2_10 = (
         'SY_SlidingWindow_lil_s2_10',
+        "SY_SlidingWindow(y,'lillie','std',2,10)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen5_2 = (
         'SY_SlidingWindow_apen_apen5_2',
+        "SY_SlidingWindow(y,'apen','apen',5,2)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s10_2 = (
         'SY_SlidingWindow_apen_s10_2',
+        "SY_SlidingWindow(y,'apen','std',10,2)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s10_1 = (
         'SY_SlidingWindow_apen_s10_1',
+        "SY_SlidingWindow(y,'apen','std',10,1)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s5_10 = (
         'SY_SlidingWindow_apen_s5_10',
+        "SY_SlidingWindow(y,'apen','std',5,10)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent10_1 = (
         'SY_SlidingWindow_lil_ent10_1',
+        "SY_SlidingWindow(y,'lillie','ent',10,1)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen5_2 = (
         'SY_SlidingWindow_mom4_apen5_2',
+        "SY_SlidingWindow(y,'mom4','apen',5,2)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s2_10 = (
         'SY_SlidingWindow_ent_s2_10',
+        "SY_SlidingWindow(y,'ent','std',2,10)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen5_10 = (
         'SY_SlidingWindow_lil_apen5_10',
+        "SY_SlidingWindow(y,'lillie','apen',5,10)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=5, nmov=10))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_mom4_ent5_2 = (
-        'SY_SlidingWindow_mom4_ent5_2',
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent10_10 = (
         'SY_SlidingWindow_mom3_ent10_10',
+        "SY_SlidingWindow(y,'mom3','ent',10,10)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=10, nmov=10))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_mom3_ent2_10 = (
+        'SY_SlidingWindow_mom3_ent2_10',
+        "SY_SlidingWindow(y,'mom3','ent',2,10)",
+        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=2, nmov=10))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_mom4_ent5_1 = (
+        'SY_SlidingWindow_mom4_ent5_1',
+        "SY_SlidingWindow(y,'mom4','ent',5,1)",
+        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=5, nmov=1))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_mom4_ent5_2 = (
+        'SY_SlidingWindow_mom4_ent5_2',
+        "SY_SlidingWindow(y,'mom4','ent',5,2)",
+        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=5, nmov=2))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_mom4_s2_10 = (
+        'SY_SlidingWindow_mom4_s2_10',
+        "SY_SlidingWindow(y,'mom4','std',2,10)",
+        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s2_1 = (
         'SY_SlidingWindow_mom4_s2_1',
+        "SY_SlidingWindow(y,'mom4','std',2,1)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s2_2 = (
         'SY_SlidingWindow_mom4_s2_2',
+        "SY_SlidingWindow(y,'mom4','std',2,2)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent5_2 = (
         'SY_SlidingWindow_lil_ent5_2',
+        "SY_SlidingWindow(y,'lillie','ent',5,2)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
-    SY_SlidingWindow_m_s2_2 = (
-        'SY_SlidingWindow_m_s2_2',
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=2, nmov=2))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_s_apen2_1 = (
-        'SY_SlidingWindow_s_apen2_1',
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=2, nmov=1))
+    SY_SlidingWindow_s_ent5_10 = (
+        'SY_SlidingWindow_s_ent5_10',
+        "SY_SlidingWindow(y,'std','ent',5,10)",
+        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen10_1 = (
         'SY_SlidingWindow_apen_apen10_1',
+        "SY_SlidingWindow(y,'apen','apen',10,1)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen10_2 = (
         'SY_SlidingWindow_ac1_apen10_2',
+        "SY_SlidingWindow(y,'AC1','apen',10,2)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen10_1 = (
         'SY_SlidingWindow_ac1_apen10_1',
+        "SY_SlidingWindow(y,'AC1','apen',10,1)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s2_10 = (
         'SY_SlidingWindow_ac1_s2_10',
+        "SY_SlidingWindow(y,'AC1','std',2,10)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=2, nmov=10))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_mom3_ent2_10 = (
-        'SY_SlidingWindow_mom3_ent2_10',
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent10_10 = (
         'SY_SlidingWindow_ent_ent10_10',
+        "SY_SlidingWindow(y,'ent','ent',10,10)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s5_1 = (
         'SY_SlidingWindow_ent_s5_1',
+        "SY_SlidingWindow(y,'ent','std',5,1)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s5_2 = (
         'SY_SlidingWindow_ent_s5_2',
+        "SY_SlidingWindow(y,'ent','std',5,2)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=5, nmov=2))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_m_ent5_2 = (
-        'SY_SlidingWindow_m_ent5_2',
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen10_10 = (
         'SY_SlidingWindow_s_apen10_10',
+        "SY_SlidingWindow(y,'std','apen',10,10)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s10_2 = (
         'SY_SlidingWindow_ent_s10_2',
+        "SY_SlidingWindow(y,'ent','std',10,2)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent2_10 = (
         'SY_SlidingWindow_ac1_ent2_10',
+        "SY_SlidingWindow(y,'AC1','ent',2,10)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen5_10 = (
         'SY_SlidingWindow_ent_apen5_10',
+        "SY_SlidingWindow(y,'ent','apen',5,10)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent5_1 = (
         'SY_SlidingWindow_s_ent5_1',
+        "SY_SlidingWindow(y,'std','ent',5,1)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=5, nmov=1))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_s_ent5_2 = (
-        'SY_SlidingWindow_s_ent5_2',
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent10_10 = (
         'SY_SlidingWindow_lil_ent10_10',
+        "SY_SlidingWindow(y,'lillie','ent',10,10)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen5_1 = (
         'SY_SlidingWindow_mom3_apen5_1',
+        "SY_SlidingWindow(y,'mom3','apen',5,1)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen10_10 = (
         'SY_SlidingWindow_lil_apen10_10',
+        "SY_SlidingWindow(y,'lillie','apen',10,10)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s2_1 = (
         'SY_SlidingWindow_mom3_s2_1',
+        "SY_SlidingWindow(y,'mom3','std',2,1)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s2_2 = (
         'SY_SlidingWindow_mom3_s2_2',
+        "SY_SlidingWindow(y,'mom3','std',2,2)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen10_1 = (
         'SY_SlidingWindow_ent_apen10_1',
+        "SY_SlidingWindow(y,'ent','apen',10,1)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen10_2 = (
         'SY_SlidingWindow_ent_apen10_2',
+        "SY_SlidingWindow(y,'ent','apen',10,2)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen10_2 = (
         'SY_SlidingWindow_mom4_apen10_2',
+        "SY_SlidingWindow(y,'mom4','apen',10,2)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen10_1 = (
         'SY_SlidingWindow_mom4_apen10_1',
+        "SY_SlidingWindow(y,'mom4','apen',10,1)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=10, nmov=1))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_m_ent5_2 = (
+        'SY_SlidingWindow_m_ent5_2',
+        "SY_SlidingWindow(y,'mean','ent',5,2)",
+        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s10_10 = (
         'SY_SlidingWindow_apen_s10_10',
+        "SY_SlidingWindow(y,'apen','std',10,10)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen5_2 = (
         'SY_SlidingWindow_mom3_apen5_2',
+        "SY_SlidingWindow(y,'mom3','apen',5,2)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen10_10 = (
         'SY_SlidingWindow_mom4_apen10_10',
+        "SY_SlidingWindow(y,'mom4','apen',10,10)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen10_10 = (
         'SY_SlidingWindow_ac1_apen10_10',
+        "SY_SlidingWindow(y,'AC1','apen',10,10)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s5_2 = (
         'SY_SlidingWindow_s_s5_2',
+        "SY_SlidingWindow(y,'std','std',5,2)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s5_1 = (
         'SY_SlidingWindow_s_s5_1',
+        "SY_SlidingWindow(y,'std','std',5,1)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen5_10 = (
         'SY_SlidingWindow_mom3_apen5_10',
+        "SY_SlidingWindow(y,'mom3','apen',5,10)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen10_10 = (
         'SY_SlidingWindow_apen_apen10_10',
+        "SY_SlidingWindow(y,'apen','apen',10,10)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent2_1 = (
         'SY_SlidingWindow_ent_ent2_1',
+        "SY_SlidingWindow(y,'ent','ent',2,1)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent2_2 = (
         'SY_SlidingWindow_ent_ent2_2',
+        "SY_SlidingWindow(y,'ent','ent',2,2)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s5_2 = (
         'SY_SlidingWindow_mom3_s5_2',
+        "SY_SlidingWindow(y,'mom3','std',5,2)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s5_1 = (
         'SY_SlidingWindow_mom3_s5_1',
+        "SY_SlidingWindow(y,'mom3','std',5,1)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s2_10 = (
         'SY_SlidingWindow_m_s2_10',
+        "SY_SlidingWindow(y,'mean','std',2,10)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent2_2 = (
         'SY_SlidingWindow_ac1_ent2_2',
+        "SY_SlidingWindow(y,'AC1','ent',2,2)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent2_1 = (
         'SY_SlidingWindow_ac1_ent2_1',
+        "SY_SlidingWindow(y,'AC1','ent',2,1)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen5_10 = (
         'SY_SlidingWindow_mom4_apen5_10',
+        "SY_SlidingWindow(y,'mom4','apen',5,10)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent5_10 = (
         'SY_SlidingWindow_lil_ent5_10',
+        "SY_SlidingWindow(y,'lillie','ent',5,10)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent10_10 = (
         'SY_SlidingWindow_mom4_ent10_10',
+        "SY_SlidingWindow(y,'mom4','ent',10,10)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent2_2 = (
         'SY_SlidingWindow_s_ent2_2',
+        "SY_SlidingWindow(y,'std','ent',2,2)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s5_10 = (
         'SY_SlidingWindow_s_s5_10',
+        "SY_SlidingWindow(y,'std','std',5,10)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent10_2 = (
         'SY_SlidingWindow_s_ent10_2',
+        "SY_SlidingWindow(y,'std','ent',10,2)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent10_1 = (
         'SY_SlidingWindow_s_ent10_1',
+        "SY_SlidingWindow(y,'std','ent',10,1)",
         SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s10_1 = (
         'SY_SlidingWindow_ac1_s10_1',
+        "SY_SlidingWindow(y,'AC1','std',10,1)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen10_10 = (
         'SY_SlidingWindow_mom3_apen10_10',
+        "SY_SlidingWindow(y,'mom3','apen',10,10)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s10_2 = (
         'SY_SlidingWindow_m_s10_2',
+        "SY_SlidingWindow(y,'mean','std',10,2)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s10_1 = (
         'SY_SlidingWindow_m_s10_1',
+        "SY_SlidingWindow(y,'mean','std',10,1)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s5_10 = (
         'SY_SlidingWindow_mom4_s5_10',
+        "SY_SlidingWindow(y,'mom4','std',5,10)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s10_2 = (
         'SY_SlidingWindow_ac1_s10_2',
+        "SY_SlidingWindow(y,'AC1','std',10,2)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen2_10 = (
         'SY_SlidingWindow_apen_apen2_10',
+        "SY_SlidingWindow(y,'apen','apen',2,10)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s5_10 = (
         'SY_SlidingWindow_lil_s5_10',
+        "SY_SlidingWindow(y,'lillie','std',5,10)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen5_1 = (
         'SY_SlidingWindow_mom4_apen5_1',
+        "SY_SlidingWindow(y,'mom4','apen',5,1)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent5_10 = (
         'SY_SlidingWindow_ent_ent5_10',
+        "SY_SlidingWindow(y,'ent','ent',5,10)",
         SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=5, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent10_2 = (
         'SY_SlidingWindow_ac1_ent10_2',
+        "SY_SlidingWindow(y,'AC1','ent',10,2)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent10_1 = (
         'SY_SlidingWindow_ac1_ent10_1',
+        "SY_SlidingWindow(y,'AC1','ent',10,1)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=10, nmov=1))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_m_s2_2 = (
+        'SY_SlidingWindow_m_s2_2',
+        "SY_SlidingWindow(y,'mean','std',2,2)",
+        SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s2_1 = (
         'SY_SlidingWindow_m_s2_1',
+        "SY_SlidingWindow(y,'mean','std',2,1)",
         SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent10_1 = (
         'SY_SlidingWindow_apen_ent10_1',
+        "SY_SlidingWindow(y,'apen','ent',10,1)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent10_2 = (
         'SY_SlidingWindow_apen_ent10_2',
+        "SY_SlidingWindow(y,'apen','ent',10,2)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent5_1 = (
         'SY_SlidingWindow_lil_ent5_1',
+        "SY_SlidingWindow(y,'lillie','ent',5,1)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=5, nmov=1))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_ac1_apen5_1 = (
-        'SY_SlidingWindow_ac1_apen5_1',
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent5_1 = (
         'SY_SlidingWindow_ac1_ent5_1',
+        "SY_SlidingWindow(y,'AC1','ent',5,1)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent5_2 = (
         'SY_SlidingWindow_ac1_ent5_2',
+        "SY_SlidingWindow(y,'AC1','ent',5,2)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen2_2 = (
         'SY_SlidingWindow_mom3_apen2_2',
+        "SY_SlidingWindow(y,'mom3','apen',2,2)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=2, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen2_1 = (
         'SY_SlidingWindow_mom3_apen2_1',
+        "SY_SlidingWindow(y,'mom3','apen',2,1)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s10_10 = (
         'SY_SlidingWindow_ac1_s10_10',
+        "SY_SlidingWindow(y,'AC1','std',10,10)",
         SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=10, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s5_1 = (
         'SY_SlidingWindow_lil_s5_1',
+        "SY_SlidingWindow(y,'lillie','std',5,1)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=5, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s5_2 = (
         'SY_SlidingWindow_lil_s5_2',
+        "SY_SlidingWindow(y,'lillie','std',5,2)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s10_1 = (
         'SY_SlidingWindow_mom4_s10_1',
+        "SY_SlidingWindow(y,'mom4','std',10,1)",
         SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=10, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent10_2 = (
         'SY_SlidingWindow_mom3_ent10_2',
+        "SY_SlidingWindow(y,'mom3','ent',10,2)",
         SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=10, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s2_1 = (
         'SY_SlidingWindow_lil_s2_1',
+        "SY_SlidingWindow(y,'lillie','std',2,1)",
         SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=2, nmov=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s2_10 = (
         'SY_SlidingWindow_apen_s2_10',
+        "SY_SlidingWindow(y,'apen','std',2,10)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=2, nmov=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent5_2 = (
         'SY_SlidingWindow_apen_ent5_2',
+        "SY_SlidingWindow(y,'apen','ent',5,2)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=5, nmov=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent5_1 = (
         'SY_SlidingWindow_apen_ent5_1',
+        "SY_SlidingWindow(y,'apen','ent',5,1)",
         SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=5, nmov=1))
 
     # outs: meanac1,meanac2,meanapen1_02,meankurt,meanmean
     # outs: meansampen1_02,meanskew,meanstd,meantaul,stdac1
     # outs: stdac2,stdapen1_02,stdkurt,stdmean,stdsampen1_02
     # outs: stdskew,stdstd,stdtaul
-    # tags: stationarity,stochastic
+    # tags: stationarity
     SY_SpreadRandomLocal_50_100 = (
         'SY_SpreadRandomLocal_50_100',
-        SY_SpreadRandomLocal(l=50, nseg=100))
+        "SY_SpreadRandomLocal(y,50,100,'default')",
+        SY_SpreadRandomLocal(l=50, numSegs=100, randomSeed='default'))
 
     # outs: meanac1,meanac2,meanapen1_02,meankurt,meanmean
     # outs: meansampen1_02,meanskew,meanstd,meantaul,stdac1
     # outs: stdac2,stdapen1_02,stdkurt,stdmean,stdsampen1_02
     # outs: stdskew,stdstd,stdtaul
-    # tags: correlation,stationarity,stochastic
+    # tags: stationarity
     SY_SpreadRandomLocal_200_100 = (
         'SY_SpreadRandomLocal_200_100',
-        SY_SpreadRandomLocal(l=200, nseg=100))
+        "SY_SpreadRandomLocal(y,200,100,'default')",
+        SY_SpreadRandomLocal(l=200, numSegs=100, randomSeed='default'))
 
     # outs: meanac1,meanac2,meanapen1_02,meankurt,meanmean
     # outs: meansampen1_02,meanskew,meanstd,meantaul,stdac1
     # outs: stdac2,stdapen1_02,stdkurt,stdmean,stdsampen1_02
     # outs: stdskew,stdstd,stdtaul
-    # tags: stationarity,stochastic
+    # tags: stationarity
     SY_SpreadRandomLocal_ac2_100 = (
         'SY_SpreadRandomLocal_ac2_100',
-        SY_SpreadRandomLocal(l='ac2', nseg=100))
+        "SY_SpreadRandomLocal(y,'ac2',100,'default')",
+        SY_SpreadRandomLocal(l='ac2', numSegs=100, randomSeed='default'))
 
     # outs: meanac1,meanac2,meanapen1_02,meankurt,meanmean
     # outs: meansampen1_02,meanskew,meanstd,meantaul,stdac1
     # outs: stdac2,stdapen1_02,stdkurt,stdmean,stdsampen1_02
     # outs: stdskew,stdstd,stdtaul
-    # tags: correlation,stationarity,stochastic
+    # tags: stationarity
     SY_SpreadRandomLocal_100_100 = (
         'SY_SpreadRandomLocal_100_100',
-        SY_SpreadRandomLocal(l=100, nseg=100))
+        "SY_SpreadRandomLocal(y,100,100,'default')",
+        SY_SpreadRandomLocal(l=100, numSegs=100, randomSeed='default'))
 
     # outs: meanac1,meanac2,meanapen1_02,meankurt,meanmean
     # outs: meansampen1_02,meanskew,meanstd,meantaul,stdac1
     # outs: stdac2,stdapen1_02,stdkurt,stdmean,stdsampen1_02
     # outs: stdskew,stdstd,stdtaul
-    # tags: stationarity,stochastic
+    # tags: stationarity
     SY_SpreadRandomLocal_ac5_100 = (
         'SY_SpreadRandomLocal_ac5_100',
-        SY_SpreadRandomLocal(l='ac5', nseg=100))
+        "SY_SpreadRandomLocal(y,'ac5',100,'default')",
+        SY_SpreadRandomLocal(l='ac5', numSegs=100, randomSeed='default'))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl100 = (
         'StatAvl100',
+        "SY_StatAv(y,'len',100)",
         SY_StatAv(WhatType='len', n=100))
 
     # outs: None
     # tags: StatAv,stationarity
-    StatAv10 = (
-        'StatAv10',
-        SY_StatAv(WhatType='seg', n=10))
+    StatAvl2000 = (
+        'StatAvl2000',
+        "SY_StatAv(y,'len',2000)",
+        SY_StatAv(WhatType='len', n=2000))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl25 = (
         'StatAvl25',
+        "SY_StatAv(y,'len',25)",
         SY_StatAv(WhatType='len', n=25))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl250 = (
         'StatAvl250',
+        "SY_StatAv(y,'len',250)",
         SY_StatAv(WhatType='len', n=250))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl150 = (
         'StatAvl150',
+        "SY_StatAv(y,'len',150)",
         SY_StatAv(WhatType='len', n=150))
-
-    # outs: None
-    # tags: StatAv,stationarity
-    StatAvl2000 = (
-        'StatAvl2000',
-        SY_StatAv(WhatType='len', n=2000))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl200 = (
         'StatAvl200',
+        "SY_StatAv(y,'len',200)",
         SY_StatAv(WhatType='len', n=200))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl1000 = (
         'StatAvl1000',
+        "SY_StatAv(y,'len',1000)",
         SY_StatAv(WhatType='len', n=1000))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl50 = (
         'StatAvl50',
+        "SY_StatAv(y,'len',50)",
         SY_StatAv(WhatType='len', n=50))
+
+    # outs: None
+    # tags: StatAv,stationarity
+    StatAv10 = (
+        'StatAv10',
+        "SY_StatAv(y,'seg',10)",
+        SY_StatAv(WhatType='seg', n=10))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl500 = (
         'StatAvl500',
+        "SY_StatAv(y,'len',500)",
         SY_StatAv(WhatType='len', n=500))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv8 = (
         'StatAv8',
+        "SY_StatAv(y,'seg',8)",
         SY_StatAv(WhatType='seg', n=8))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv9 = (
         'StatAv9',
+        "SY_StatAv(y,'seg',9)",
         SY_StatAv(WhatType='seg', n=9))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv2 = (
         'StatAv2',
+        "SY_StatAv(y,'seg',2)",
         SY_StatAv(WhatType='seg', n=2))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv3 = (
         'StatAv3',
+        "SY_StatAv(y,'seg',3)",
         SY_StatAv(WhatType='seg', n=3))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv6 = (
         'StatAv6',
+        "SY_StatAv(y,'seg',6)",
         SY_StatAv(WhatType='seg', n=6))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv7 = (
         'StatAv7',
+        "SY_StatAv(y,'seg',7)",
         SY_StatAv(WhatType='seg', n=7))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv4 = (
         'StatAv4',
+        "SY_StatAv(y,'seg',4)",
         SY_StatAv(WhatType='seg', n=4))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv5 = (
         'StatAv5',
+        "SY_StatAv(y,'seg',5)",
         SY_StatAv(WhatType='seg', n=5))
+
+    # outs: None
+    # tags: entropy
+    SY_StdNthDer_9 = (
+        'SY_StdNthDer_9',
+        'SY_StdNthDer(y,9)',
+        SY_StdNthDer(n=9))
+
+    # outs: None
+    # tags: entropy
+    SY_StdNthDer_2 = (
+        'SY_StdNthDer_2',
+        'SY_StdNthDer(y,2)',
+        SY_StdNthDer(n=2))
+
+    # outs: None
+    # tags: entropy
+    SY_StdNthDer_3 = (
+        'SY_StdNthDer_3',
+        'SY_StdNthDer(y,3)',
+        SY_StdNthDer(n=3))
 
     # outs: None
     # tags: entropy
     SY_StdNthDer_6 = (
         'SY_StdNthDer_6',
+        'SY_StdNthDer(y,6)',
         SY_StdNthDer(n=6))
 
     # outs: None
     # tags: entropy
     SY_StdNthDer_7 = (
         'SY_StdNthDer_7',
+        'SY_StdNthDer(y,7)',
         SY_StdNthDer(n=7))
 
     # outs: None
     # tags: entropy
     SY_StdNthDer_4 = (
         'SY_StdNthDer_4',
+        'SY_StdNthDer(y,4)',
         SY_StdNthDer(n=4))
 
     # outs: None
     # tags: entropy
     SY_StdNthDer_5 = (
         'SY_StdNthDer_5',
+        'SY_StdNthDer(y,5)',
         SY_StdNthDer(n=5))
 
     # outs: None
     # tags: entropy
     SY_StdNthDer_8 = (
         'SY_StdNthDer_8',
+        'SY_StdNthDer(y,8)',
         SY_StdNthDer(n=8))
-
-    # outs: None
-    # tags: entropy
-    SY_StdNthDer_9 = (
-        'SY_StdNthDer_9',
-        SY_StdNthDer(n=9))
-
-    # outs: None
-    # tags: entropy
-    SY_StdNthDer_3 = (
-        'SY_StdNthDer_3',
-        SY_StdNthDer(n=3))
 
     # outs: None
     # tags: entropy
     SY_StdNthDer_10 = (
         'SY_StdNthDer_10',
+        'SY_StdNthDer(y,10)',
         SY_StdNthDer(n=10))
-
-    # outs: None
-    # tags: entropy
-    SY_StdNthDer_2 = (
-        'SY_StdNthDer_2',
-        SY_StdNthDer(n=2))
 
     # outs: None
     # tags: entropy
     SY_StdNthDer_1 = (
         'SY_StdNthDer_1',
+        'SY_StdNthDer(y,1)',
         SY_StdNthDer(n=1))
 
     # outs: fexp_a,fexp_adjr2,fexp_b,fexp_r2,fexp_rmse
     # tags: entropy
     SY_StdNthDerChange = (
         'SY_StdNthDerChange',
+        'SY_StdNthDerChange(y)',
         SY_StdNthDerChange())
 
     # outs: iqr,iqroffdiag,max,maxeig,maximageig
@@ -16577,7 +17602,8 @@ class HCTSAOperations(object):
     # tags: model,nonlinear,stationarity,tisean
     SY_TISEAN_nstat_z_5_1_3 = (
         'SY_TISEAN_nstat_z_5_1_3',
-        SY_TISEAN_nstat_z(nseg=5, embedparams=(1.0, 3.0)))
+        'SY_TISEAN_nstat_z(y,5,{1,3})',
+        SY_TISEAN_nstat_z(nseg=5, embedparams=(1, 3, '_celltrick_')))
 
     # outs: iqr,iqroffdiag,max,maxeig,maximageig
     # outs: mean,median,min,mineig,minimageig
@@ -16588,7 +17614,8 @@ class HCTSAOperations(object):
     # tags: model,nonlinear,stationarity,tisean
     SY_TISEAN_nstat_z_4_1_3 = (
         'SY_TISEAN_nstat_z_4_1_3',
-        SY_TISEAN_nstat_z(nseg=4, embedparams=(1.0, 3.0)))
+        'SY_TISEAN_nstat_z(y,4,{1,3})',
+        SY_TISEAN_nstat_z(nseg=4, embedparams=(1, 3, '_celltrick_')))
 
     # outs: iqr,iqroffdiag,max,maxeig,maximageig
     # outs: mean,median,min,mineig,minimageig
@@ -16599,30 +17626,35 @@ class HCTSAOperations(object):
     # tags: model,nonlinear,stationarity,tisean
     SY_TISEAN_nstat_z_4_ac_3 = (
         'SY_TISEAN_nstat_z_4_ac_3',
+        "SY_TISEAN_nstat_z(y,4,{'ac',3})",
         SY_TISEAN_nstat_z(nseg=4, embedparams=('ac', 3)))
 
     # outs: pValue,ratio,stat
     # tags: econometricstoolbox,pvalue,vratiotest
     SY_VarRatioTest_4_0 = (
         'SY_VarRatioTest_4_0',
+        'SY_VarRatioTest(y,4,0)',
         SY_VarRatioTest(periods=4, IIDs=0))
 
     # outs: pValue,ratio,stat
     # tags: econometricstoolbox,pvalue,vratiotest
     SY_VarRatioTest_4_1 = (
         'SY_VarRatioTest_4_1',
+        'SY_VarRatioTest(y,4,1)',
         SY_VarRatioTest(periods=4, IIDs=1))
 
     # outs: pValue,ratio,stat
     # tags: econometricstoolbox,pvalue,vratiotest
     SY_VarRatioTest_2_0 = (
         'SY_VarRatioTest_2_0',
+        'SY_VarRatioTest(y,2,0)',
         SY_VarRatioTest(periods=2, IIDs=0))
 
     # outs: pValue,ratio,stat
     # tags: econometricstoolbox,pvalue,vratiotest
     SY_VarRatioTest_2_1 = (
         'SY_VarRatioTest_2_1',
+        'SY_VarRatioTest(y,2,1)',
         SY_VarRatioTest(periods=2, IIDs=1))
 
     # outs: IIDperiodmaxpValue,IIDperiodminpValue,maxpValue,maxstat,meanpValue
@@ -16630,15 +17662,17 @@ class HCTSAOperations(object):
     # tags: econometricstoolbox,pvalue,vratiotest
     SY_VarRatioTest_24682468_00001111 = (
         'SY_VarRatioTest_24682468_00001111',
+        'SY_VarRatioTest(y,[2,4,6,8,2,4,6,8],[0,0,0,0,1,1,1,1])',
         SY_VarRatioTest(periods=(2.0, 4.0, 6.0, 8.0, 2.0, 4.0, 6.0, 8.0), IIDs=(0.0, 0.0, 0.0, 0.0,
                         1.0, 1.0, 1.0, 1.0)))
 
     # outs: difftau12,difftau13,maxtau,meantau,mintau
     # outs: stdtau,tau1,tau2,tau3
-    # tags: correlation,nonlinear,stochastic,tau,tstool
+    # tags: correlation,nonlinear,tau,tstool
     TSTL_delaytime_01_1 = (
         'TSTL_delaytime_01_1',
-        TSTL_delaytime(maxdelay=0.1, past=1))
+        "TSTL_delaytime(y,0.1,1,'default')",
+        TSTL_delaytime(maxDelay=0.1, past=1, randomSeed='default'))
 
     # outs: ac1den,ac2den,ac3den,ac4den,ac5den
     # outs: iqrden,maxden,meanden,medianden,minden
@@ -16646,7 +17680,8 @@ class HCTSAOperations(object):
     # tags: localdensity,nonlinear,stochastic,tstool
     TSTL_localdensity_5_40_ac_cao = (
         'TSTL_localdensity_5_40_ac_cao',
-        TSTL_localdensity(NNR=5, past=40, embedparams=('ac', 'cao')))
+        "TSTL_localdensity(y,5,40,{'ac','cao'})",
+        TSTL_localdensity(NNR=5, past=40, embedParams=('ac', 'cao')))
 
     # outs: ac1den,ac2den,ac3den,ac4den,ac5den
     # outs: iqrden,maxden,meanden,medianden,minden
@@ -16654,7 +17689,8 @@ class HCTSAOperations(object):
     # tags: localdensity,nonlinear,tstool
     TSTL_localdensity_5_40_ac_2 = (
         'TSTL_localdensity_5_40_ac_2',
-        TSTL_localdensity(NNR=5, past=40, embedparams=('ac', 2)))
+        "TSTL_localdensity(y,5,40,{'ac',2})",
+        TSTL_localdensity(NNR=5, past=40, embedParams=('ac', 2)))
 
     # outs: ac1den,ac2den,ac3den,ac4den,ac5den
     # outs: iqrden,maxden,meanden,medianden,minden
@@ -16662,7 +17698,8 @@ class HCTSAOperations(object):
     # tags: localdensity,nonlinear,tstool
     TSTL_localdensity_5_40_1_3 = (
         'TSTL_localdensity_5_40_1_3',
-        TSTL_localdensity(NNR=5, past=40, embedparams=(1.0, 3.0)))
+        'TSTL_localdensity(y,5,40,{1,3})',
+        TSTL_localdensity(NNR=5, past=40, embedParams=(1, 3, '_celltrick_')))
 
     # outs: corrcoef_max_medians,max1on2_max,max1on2_mean,max1on2_median,max_max
     # outs: max_mean,max_median,std_max,std_mean,std_median
@@ -16671,20 +17708,15 @@ class HCTSAOperations(object):
     # tags: wavelet,waveletTB
     WL_DetailCoeffs_db3_max = (
         'WL_DetailCoeffs_db3_max',
+        "WL_DetailCoeffs(y,'db3','max')",
         WL_DetailCoeffs(wname='db3', maxlevel='max'))
-
-    # outs: max_coeff,mean_coeff,med_coeff,wb10m,wb1m
-    # outs: wb25m,wb50m,wb75m,wb90m,wb99m
-    # tags: lengthdep,wavelet,waveletTB
-    WL_coeffs_db3_5 = (
-        'WL_coeffs_db3_5',
-        WL_coeffs(wname='db3', level=5))
 
     # outs: max_coeff,mean_coeff,med_coeff,wb10m,wb1m
     # outs: wb25m,wb50m,wb75m,wb90m,wb99m
     # tags: lengthdep,wavelet,waveletTB
     WL_coeffs_db3_2 = (
         'WL_coeffs_db3_2',
+        "WL_coeffs(y,'db3',2)",
         WL_coeffs(wname='db3', level=2))
 
     # outs: max_coeff,mean_coeff,med_coeff,wb10m,wb1m
@@ -16692,6 +17724,7 @@ class HCTSAOperations(object):
     # tags: lengthdep,wavelet,waveletTB
     WL_coeffs_db3_3 = (
         'WL_coeffs_db3_3',
+        "WL_coeffs(y,'db3',3)",
         WL_coeffs(wname='db3', level=3))
 
     # outs: max_coeff,mean_coeff,med_coeff,wb10m,wb1m
@@ -16699,13 +17732,23 @@ class HCTSAOperations(object):
     # tags: lengthdep,wavelet,waveletTB
     WL_coeffs_db3_4 = (
         'WL_coeffs_db3_4',
+        "WL_coeffs(y,'db3',4)",
         WL_coeffs(wname='db3', level=4))
+
+    # outs: max_coeff,mean_coeff,med_coeff,wb10m,wb1m
+    # outs: wb25m,wb50m,wb75m,wb90m,wb99m
+    # tags: lengthdep,wavelet,waveletTB
+    WL_coeffs_db3_5 = (
+        'WL_coeffs_db3_5',
+        "WL_coeffs(y,'db3',5)",
+        WL_coeffs(wname='db3', level=5))
 
     # outs: max_coeff,mean_coeff,med_coeff,wb10m,wb1m
     # outs: wb25m,wb50m,wb75m,wb90m,wb99m
     # tags: lengthdep,wavelet,waveletTB
     WL_coeffs_db3_1 = (
         'WL_coeffs_db3_1',
+        "WL_coeffs(y,'db3',1)",
         WL_coeffs(wname='db3', level=1))
 
     # outs: max_coeff,mean_coeff,med_coeff,wb10m,wb1m
@@ -16713,6 +17756,7 @@ class HCTSAOperations(object):
     # tags: lengthdep,wavelet,waveletTB
     WL_coeffs_db3_max = (
         'WL_coeffs_db3_max',
+        "WL_coeffs(y,'db3','max')",
         WL_coeffs(wname='db3', level='max'))
 
     # outs: SC_h,dd_SC_h,exp_muhat,gam1,gam2
@@ -16724,6 +17768,7 @@ class HCTSAOperations(object):
     # tags: cwt,lengthdep,statTB,wavelet,waveletTB
     WL_cwt_sym2_32 = (
         'WL_cwt_sym2_32',
+        "WL_cwt(y,'sym2',32)",
         WL_cwt(wname='sym2', maxscale=32))
 
     # outs: SC_h,dd_SC_h,exp_muhat,gam1,gam2
@@ -16735,6 +17780,7 @@ class HCTSAOperations(object):
     # tags: cwt,lengthdep,statTB,wavelet,waveletTB
     WL_cwt_db3_32 = (
         'WL_cwt_db3_32',
+        "WL_cwt(y,'db3',32)",
         WL_cwt(wname='db3', maxscale=32))
 
     # outs: maxd_l1,maxd_l2,maxd_l3,maxd_l4,maxd_l5
@@ -16744,6 +17790,7 @@ class HCTSAOperations(object):
     # tags: dwt,wavelet,waveletTB
     WL_dwtcoeff_sym2_5 = (
         'WL_dwtcoeff_sym2_5',
+        "WL_dwtcoeff(y,'sym2',5)",
         WL_dwtcoeff(wname='sym2', level=5))
 
     # outs: maxd_l1,maxd_l2,maxd_l3,maxd_l4,maxd_l5
@@ -16753,21 +17800,35 @@ class HCTSAOperations(object):
     # tags: dwt,wavelet,waveletTB
     WL_dwtcoeff_db3_5 = (
         'WL_dwtcoeff_db3_5',
+        "WL_dwtcoeff(y,'db3',5)",
         WL_dwtcoeff(wname='db3', level=5))
 
     # outs: p1,p2,p3
     # tags: wavelet,waveletTB
     WL_fBM = (
         'WL_fBM',
+        'WL_fBM(y)',
         WL_fBM())
 
     # outs: lmax,period,pf
     # tags: wavelet,waveletTB
     WL_scal2frq_db3_max_1 = (
         'WL_scal2frq_db3_max_1',
+        "WL_scal2frq(y,'db3','max',1)",
         WL_scal2frq(wname='db3', amax='max', delta=1))
 
+    _all = None
+    _whatami2op = None
+    
     @staticmethod
     def all():
-        return sorted((name, comp[1]) for name, comp in HCTSAOperations.__dict__.iteritems()
-                      if not name.startswith('_') and not name == 'all')
+        if HCTSAOperations._all is None:
+            HCTSAOperations._all = sorted((name, comp[2]) for name, comp in HCTSAOperations.__dict__.iteritems()
+                                          if not name.startswith('_') and not name == 'all')
+        return HCTSAOperations._all
+    
+    @staticmethod
+    def what2op(what):
+        if HCTSAOperations._whatami2op is None:
+            HCTSAOperations._whatami2op = {comp.what().id(): name for name, comp in HCTSAOperations.all()}
+        return HCTSAOperations._whatami2op.get(what.what().id(), None)

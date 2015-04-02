@@ -21,6 +21,8 @@ setup(
     author='Santi Villalba',
     author_email='sdvillal@gmail.com',
     packages=['pyopy',
+              'pyopy.minioct2py',
+              'pyopy.externals.ompc',
               'pyopy.tests',
               'pyopy.hctsa',
               'pyopy.hctsa.tests'],
@@ -38,14 +40,15 @@ setup(
               'scipy',
               'pandas',
               'joblib',
-              'oct2py',  # FIXME == 3.1
               'argh',
               'whatami',
               'lockfile'],
 
     extras_require={
-        'pymatbridge': ['pymatbridge'],
-        'matlab_wrapper': ['matlab_wrapper'],
+        'oct2py': ['oct2py>=3.1.0'],
+        'pymatbridge': ['pymatbridge>=0.4.3'],
+        'matlab_wrapper': ['matlab_wrapper>=0.9.6'],
+        'mathworks': [],  # matlab python engine (http://www.mathworks.com/help/matlab/matlab-engine-for-python.html)
     },
     tests_require=['pytest'],
 

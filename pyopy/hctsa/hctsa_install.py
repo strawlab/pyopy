@@ -9,7 +9,7 @@ import tarfile
 from pyopy.base import PyopyEngines
 from pyopy.hctsa.hctsa_bindings_gen import gen_bindings
 
-from pyopy.hctsa.hctsa_config import HCTSA_DIR, HCTSA_TOOLBOXES_DIR
+from pyopy.hctsa.hctsa_config import HCTSA_DIR, HCTSA_TOOLBOXES_DIR, HCTSA_MOPS_FILE, HCTSA_OPS_FILE
 from pyopy.code import rename_matlab_func
 from pyopy.misc import ensure_dir, cd
 
@@ -116,23 +116,42 @@ def _fix_includes():
         comment_matrix_import(op.join(HCTSA_TOOLBOXES_DIR, path))
 
 
+def _fix_mops_ops():
+    """Replaces '-' by '_' in operation names, and apply other fixes to mops."""
+
+    REPLACEMENTS = (
+        ("CO_FirstMin(y,'mi-kraskov2',3)", "CO_FirstMin(y,'mi-kraskov2','3')"),
+        ('CO_FirstMin_mi-', 'CO_FirstMin_mi_'),
+    )
+    with open(HCTSA_MOPS_FILE) as mops, open(HCTSA_OPS_FILE) as ops:
+        mops = mops.read()
+        ops = ops.read()
+        for bad, good in REPLACEMENTS:
+            mops = mops.replace(bad, good)
+            ops = ops.replace(good, bad)
+        with open(HCTSA_MOPS_FILE, 'w') as mopsw, open(HCTSA_OPS_FILE, 'w') as opsw:
+            mopsw.write(mops)
+            opsw.write(ops)
+
+
 def _fix_hctsa():
     """Applies some fixes to the HCTSA codebase so they work for us."""
     # N.B. running this function twice should not lead to any problem...
     _fix_fnames()
     _fix_shadowing()
     _fix_includes()
+    _fix_mops_ops()
 
 
 def _mex_hctsa(engine=None):
     """Compiles the mex extensions using the specified engine."""
     # At the moment only OpenTSTool fails to compile for Octave under Linux64 (as said in their docs)
-    engine.run_command('cd %s' % HCTSA_TOOLBOXES_DIR)
+    engine.eval('cd %s' % HCTSA_TOOLBOXES_DIR)
     # Quick hack to stop OpenTSTOOL asking for user input
     mexext = engine.run_function(1, 'mexext')
     ensure_dir(op.join(HCTSA_TOOLBOXES_DIR, 'OpenTSTOOL', 'tstoolbox', 'mex', mexext))
     # mex all
-    response, _ = engine.run_command('compile_mex')
+    response, _ = engine.eval('compile_mex')
     # feedback if available...
     print 'Compilation feedback:\n\t', response.stdout
     #
@@ -162,11 +181,13 @@ def hctsa_prepare_engine(engine):
     # See also notes on optional package loading:
     # https://wiki.archlinux.org/index.php/Octave#Using_Octave.27s_installer
     if engine.is_octave():
-        engine.run_command('pkg load parallel')
-        engine.run_command('pkg load optim')
-        engine.run_command('pkg load signal')
-        engine.run_command('pkg load statistics')
-        engine.run_command('pkg load econometrics')
+        engine.eval('pkg load parallel')
+        engine.eval('pkg load optim')
+        engine.eval('pkg load signal')
+        engine.eval('pkg load statistics')
+        engine.eval('pkg load econometrics')
+    # Tweaks java classpaths
+    engine.eval('javaaddpath(\'%s\');' % op.join(HCTSA_TOOLBOXES_DIR, 'infodynamics-dist', 'infodynamics.jar'))
 
 
 def install(engine='octave', force_download=False, generate_bindings=True):

@@ -15,7 +15,7 @@ class PyMatBridgeTransplanter(PyopyTransplanter):
         for name, value in zip(varnames, values):
             eng.session().set_variable(name, value)
             if not int2float and isinstance(value, int):
-                eng.run_command('%s=int64(%s)' % (name, name))  # FIXME: or int32, if we are in a 32 bit system
+                eng.eval('%s=int64(%s)' % (name, name))  # FIXME: or int32, if we are in a 32 bit system
 
 
 class PyMatBridgeEngine(PyopyEngine):

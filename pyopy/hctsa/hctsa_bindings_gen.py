@@ -63,10 +63,17 @@ class HCTSASuper(object):
 def gen_bindings(hctsa_catalog=None, write_function_too=False):
     """Generates the python bindings to the library operators."""
 
-    def gen_function(funcname, parameters, doc, defaults=None, prefix='HCTSA'):
+    def gen_function(funcname, parameters, doc, defaults=None, prefix='HCTSA', varargin_as_args=False):
         """Generates python bindings for calling the feature extractors."""
 
         pyfuncname = '%s_%s' % (prefix, funcname)
+
+        # varargin support (http://www.mathworks.com/help/matlab/ref/varargin.html)
+        if len(parameters) > 0 and parameters[-1] == 'varargin' and varargin_as_args:
+            parameters[-1] = '*args'
+            raise NotImplementedError()
+        # this would require to support default values longer than the number of parameters
+        # this would need further work on calling to support pure numeric args via the cell-trick
 
         # avoid shadowing buitins with parameters...
         parameters = [{'ord': 'ord_'}.get(param, param)for param in parameters]
@@ -111,7 +118,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
     def gen_class_from_function_string(hctsa_function, func_params, function_prefix='HCTSA_', catalog=None):
 
         if catalog is None:
-            catalog = HCTSACatalog()
+            catalog = HCTSACatalog.catalog()
 
         # Our indentation levels
         indent1 = ' ' * 4
@@ -132,7 +139,19 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         # parameter read -> class member read
         for param in func_params:
             body = body.replace('if %s is' % param, 'if self.%s is' % param)
-            body = body.replace(', %s' % param, ', self.%s' % param)
+            if 'varargin' == param:
+
+                # dirty hack to force varagint to be transferred as cells
+                # can fail in many instances (e.g. tuples should be passed as ((1,2),) instead of just (1,2))
+                # works for HCTSA as it is at the moment, but varargin is not generally supported
+                # we need to fully implement it by translating to python *args
+                body = body.replace(
+                    ', varargin',
+                    ", self.varargin + ('_celltrick_',) if isinstance(self.varargin, tuple) "
+                    "else (self.varargin, '_celltrick_')")
+            else:
+                body = body.replace(', %s' % param, ', self.%s' % param)
+
         body = body.strip()
 
         # known outputs and tags
@@ -207,6 +226,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
                              ','.join(map(str, operation.tags()) if operation.tags() else ''))
                 lines.append('%s = (' % operation.opname)
                 lines.append('    \'%s\',' % operation.opname)
+                lines.append('    %r,' % operation.opcall)
                 instline = '    %s(%s))\n' % (fname, params_string)
                 if len(instline) < 110:
                     lines.append(instline)
@@ -214,14 +234,32 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
                     first_comma = instline.find(',', 90)
                     lines.append(instline[:first_comma + 1])
                     lines.append(' ' * len('    %s(' % fname) + instline[first_comma+2:])
-        lines.append('@staticmethod')
-        lines.append('def all():')
-        lines.append('    return sorted((name, comp[1]) for name, comp in HCTSAOperations.__dict__.iteritems()')
-        lines.append('                  if not name.startswith(\'_\') and not name == \'all\')')
-        lines = ['    %s' % line for line in lines]
+
+        STATICS = """
+            _all = None
+            _whatami2op = None
+
+            @staticmethod
+            def all():
+                if HCTSAOperations._all is None:
+                    HCTSAOperations._all = sorted((name, comp[2]) for name, comp in HCTSAOperations.__dict__.iteritems()
+                                                  if not name.startswith('_') and not name == 'all')
+                return HCTSAOperations._all
+
+            @staticmethod
+            def what2op(what):
+                if HCTSAOperations._whatami2op is None:
+                    HCTSAOperations._whatami2op = {comp.what().id(): name for name, comp in HCTSAOperations.all()}
+                return HCTSAOperations._whatami2op.get(what.what().id(), None)
+            """
+        for line in STATICS.rstrip()[1:].splitlines():
+            lines.append(line[12:])
+
+        lines = ['    %s' % line for line in lines] + ['']
         return 'class HCTSAOperations(object):\n' \
                '    """Namespace for HCTSA selected operations."""' \
                '\n\n%s' % '\n'.join(lines)
+
 
     # Read-in the catalog
     if hctsa_catalog is None:
@@ -240,7 +278,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         # Write the functions and classes
         funcnames = []
         classnames = []
-        exclusions = {'PP_PreProcess', }  # PP_PreProcess oes not extract features
+        exclusions = {'PP_PreProcess', }  # PP_PreProcess does not extract features
         for func in sorted(hctsa_catalog.functions_dict.values(), key=lambda f: f.funcname):
             if func.funcname in exclusions:
                 continue

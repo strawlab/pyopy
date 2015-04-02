@@ -109,6 +109,9 @@ class HCTSAOperation(object):
     opname : string
       The operation name (e.g. "CO_CompareMinAMI_even_2_80")
 
+    opcall : string
+      The operation call string in matlab land (e.g. "CO_CompareMinAMI(y,'even',[2:80])")
+
     funcname : string
       The function name associated to this operation (e.g. "CO_CompareMinAMI")
 
@@ -126,6 +129,7 @@ class HCTSAOperation(object):
     """
     def __init__(self,
                  opname,
+                 opcall,
                  funcname,
                  param_values,
                  is_commented,
@@ -133,6 +137,7 @@ class HCTSAOperation(object):
                  standardize=False):
         super(HCTSAOperation, self).__init__()
         self.opname = opname
+        self.opcall = opcall
         self.funcname = funcname
         self.param_values = param_values
         self.is_commented = is_commented
@@ -239,6 +244,7 @@ class HCTSACatalog(object):
 
             Gets splitted as:
               operation = 'CO_CompareMinAMI_even_2_80'
+              opcall = "CO_CompareMinAMI(y,'even',[2:80])"
               funcname = 'CO_CompareMinAMI'
               params = ['even', '2:80']
               is_commented = False
@@ -246,7 +252,7 @@ class HCTSACatalog(object):
             """
             line, is_commented = manage_comments(line)
             if line is None:  # Ignore commented lines
-                return None, None, None, None, None
+                return (None,) * 6
             callspec, operation = line.split()
             funcname, _, params = callspec.partition('(')
             funcname = funcname.strip()
@@ -254,20 +260,20 @@ class HCTSACatalog(object):
             series, _, params = params.partition(',')  # The first parameter is always the time series
             params = parse_matlab_params(params)
             is_standardized = series == 'y'
-            return operation, funcname, params, is_commented, is_standardized
+            return operation, callspec, funcname, params, is_commented, is_standardized
 
         self.operations_dict = {}
         with open(self.mops_file) as reader:
             for line in reader:
                 if not line.strip():
                     continue
-                operationname, funcname, params, is_commented, is_standardized = parse_mops_line(line)
+                operationname, callspec, funcname, params, is_commented, is_standardized = parse_mops_line(line)
                 if operationname is None:
                     continue  # Ignore commented lines
                 if operationname in self.operations_dict:
                     raise Exception('Repeated operation: %s' % operationname)
                 self.operations_dict[operationname] = \
-                    HCTSAOperation(operationname, funcname, params, is_commented, standardize=is_standardized)
+                    HCTSAOperation(operationname, callspec, funcname, params, is_commented, standardize=is_standardized)
 
         #
         # 2) Get all the features defined in the OPS file
@@ -307,7 +313,7 @@ class HCTSACatalog(object):
                 if operationname is None:
                     continue  # Ignore commented lines
                 operation = self.operations_dict.get(operationname,
-                                                     HCTSAOperation(operationname, None, None, None))
+                                                     HCTSAOperation(operationname, None, None, None, None))
                 feature = HCTSAFeature(featname, operation, outname, tags)
                 if featname in self.features_dict:
                     msg = 'Warning: the feature %s is defined more than once, ignoring...' % featname

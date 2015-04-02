@@ -7,9 +7,8 @@ import os.path as op
 import sys
 
 import numpy as np
-from pyopy.code import outputs_from_command
 
-from pyopy.misc import ints2floats, some_strings, is_iterable
+from pyopy.misc import ints2floats_tuples2lists, some_strings, is_iterable
 from pyopy.misc import float_or_int
 
 
@@ -277,7 +276,7 @@ class EngineResponse(object):
     def matlab_out(self):
         if self.stdout is None and self.stderr is None:
             return None
-        return '# --- stdout:\n%s\n\n# --- stderr:\n%s' % (
+        return '\n\n# --- stdout:\n%s\n\n# --- stderr:\n%s' % (
             self.stdout if self.stdout is not None else '',
             self.stderr if self.stderr is not None else '',
         )
@@ -369,7 +368,9 @@ class PyopyTransplanter(object):
         varnames = map(unicode, varnames)
         # int -> float (beware of too much magic)
         if int2float:
-            values = ints2floats(*values)
+            values = ints2floats_tuples2lists(*values)
+        # convert tuples to lists - TODO: document how this makes easy to implement transplanters
+        values = [list(v) if isinstance(v, tuple) else v for v in values]
         # deal with nested matlab sequences
         values = map(_flatten_matlab_sequences, values)
         # treat differently enginevar from other values
@@ -384,7 +385,7 @@ class PyopyTransplanter(object):
         if len(ev_names) > 0 or len(ms_names) > 0:
             command = ';'.join('%s=%s' % (alias, py2matstr(val)) for alias, val
                                in zip(ev_names, ev_values) + zip(ms_names, ms_values))
-            eng.run_command(command, outs2py=False)
+            eng.eval(command, outs2py=False)
         # return a single var...
         if len(varnames) == 1:
             return EngineVar(eng, varnames[0])
@@ -432,7 +433,7 @@ class PyopyEngine(object):
 
     def warmup(self):
         """Initializes the engine to avoid delays in posterior calls."""
-        self.run_command('ones(1);')
+        self.eval('ones(1);')
 
     def is_octave(self):
         """Returns True iff this engine is attached to octave."""
@@ -440,11 +441,11 @@ class PyopyEngine(object):
 
     # --- Command running
 
-    def run_command(self,
-                    command,
-                    outs2py=False,
-                    supress_text_output=True):
-        """Runs the command, optionally retrieving its results into python land.
+    def eval(self,
+             command,
+             outs2py=False,
+             supress_text_output=True):
+        """Evaluates the command, optionally retrieving its results into python land.
 
         Parameters
         ----------
@@ -474,7 +475,7 @@ class PyopyEngine(object):
             response, actual_command = self._run_command_hook(
                 command + (';' if supress_text_output and not command.endswith(';') else ''))
             if response.success is False:
-                raise Exception(response.stdout)
+                raise Exception(response.matlab_out())
             if outs2py:
                 # return response, map(self.get, outputs_from_command(actual_command))
                 outputs = self.get(outputs_from_command(actual_command))
@@ -502,7 +503,7 @@ class PyopyEngine(object):
             if not is_iterable(args):  # split apart numpy arrays, move these using a put context
                 args = [args]
             command = u'%s=%s(%s);' % (u'[%s]' % u','.join(result_vars), funcname, u','.join(map(py2matstr, args)))
-            _, results = self.run_command(command, outs2py=True)
+            _, results = self.eval(command, outs2py=True)
             return results[0] if len(results) == 1 else results
         finally:
             self.clear(result_vars)  # we could also avoid this burden too
@@ -536,7 +537,7 @@ class PyopyEngine(object):
                 if not is_iterable(args):
                     args = [args]
                 command = u'%s=%s(%s);' % (u'[%s]' % u','.join(result_vars), funcname, u','.join(map(py2matstr, args)))
-                _, results = self.run_command(command, outs2py=True)
+                _, results = self.eval(command, outs2py=True)
                 return results[0] if len(results) == 1 else results
         finally:
             self.clear(result_vars)
@@ -574,14 +575,14 @@ class PyopyEngine(object):
             varnames = [varnames]
         varnames = [var.name if isinstance(var, EngineVar) else var for var in varnames]
         if len(varnames) > 0:
-            self.run_command('clear %s' % ' '.join(varnames), outs2py=False)
+            self.eval('clear %s' % ' '.join(varnames), outs2py=False)
 
     def who(self, in_global=False):
         """Returns a list with the variable names in the current matlab/octave workspace."""
         # Remember also whos, class, clear, clearvars...
         if in_global:
-            return self.run_command('ans=who(\'global\');', outs2py=True)[1][0]  # run with ()
-        return self.run_command('ans=who();', outs2py=True)[1][0]  # run with ()
+            return self.eval('ans=who(\'global\');', outs2py=True)[1][0]  # run with ()
+        return self.eval('ans=who();', outs2py=True)[1][0]  # run with ()
 
     def list_variables(self, in_global=False):
         """who() synonym."""
@@ -593,7 +594,7 @@ class PyopyEngine(object):
     def engine_class(self, name):
         """Returns the class of a variable in matlab-land."""
         name = name.name if isinstance(name, EngineVar) else name
-        return self.run_command('class(%s)' % name, outs2py=True)[1][0]
+        return self.eval('class(%s)' % name, outs2py=True)[1][0]
 
     def exists(self, name):
         """Returns True iff the variable exists in the engine session."""
@@ -623,12 +624,12 @@ class PyopyEngine(object):
         The matlab path after this operation has completed.
         """
         path = op.abspath(path)
-        _, (matlab_path,) = self.run_command('ans=path();', outs2py=True)
+        _, (matlab_path,) = self.eval('ans=path();', outs2py=True)
         if path not in matlab_path or force:
             if recursive:
-                path = self.run_command('generated_path=genpath(\'%s\')' % path, outs2py=True)[1][0]
-            self.run_command('addpath(\'%s\', \'%s\')' % (path, '-begin' if begin else '-end'))
-        return self.run_command('ans=path();', outs2py=True)[1][0]
+                path = self.eval('generated_path=genpath(\'%s\')' % path, outs2py=True)[1][0]
+            self.eval('addpath(\'%s\', \'%s\')' % (path, '-begin' if begin else '-end'))
+        return self.eval('ans=path();', outs2py=True)[1][0]
 
     # --- Context manager stuff
 
@@ -722,8 +723,8 @@ def set_max_matlab_threads(eng, n_threads=1):
     if eng.is_octave():
         raise ValueError('Engine should be over Matlab, not Octave')
     if n_threads is None or n_threads < 1:
-        eng.run_command("maxNumCompThreads('auto')")
-    eng.run_command("maxNumCompThreads(%d)" % n_threads)
+        eng.eval("maxNumCompThreads('auto')")
+    eng.eval("maxNumCompThreads(%d)" % n_threads)
 
 
 def get_max_matlab_threads(eng):
@@ -805,3 +806,31 @@ class PyopyEngines(object):
     @staticmethod
     def set_default(name, thunk):
         raise NotImplementedError('To implement ASAP')
+
+
+# --- Auxiliary functions
+
+def outputs_from_command(command):
+    """Very ad-hoc function that finds out the names of the outputs of a matlab command.
+
+    It surely won't cover all of matlab statement call syntax, so complete with new cases as they come by.
+
+    Examples
+    --------
+
+    >>> outputs_from_command('clear x')
+    []
+    >>> outputs_from_command('ones(1);')
+    ['ans']
+    >>> outputs_from_command('[x, y] = meshgrid(5, 5);')
+    ['x', 'y']
+    """
+    # Is it a function call? - not robust at all
+    is_function_call = '=' in command or '(' in command and ')' in command
+    if not is_function_call:
+        return []
+    has_out_names = '=' in command[:command.find('(')]
+    if not has_out_names:
+        return ['ans']
+    out_names = command[:command.find('(')].partition('=')[0].strip().replace('[', '').replace(']', '')
+    return map(str.strip if not isinstance(command, unicode) else unicode.strip, out_names.split(','))

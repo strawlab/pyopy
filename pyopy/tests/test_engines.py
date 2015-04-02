@@ -139,9 +139,43 @@ def test_roundtrip_array(eng):
     # See http://stackoverflow.com/questions/7482205/precision-why-do-matlab-and-python-numpy-give-so-different-outputs
 
 
+def test_roundtrip_cell(eng):
+
+    # Mixed cells, as tuple
+    cell_tuple_mixed = ('ac', 5)
+    eng.put('cell_tuple_mixed', [cell_tuple_mixed])
+    assert eng.get('cell_tuple_mixed') == cell_tuple_mixed
+    assert eng.engine_class('cell_tuple_mixed') == 'cell'
+
+    # Recursive cells (FIXME: hackish implementation)
+    cellr = ('covSum', ('covSEiso', 'covNoise'))
+    # this is quite bad, and won't play nice with e.g. matlabwrapper that does the right thing...
+    wrong_roundtripped_expected = ['covSum', np.array(['covSEiso', 'covNoise'])]
+    eng.put('cellr', [cellr])
+    roundtripped = eng.get('cellr')
+    assert roundtripped[0] == wrong_roundtripped_expected[0]
+    assert (roundtripped[1] == wrong_roundtripped_expected[1]).all()
+    assert eng.engine_class('cellr') == 'cell'
+
+    # Homogeneous-type cell, as list
+    cell_list_nonummeric = ['ami1', 'fmmi', 'o3', 'tc3']
+    eng.put('cell_list_nonummeric', [cell_list_nonummeric])
+    assert eng.get('cell_list_nonummeric') == cell_list_nonummeric
+    assert eng.engine_class('cell_list_nonummeric') == 'cell'
+
+    # TODO: using a string to avoid pure-numeric cells to be passed as arrays is dirty
+    #       it would be better (even if more expensive) to have a Cell class in python-land
+    cell2 = [1, 2, 'c']
+    eng.put('cell2', [cell2])
+    assert eng.get('cell2') == cell2
+    assert eng.engine_class('cell_list_nonummeric') == 'cell'
+
+    # TODO: test that a numeric cell gets converted to (..., '_celltrick_')
+
+
 def test_run_outs2py(eng):
 
-    response, result = eng.run_command('a=[1,2]', outs2py=True)
+    response, result = eng.eval('a=[1,2]', outs2py=True)
     assert response.success
     assert len(result) == 1
     assert result[0].shape == (1, 2)
@@ -150,7 +184,7 @@ def test_run_outs2py(eng):
     eng.clear('a')
     assert not eng.exists('a')
 
-    response, result = eng.run_command('[x, y]=meshgrid(5, 4)', outs2py=True)
+    response, result = eng.eval('[x, y]=meshgrid(5, 4)', outs2py=True)
     assert response.success
     assert len(result) == 2
     x, y = result

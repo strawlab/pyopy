@@ -1,6 +1,6 @@
 # coding=utf-8
 """Benchmarks and checks the HCTSA python bindings."""
-from itertools import product
+from itertools import product, izip
 import os.path as op
 import random
 import time
@@ -57,8 +57,8 @@ def check_benchmark_bindings(x,
 
     # Setup the input for hctsa
     size = len(x)
-    x = hctsa_prepare_input(x)
-    x = engine.put('x', x)
+    y = engine.put('y', hctsa_prepare_input(x, z_scored=True))
+    x = engine.put('x', hctsa_prepare_input(x, z_scored=False))
 
     # Operations
     if operations is None:
@@ -109,7 +109,7 @@ def check_benchmark_bindings(x,
         try:
             if opname in forbidden:
                 raise EngineException(None, 'Forbidden operation')
-            result = operation.transform(x, engine)
+            result = operation.transform(y if HCTSACatalog.catalog().must_standardize(opname) else x, engine)
             taken = time.time() - start
             if not isinstance(result, dict):
                 result = {None: result}
@@ -202,6 +202,17 @@ def analyse():
     df = df[float_values]
     df = df.convert_objects(convert_numeric=True)  # After removing these, value can be again converted to float
 
+    nodup = df.dropna(subset=['error'], axis=0).drop_duplicates(['operator', 'error']).sort('operation')
+    nodup.to_html('/home/santi/dupes.html')
+
+    print '\n'.join(nodup['operator'].unique())
+    operations_failing = map(lambda o: 'HCTSAOperations.%s[2],' % o, sorted(nodup['operation'].unique()))
+    print '\n'.join(operations_failing)
+    for opname, error in izip(nodup['operation'], nodup['error']):
+        print '-' * 80
+        print opname
+        print error
+
     # Round to the 6th decimal
     df['value'] = np.around(df['value'], decimals=6)
 
@@ -223,19 +234,42 @@ def analyse():
             tagged_as_stochastic = catalog.operation(operation).has_tag('stochastic')
             failing = 'OK' if (~np.isfinite(oodf['value'])).sum() == 0 else 'FAILING'
             if oodf['value'].nunique() == 0:
-                print xname, operation, output, failing, failing, failing, tagged_as_stochastic
+                print xname, operator, operation, output, failing, failing, failing, tagged_as_stochastic
             elif oodf['value'].nunique() == 1:
                 if failing != 'OK' or verbose:
-                    print xname, operation, output, 'DETERMINISTIC', failing, tagged_as_stochastic
+                    print xname, operator, operation, output, 'DETERMINISTIC', failing, tagged_as_stochastic
             else:
-                print xname, operation, output, 'RANDOMISED', failing, tagged_as_stochastic
+                print xname, operator, operation, output, 'RANDOMISED', failing, tagged_as_stochastic
                 if tooverbose:
                     for value, voodf in oodf.groupby('value'):
                         print '\t', value, map(str, voodf['host'].unique())
     stochastic_failing(df)
 
-# analyse()
-# exit(22)
+
+FAILING_AFTER_CELL_NASTINESS = {
+    'Fails with sine': [HCTSAOperations.MF_GP_hyperparameters_covSEiso_covNoise_1_200_first[2]],
+    'Fails with noisysinusoid': [
+        HCTSAOperations.NL_TISEAN_d2_1_10_0[2],
+        HCTSAOperations.NL_TISEAN_d2_ac_10_001[2],
+    ]
+}
+
+
+def test_one(operation, engine='matlab'):
+    engine = PyopyEngines.engine_or_matlab_or_octave(engine)
+    hctsa_prepare_engine(engine)
+    print operation.what().id()
+    for name, x in (('noise', hctsa_noise()),
+                    ('sine', hctsa_sine()),
+                    ('noisysinusoid', hctsa_noisysinusoid()),
+                    ('randn10000', np.random.RandomState(0).randn(10000))):
+        print '-' * 80
+        print name
+        x = engine.put('x', hctsa_prepare_input(x, z_scored=True))
+        try:
+            operation.transform(x, eng=engine)
+        except Exception as ex:
+            print ex
 
 
 if __name__ == '__main__':
@@ -244,6 +278,6 @@ if __name__ == '__main__':
     n_jobs = 4
     Parallel(n_jobs=n_jobs)(delayed(check_benchmark_bindings)(x=xfact(),
                                                               xname=xname,
-                                                              extra=None,
+                                                              extra='pycharm',
                                                               n_jobs=n_jobs)
                             for (xname, xfact), _ in product(TS_FACTORIES.items(), range(4)))

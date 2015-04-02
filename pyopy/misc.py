@@ -57,12 +57,15 @@ def float_or_int(val_string):
     return int(val_string)
 
 
-def ints2floats(*args):
+def ints2floats_tuples2lists(*args):
     """Returns a list with args where integers have been converted to floats.
     In python, '2' is an int; in matlab, it is a double, and that can give problems with matlab's picky type system.
     """
     # this is now solved also in oct2py putval, but it is handy to have it standalone
     def int2float(x):
+        if isinstance(x, (list, tuple)):
+            return ints2floats_tuples2lists(*x)
+        # TODO: dicts and other containers
         if isinstance(x, int):
             return float(x)
         if hasattr(x, 'dtype') and x.dtype.kind in 'uib':

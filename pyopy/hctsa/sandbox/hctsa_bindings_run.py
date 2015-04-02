@@ -90,7 +90,7 @@ def hctsa_partials_poc(eng_thunk=PyopyEngines.matlab,
         results = {}
         for feature in features:
             partial = as_partial_call(feature)
-            response, result = eng.run_command(u'cellfun(%s, data, \'UniformOutput\', 0)' % partial,
+            response, result = eng.eval(u'cellfun(%s, data, \'UniformOutput\', 0)' % partial,
                                                outs2py=True)
             if not response.success:
                 raise Exception(response.stdout)

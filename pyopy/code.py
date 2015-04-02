@@ -165,7 +165,8 @@ def parse_matlab_params(matlab_params_string, int2float=True):
             ompc_string = flatten(ompc_string, flatter)
 
         # Evaluate to get the matlab value
-        from pyopy.base import MatlabSequence  # need this in scope for eval
+        from pyopy.base import MatlabSequence
+        assert MatlabSequence is not None  # just to paint it green in pycharm
         pyval = eval(ompc_string)   # literal_eval does not cover MatlabSequence
         if int2float:
             try:
@@ -178,38 +179,51 @@ def parse_matlab_params(matlab_params_string, int2float=True):
 
     if not matlab_params_string:
         return []
-    return map(ompc2evaluable, translate_to_str(matlab_params_string).splitlines())
+    #
+    # hack to make only-numeric cells map to only numeric + string marker
+    # time allowing, make this better by:
+    #   adapting ompc grammar to parse cells as a special type Cell
+    #   + adding support in the engine dispatch for this type (ala MatlabSequence)
+    #
+
+    def cell_hack(matlab_string):
+        cells = []
+        stack = []
+        for c in matlab_string:
+            if '{' == c:
+                stack.append([])
+            elif '}' == c:
+                cells.append('{%s}' % ''.join(stack.pop()))
+            elif len(stack):
+                stack[-1].append(c)
+
+        def is_number(s):
+            try:
+                float(s)
+                return True
+            except:
+                return False
+
+        def numeric_to_mixed(cell):
+            # This is nasty, as we are changing the cell contents
+            # It will work as long as the code reading this cell does not query its size
+            # but just access a set of concrete values.
+            # This is the case in HCTSA parameter specification
+            values = map(str.strip, cell[1:-1].split(','))
+            if all(is_number(value) for value in values):
+                return "{%s,'_celltrick_'}" % ','.join(map(str, values))
+            return cell
+
+        for cell in cells:
+            matlab_string = matlab_string.replace(cell, numeric_to_mixed(cell))
+
+        return matlab_string
+
+    return map(ompc2evaluable, translate_to_str(cell_hack(matlab_params_string)).splitlines())
 
 
-def outputs_from_command(command):
-    """Very ad-hoc function that finds out the names of the outputs of a matlab command.
-
-    It surely won't cover all of matlab statement call syntax, so complete with new cases as they come by.
-
-    Examples
-    --------
-
-    >>> outputs_from_command('clear x')
-    []
-    >>> outputs_from_command('ones(1);')
-    ['ans']
-    >>> outputs_from_command('[x, y] = meshgrid(5, 5);')
-    ['x', 'y']
-    """
-    # Is it a function call? - not robust at all
-    is_function_call = '=' in command or '(' in command and ')' in command
-    if not is_function_call:
-        return []
-    has_out_names = '=' in command[:command.find('(')]
-    if not has_out_names:
-        return ['ans']
-    out_names = command[:command.find('(')].partition('=')[0].strip().replace('[', '').replace(']', '')
-    return map(str.strip if not isinstance(command, unicode) else unicode.strip, out_names.split(','))
-
-
-#####################################################################
-# Old parameter-line parsing machinery (pre OMPC reimplementation)
-#####################################################################
+#
+# --- Old parameter-line parsing machinery (pre OMPC reimplementation)
 #
 #
 # def matlab_val_to_python_val(matlabval):
