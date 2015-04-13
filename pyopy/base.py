@@ -797,10 +797,10 @@ class PyopyEngines(object):
     @staticmethod
     def default():
         try:
-            print 'Using matlab...'
+            # print 'Using matlab...'
             return PyopyEngines.matlab()
         except:
-            print 'Using octave...'
+            # print 'Using octave...'
             return PyopyEngines.octave()
 
     @staticmethod

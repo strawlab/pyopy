@@ -8,7 +8,7 @@ Modified to work with pyopy by Santi Villalba
 """
 import inspect
 import dis
-from oct2py.compat import PY2
+from pyopy.minioct2py.compat import PY2
 
 
 def get_nout():
@@ -125,9 +125,9 @@ def get_log(name=None):
     import logging
 
     if name is None:
-        name = 'oct2py'
+        name = 'minioct2py'
     else:
-        name += 'oct2py.'
+        name += 'minioct2py.'
 
     log = logging.getLogger(name)
     log.setLevel(logging.WARN)

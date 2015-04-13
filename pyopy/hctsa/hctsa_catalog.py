@@ -9,7 +9,7 @@ from glob import glob
 from itertools import chain
 import os.path as op
 
-from pyopy.hctsa.hctsa_config import HCTSA_OPS_FILE, HCTSA_MOPS_FILE, HCTSA_OPERATIONS_DIR
+from pyopy.hctsa.hctsa_config import HCTSA_OPS_FILE, HCTSA_MOPS_FILE, HCTSA_OPERATIONS_DIR, HCTSA_OPS_REDUCED_FILE
 from pyopy.code import matlab_funcname_from_filename, parse_matlab_params, parse_matlab_funcdef
 
 
@@ -199,16 +199,19 @@ class HCTSACatalog(object):
     def __init__(self,
                  mfiles_dir=HCTSA_OPERATIONS_DIR,
                  mops_file=HCTSA_MOPS_FILE,
-                 ops_file=HCTSA_OPS_FILE):
+                 ops_file=HCTSA_OPS_FILE,
+                 reduced_ops_file=HCTSA_OPS_REDUCED_FILE):
         super(HCTSACatalog, self).__init__()
 
         self.mfiles_dir = mfiles_dir
         self.mops_file = mops_file
         self.ops_file = ops_file
+        self.reduced_ops_file = reduced_ops_file
 
         self.functions_dict = None
         self.operations_dict = None
         self.features_dict = None
+        self.reduced_ops = None
 
         self._build_hctsa_catalog()
 
@@ -344,9 +347,15 @@ class HCTSACatalog(object):
             self.functions_dict[funcname] = HCTSAFunction(mfile, outstring, parameters, doc, code, operations)
 
         #
-        # 4) Make easy the link:
-        #    function -> {operation -> {features}}
+        # 4) Read the reduced-operations file
+        #    These showed worthiness in a feature selection paper
         #
+        # FIXME: this is wrongly parsed, mainly because the file is poorly formatted
+        operations = set()
+        with open(self.reduced_ops_file) as reader:
+            for line in (line for line in reader.readlines() if not line.strip().startswith('#') and len(line.strip())):
+                operations.add(line.strip().split()[0].split('.')[0])
+            self.reduced_ops = tuple(sorted(operations))
 
     def summary(self):
         report = [
@@ -411,6 +420,15 @@ class HCTSACatalog(object):
         return HCTSACatalog._catalog
 
     _whatami2hctsa = None
+    _allops = None
+
+    @staticmethod
+    def allops():
+        if HCTSACatalog._allops is None:
+            from hctsa_bindings import HCTSAOperations
+            HCTSACatalog._allops = sorted((name, comp[2]) for name, comp in HCTSAOperations.__dict__.iteritems()
+                                          if not name.startswith('_'))
+        return HCTSACatalog._allops
 
     @staticmethod
     def what2op(whatid):
@@ -418,10 +436,10 @@ class HCTSACatalog(object):
         if HCTSACatalog._whatami2hctsa is None:
             HCTSACatalog._whatami2hctsa = {}
             from hctsa_bindings import HCTSAOperations
-            for hctsaop, comp in HCTSAOperations.all():
+            for hctsaop, comp in HCTSACatalog.allops():
                 # N.B. this is not unique until we use a Standardizer for these features which require standardisation
-                HCTSACatalog._whatami2hctsa[comp.what().id()] = hctsaop
-        return HCTSACatalog._whatami2hctsa.get(whatid, None)
+                HCTSACatalog._whatami2hctsa[comp.what().id()] = (hctsaop, comp)
+        return HCTSACatalog._whatami2hctsa.get(whatid, (None, None))
 
     @staticmethod
     def must_standardize(operation):

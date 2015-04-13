@@ -22,7 +22,7 @@ Pyopy is only tested on linux. It requires python 2.7 and the following python d
  - joblib
  - argh
  - whatami
- - lockfile
+ - lockfilehe
  
 Optionally, some libraries can be used for data transfer and command pimping:
 

@@ -8,6 +8,7 @@ from pyopy.hctsa.hctsa_config import HCTSA_BINDINGS_FILE, HCTSA_BINDINGS_DIR
 from pyopy.hctsa.hctsa_catalog import HCTSACatalog
 from pyopy.hctsa.hctsa_data import hctsa_sine
 from pyopy.base import PyopyEngines
+from pyopy.hctsa.hctsa_transformers import matlab_standardize
 from pyopy.misc import ensure_python_package
 
 
@@ -49,6 +50,9 @@ class HCTSASuper(object):
         eng = self._infer_eng(eng)
         return self._eval_hook(eng, x)
 
+    def compute(self, x, eng=None):
+        return self.transform(x, eng=eng)
+
     def _eval_hook(self, eng, x):
         raise NotImplementedError()
 
@@ -58,6 +62,45 @@ class HCTSASuper(object):
 
     def use_eng(self, eng):
         self._eng = eng
+
+
+@whatable(force_flag_as_whatami=True)
+class HCTSAOperation(object):
+    def __init__(self, operation_name, matlab_call, operation):
+        super(HCTSAOperation, self).__init__()
+        self.name = operation_name
+        self.matlab_call = matlab_call
+        self.operation = operation
+        self._must_standardize = None
+
+    def what(self):
+        return self.operation.what()
+
+    def must_standardize(self):
+        if self._must_standardize is None:
+            from hctsa_catalog import HCTSACatalog
+            self._must_standardize = HCTSACatalog.must_standardize(self.name)
+        return self._must_standardize
+
+    def compute(self, x, y=None, eng=None):
+        if self.must_standardize() and y is None:
+            x = matlab_standardize(x) if y is None else y
+        return self.operation.compute(x, eng=eng)
+
+    def __call__(self, x, y=None, eng=None):
+        return self.compute(x, y=y, eng=eng)
+
+    def _as_tuple(self):
+        return self.name, self.matlab_call, self.operation
+
+    def __getitem__(self, item):
+        return self._as_tuple()[item]
+
+    def __iter__(self):
+        return iter(self._as_tuple())
+
+    def __repr__(self):
+        return self.__class__.__name__ + self._as_tuple().__repr__()
 
 
 def gen_bindings(hctsa_catalog=None, write_function_too=False):
@@ -224,7 +267,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
                                  ','.join(map(str, outs) if operation.known_outputs() else ''))
                 lines.append('# tags: %s' %
                              ','.join(map(str, operation.tags()) if operation.tags() else ''))
-                lines.append('%s = (' % operation.opname)
+                lines.append('%s = HCTSAOperation(' % operation.opname)
                 lines.append('    \'%s\',' % operation.opname)
                 lines.append('    %r,' % operation.opcall)
                 instline = '    %s(%s))\n' % (fname, params_string)
@@ -235,31 +278,10 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
                     lines.append(instline[:first_comma + 1])
                     lines.append(' ' * len('    %s(' % fname) + instline[first_comma+2:])
 
-        STATICS = """
-            _all = None
-            _whatami2op = None
-
-            @staticmethod
-            def all():
-                if HCTSAOperations._all is None:
-                    HCTSAOperations._all = sorted((name, comp[2]) for name, comp in HCTSAOperations.__dict__.iteritems()
-                                                  if not name.startswith('_') and not name == 'all')
-                return HCTSAOperations._all
-
-            @staticmethod
-            def what2op(what):
-                if HCTSAOperations._whatami2op is None:
-                    HCTSAOperations._whatami2op = {comp.what().id(): name for name, comp in HCTSAOperations.all()}
-                return HCTSAOperations._whatami2op.get(what.what().id(), None)
-            """
-        for line in STATICS.rstrip()[1:].splitlines():
-            lines.append(line[12:])
-
-        lines = ['    %s' % line for line in lines] + ['']
+        lines = ['    %s' % line for line in lines]
         return 'class HCTSAOperations(object):\n' \
                '    """Namespace for HCTSA selected operations."""' \
                '\n\n%s' % '\n'.join(lines)
-
 
     # Read-in the catalog
     if hctsa_catalog is None:
@@ -270,7 +292,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         # Bindings imports
         binding_imports = (
             'from pyopy.base import MatlabSequence',
-            'from pyopy.hctsa.hctsa_bindings_gen import HCTSASuper')
+            'from pyopy.hctsa.hctsa_bindings_gen import HCTSASuper, HCTSAOperation')
         exec '\n'.join(binding_imports) in globals()  # We are using nasty execs around that need these imports
         # Write the header
         writer.write('# coding=utf-8\n')
