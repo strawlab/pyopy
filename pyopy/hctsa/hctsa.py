@@ -24,8 +24,8 @@ def prepare_hctsa(engine='matlab',
             hctsa_prepare_engine(eng[0])
         if prepare_operators:
             print 'Setting up HCTSA operators'
-            operations_with_eng[0] = hctsa_all_use_eng(eng=eng[0])
-        print 'Hooray, is now ready to use from python'
+            operations_with_eng[0] = hctsa_operations_use_eng(eng=eng[0])
+        print 'Hooray, we can use HCTSA now...'
     return eng[0], operations_with_eng[0]
 
 
@@ -45,10 +45,8 @@ try:
 except ImportError:
     catalog = None
 
-from hctsa_transformers import hctsa_prepare_input
 
-
-def hctsa_all_use_eng(operators=None, eng=None, inplace=True):
+def hctsa_operations_use_eng(operators=None, eng=None, inplace=True):
     if eng is None:
         eng = prepare_hctsa()
     if operators is None:
