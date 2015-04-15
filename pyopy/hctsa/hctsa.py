@@ -3,12 +3,12 @@
 import copy
 
 
-def prepare_hctsa(engine='matlab',
-                  warmup=True,
-                  prepare_engine=True,
-                  prepare_operators=True,
-                  eng=[None],
-                  operations_with_eng=[None]):
+def prepare(engine='matlab',
+            warmup=True,
+            prepare_engine=True,
+            prepare_operators=True,
+            eng=[None],
+            operations_with_eng=[None]):
 
     # TODO: a fast function to check if hctsa has been initialised
     if eng[0] is None:
@@ -48,7 +48,7 @@ except ImportError:
 
 def hctsa_operations_use_eng(operators=None, eng=None, inplace=True):
     if eng is None:
-        eng = prepare_hctsa()
+        eng = prepare()
     if operators is None:
         operators = catalog.allops()
     operators_copy = []
