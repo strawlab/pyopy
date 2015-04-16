@@ -8,7 +8,7 @@ from pyopy.hctsa.hctsa_config import HCTSA_BINDINGS_FILE, HCTSA_BINDINGS_DIR
 from pyopy.hctsa.hctsa_catalog import HCTSACatalog
 from pyopy.hctsa.hctsa_data import hctsa_sine
 from pyopy.base import PyopyEngines
-from pyopy.hctsa.hctsa_transformers import matlab_standardize
+from pyopy.hctsa.hctsa_transformers import hctsa_prepare_input
 from pyopy.misc import ensure_python_package
 
 
@@ -84,7 +84,9 @@ class HCTSAOperation(object):
 
     def compute(self, x, y=None, eng=None):
         if self.must_standardize() and y is None:
-            x = matlab_standardize(x) if y is None else y
+            x = hctsa_prepare_input(x, z_scored=True) if y is None else y
+        else:
+            x = hctsa_prepare_input(x, z_scored=False)
         return self.operation.compute(x, eng=eng)
 
     def __call__(self, x, y=None, eng=None):
