@@ -32,20 +32,20 @@ based on [pymatbridge](https://github.com/arokem/python-matlab-bridge) is also a
 
 ### Install example using a [conda environment](http://conda.io/)
 
- - Install dependencies
+ - Install dependencies.
 ```sh
 conda install numpy scipy pandas
 pip install joblib argh whatami lockfile
 ```
 
- - To use matlab, install the python matlab engine. 
+ - To use matlab, install the [python matlab engine](http://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html). 
 
 ```sh
-cd /opt/matlab/extern/engines/python  # if matlab is installed in */opt/matlab*:
+cd /opt/matlab/extern/engines/python  # if matlab is installed in /opt/matlab
 python setup.py install  # unfortunately, pip would fail here
 ```
 
- - To use octave, install oct2py:
+ - To use octave, install oct2py.
 
 ```sh
 pip install oct2py
@@ -60,7 +60,7 @@ pip install https://github.com/strawlab/pyopy/tarball/master
 Licenses
 --------
 
- - PYOPY: BSD
- - OCT2PY: BSD
- - OMPC: GPL
- - HCTSA: GPL
+ - PYOPY: Modified BSD
+ - OCT2PY: Modified BSD
+ - OMPC: Modified BSD
+ - HCTSA: GPL (must be downloaded separately or with the hctsa_install.py script)
