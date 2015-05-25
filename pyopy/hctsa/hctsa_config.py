@@ -1,9 +1,10 @@
 import os.path as op
-from pyopy.config import PYOPY_TOOLBOXES_DIR, PYOPY_DIR
+
+from pyopy.config import PYOPY_DIR, PYOPY_EXTERNAL_TOOLBOXES_DIR
 
 # ---- Some paths
 
-HCTSA_DIR = op.abspath(op.join(PYOPY_TOOLBOXES_DIR, 'hctsa'))  # where hctsa is
+HCTSA_DIR = op.abspath(op.join(PYOPY_EXTERNAL_TOOLBOXES_DIR, 'hctsa'))  # where hctsa is
 HCTSA_OPERATIONS_DIR = op.join(HCTSA_DIR, 'Operations')  # where the operators are
 HCTSA_TOOLBOXES_DIR = op.join(HCTSA_DIR, 'Toolboxes')  # where the 3rd party toolboxes are
 HCTSA_MOPS_FILE = op.join(HCTSA_DIR, 'Database', 'INP_mops.txt')  # funcname, parameters -> feature_cat
