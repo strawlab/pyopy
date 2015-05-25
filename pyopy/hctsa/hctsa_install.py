@@ -101,7 +101,8 @@ def _fix_includes():
         'gpml/util/lbfgsb/lbfgsb.cpp',
         'Max_Little/steps_bumps_toolkit/ML_kvsteps_core.c',
         'Max_Little/steps_bumps_toolkit/ML_kvsteps_core.cpp',
-        'Max_Little/fastdfa/ML_fastdfa_core.c'
+        'Max_Little/fastdfa/ML_fastdfa_core.c',
+        'Max_Little/rpde/ML_close_ret.c'
     )
 
     def comment_matrix_import(path):
