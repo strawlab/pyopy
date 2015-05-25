@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 
 from pyopy.base import PyopyEngines, EngineException
-from pyopy.config import PYOPY_TOOLBOXES_DIR
+from pyopy.config import PYOPY_EXTERNAL_TOOLBOXES_DIR
 from pyopy.hctsa.hctsa_bindings import HCTSAOperations
 from pyopy.hctsa.hctsa_catalog import HCTSACatalog
 from pyopy.hctsa.hctsa_data import hctsa_sine, hctsa_noise, hctsa_noisysinusoid
@@ -23,7 +23,7 @@ from pyopy.misc import ensure_dir
 
 
 # Where benchmark and check results will live
-HCTSA_BENCHMARKS_DIR = op.join(PYOPY_TOOLBOXES_DIR, 'hctsa_benchmarks')
+HCTSA_BENCHMARKS_DIR = op.join(PYOPY_EXTERNAL_TOOLBOXES_DIR, 'hctsa_benchmarks')
 
 # Operations that can potentially hang the system - which BTW should be properlly fixed
 HCTSA_FORBIDDEN_OPERATIONS = {
