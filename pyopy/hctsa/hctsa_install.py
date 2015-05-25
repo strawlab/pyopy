@@ -188,7 +188,11 @@ def hctsa_prepare_engine(engine):
         engine.eval('pkg load statistics')
         engine.eval('pkg load econometrics')
     # Tweaks java classpaths
-    engine.eval('javaaddpath(\'%s\');' % op.join(HCTSA_TOOLBOXES_DIR, 'infodynamics-dist', 'infodynamics.jar'))
+    try:
+        engine.eval('javaaddpath(\'%s\');' % op.join(HCTSA_TOOLBOXES_DIR, 'infodynamics-dist', 'infodynamics.jar'))
+    except:
+        print 'Warning, could not add infodynamics to the %s path, is there java support in the engine?' % \
+              ('octave' if engine.is_octave() else 'matlab')
 
 
 def install(engine='octave', force_download=False, generate_bindings=True):
