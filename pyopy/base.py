@@ -402,9 +402,9 @@ class PyopyEngine(object):
     """Simple unifying API to wrap different python->(octave|matlab)->python integration tools.
 
     This API should allow also to:
-      - Playing well with EngineVar
-      - Playing well with MatlabSequence
-      - Playing well with Matlab weird triple-quoted escaped strings
+      - Play well with EngineVar
+      - Play well with MatlabSequence
+      - Play well with Matlab weird triple-quoted escaped strings
       - Keep track of existing variables and try to tame memory consumption on matlab land
 
     Not goals of this class:
