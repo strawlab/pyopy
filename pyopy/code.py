@@ -19,8 +19,7 @@ def matlab_funcname_from_filename(mfile):
 
 
 def parse_matlab_funcdef(mfile,
-                         funcdef_pattern=re.compile(r'^function\s*(\S.+)\s*=\s*(\S+)\s*\((.*)\)$',
-                                                    flags=re.MULTILINE)):
+                         funcdef_pattern=re.compile(r'^function\s*(\S.+)\s*=\s*(\S+)\s*\((.*)\)[\r\n|\n]', flags=re.MULTILINE)):
     """Splits a matlab function file into components.
 
     Parameters
