@@ -60,7 +60,17 @@ pip install https://github.com/strawlab/pyopy/tarball/master
 Licenses
 --------
 
- - PYOPY: Modified BSD
+### Code distributed with pyopy
+
+ - PYOPY itself: Modified BSD
  - OCT2PY: Modified BSD
  - OMPC: Modified BSD
- - HCTSA: GPL (must be downloaded separately or with the hctsa_install.py script)
+ 
+### Optional matlab toolboxes
+
+#### HCTSA
+
+HCTSA must be downloaded separately (preferably using the *pyopy/hctsa/hctsa_install.py* script).
+"Operators" are GPL licensed. Pyopy bindings rely on operators only.
+Other parts of HCTSA are licensed as [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/). 
+Other licenses in 3rd party code used by HCTSA (TOOLBOXES directory), mostly GPL, might apply. 
