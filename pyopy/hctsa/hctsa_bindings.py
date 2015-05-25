@@ -39,10 +39,6 @@ class CO_AddNoise(HCTSASuper):
     % 
     % randomSeed: settings for resetting the random seed for reproducible results
     %               (using BF_ResetSeed)
-    %
-    %---HISTORY:
-    % Ben Fulcher, September 2009
-    % Ben Fulcher, 2015-03-19 added random seed input for reproducibility
     % 
     ----------------------------------------
     """
@@ -87,16 +83,15 @@ class CO_AutoCorr(HCTSASuper):
     %       
     %---OUTPUT: the autocorrelation at the given time-lag.
     %
-    %---HISTORY:
-    % Ben Fulcher, 2014-10-28. Added a version of the 'TimeDomain' method that can
-    % tolerate NaN values in the time series, for a specific application for Simonne
-    % Cohen.
+    %---NOTES:
+    % Specifying whatMethod = 'TimeDomain' can tolerate NaN values in the time
+    % series.
     % 
-    % Ben Fulcher, 2014-03-24. Added multiple definitions for computing the
-    %       autocorrelation Computing mean/std across the full time series makes a
-    %       significant difference for short time series, but can produce values
-    %       outside [-1,+1]. The filtering-based method used by Matlab's autocorr,
-    %       is probably the best for short time series, and is now implemented here.
+    % Computing mean/std across the full time series makes a significant difference
+    % for short time series, but can produce values outside [-1,+1]. The
+    % filtering-based method used by Matlab's autocorr, is probably the best for
+    % short time series, and is implemented here by specifying: whatMethod =
+    % 'Fourier'.
     %
     ----------------------------------------
     """
@@ -130,10 +125,7 @@ class CO_AutoCorrShape(HCTSASuper):
     % autocorrelation function itself.
     % 
     %---INPUTS:
-    % y, the input time series
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
+    % y, the input time series.
     % 
     ----------------------------------------
     """
@@ -160,14 +152,14 @@ class CO_CompareMinAMI(HCTSASuper):
     % 
     % The function returns a set of statistics on the set of first minimums of the
     % automutual information function obtained over a range of the number of bins
-    % used in the histogram estimation, when specifying 'nbins' as a vector
+    % used in the histogram estimation, when specifying 'numBins' as a vector
     % 
-    % INPUTS:
+    %---INPUTS:
     % y, the input time series
     % 
     % meth, the method for estimating mutual information (input to CO_HistogramAMI)
     % 
-    % nbins, the number of bins for the AMI estimation to compare over (can be a
+    % numBins, the number of bins for the AMI estimation to compare over (can be a
     %           scalar or vector)
     % 
     % Outputs include the minimum, maximum, range, number of unique values, and the
@@ -181,17 +173,17 @@ class CO_CompareMinAMI(HCTSASuper):
 
     TAGS = ('AMI', 'correlation')
 
-    def __init__(self, meth='std2', nbins=(MatlabSequence('2:80'))):
+    def __init__(self, meth='std2', numBins=(MatlabSequence('2:80'))):
         super(CO_CompareMinAMI, self).__init__()
         self.meth = meth
-        self.nbins = nbins
+        self.numBins = numBins
 
     def _eval_hook(self, eng, x):
         if self.meth is None:
             return eng.run_function(1, 'CO_CompareMinAMI', x, )
-        elif self.nbins is None:
+        elif self.numBins is None:
             return eng.run_function(1, 'CO_CompareMinAMI', x, self.meth)
-        return eng.run_function(1, 'CO_CompareMinAMI', x, self.meth, self.nbins)
+        return eng.run_function(1, 'CO_CompareMinAMI', x, self.meth, self.numBins)
 
 
 class CO_Embed2(HCTSASuper):
@@ -211,9 +203,6 @@ class CO_Embed2(HCTSASuper):
     %---OUTPUTS: include the distribution of angles between successive points in the
     % space, stationarity of this angular distribution, euclidean distances from the
     % origin, and statistics on outliers.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, September 2009
     % 
     ----------------------------------------
     """
@@ -239,14 +228,11 @@ class CO_Embed2_AngleTau(HCTSASuper):
     % 
     % Investigates how the autocorrelation of angles between successive points in
     % the two-dimensional time-series embedding change as tau varies from
-    % tau = 1, 2, ..., maxtau.
+    % tau = 1, 2, ..., maxTau.
     % 
     %---INPUTS:
     % y, a column vector time series
-    % maxtau, the maximum time lag to consider
-    % 
-    %---HISTORY:
-    % Ben Fulcher, September 2009
+    % maxTau, the maximum time lag to consider
     %
     ----------------------------------------
     """
@@ -255,14 +241,14 @@ class CO_Embed2_AngleTau(HCTSASuper):
 
     TAGS = ('correlation', 'embedding')
 
-    def __init__(self, maxtau=50.0):
+    def __init__(self, maxTau=50.0):
         super(CO_Embed2_AngleTau, self).__init__()
-        self.maxtau = maxtau
+        self.maxTau = maxTau
 
     def _eval_hook(self, eng, x):
-        if self.maxtau is None:
+        if self.maxTau is None:
             return eng.run_function(1, 'CO_Embed2_AngleTau', x, )
-        return eng.run_function(1, 'CO_Embed2_AngleTau', x, self.maxtau)
+        return eng.run_function(1, 'CO_Embed2_AngleTau', x, self.maxTau)
 
 
 class CO_Embed2_Basic(HCTSASuper):
@@ -313,11 +299,8 @@ class CO_Embed2_Dist(HCTSASuper):
     % distribution of distances.
     % 
     %---INPUTS:
-    % y, a z-scored column vector representing the input time series
+    % y, a z-scored column vector representing the input time series.
     % tau, the time delay.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, September 2009
     % 
     ----------------------------------------
     """
@@ -345,13 +328,14 @@ class CO_Embed2_Shapes(HCTSASuper):
     % embedding space sequentially. This function counts the points inside this shape
     % as a function of time, and returns statistics on this extracted time series.
     % 
-    % INPUTS:
+    %---INPUTS:
     % y, the input time-series as a (z-scored) column vector
     % tau, the time-delay
     % shape, has to be 'circle' for now...
     % r, the radius of the circle
     % 
-    % Outputs are of the constructed time series of the number of nearby points, and
+    %---OUTPUTS:
+    % The constructed time series of the number of nearby points, and
     % include the autocorrelation, maximum, median, mode, a Poisson fit to the
     % distribution, histogram entropy, and stationarity over fifths of the time
     % series.
@@ -390,18 +374,15 @@ class CO_FirstMin(HCTSASuper):
     %---INPUTS:
     % y, the input time series
     % minWhat, the type of correlation to minimize: either 'ac' for autocorrelation,
-    %           or 'mi' for automutual information
+    %           or 'mi' for automutual information. By default, 'mi' specifies the
+    %           'gaussian' method from the Information Dynamics Toolkit. Other
+    %           options can also be implemented as 'mi-kernel', 'mi-kraskov1',
+    %           'mi-kraskov2' (all from Information Dynamics Toolkit implementations),
+    %           or 'mi-hist' (histogram-based method).
     % 
     % Note that selecting 'ac' is unusual operation: standard operations are the
     % first zero-crossing of the autocorrelation (as in CO_FirstZero), or the first
     % minimum of the mutual information function ('mi').
-    %
-    % The 'mi' option uses Rudy Moddemeijer's RM_information.m code that may or may
-    % not be great...
-    % 
-    %---HISTORY
-    % Ben Fulcher, 2015-03-27 updated to using Information Dynamics Toolkit by default
-    % Ben Fulcher, 2008
     % 
     ----------------------------------------
     """
@@ -410,7 +391,7 @@ class CO_FirstMin(HCTSASuper):
 
     TAGS = ('autocorrelation', 'correlation', 'tau')
 
-    def __init__(self, minWhat='mi-kraskov2', extraParam='3'):
+    def __init__(self, minWhat='mi-kraskov1', extraParam='4'):
         super(CO_FirstMin, self).__init__()
         self.minWhat = minWhat
         self.extraParam = extraParam
@@ -436,14 +417,11 @@ class CO_FirstZero(HCTSASuper):
     % corrFun, the self-correlation function to measure:
     %         (i) 'ac': normal linear autocorrelation function. Uses CO_AutoCorr to
     %                   calculate autocorrelations.
-    % maxTau, a maximum time-delay to search up to
+    % maxTau, a maximum time-delay to search up to.
     % 
     % In future, could add an option to return the point at which the function
     % crosses the axis, rather than the first integer lag at which it has already
-    % crossed (what is currently implemented)
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2008
+    % crossed (what is currently implemented).
     % 
     ----------------------------------------
     """
@@ -494,9 +472,6 @@ class CO_HistogramAMI(HCTSASuper):
     % numBins, the number of bins, required by some methods, meth (see above)
     % 
     %---OUTPUT: the automutual information calculated in this way.
-    %
-    %---HISTORY:
-    % Ben Fulcher, September 2009
     % 
     ----------------------------------------
     """
@@ -542,21 +517,20 @@ class CO_NonlinearAutocorr(HCTSASuper):
     %   e.g., [2] computes <x_i x_{i-2}>
     %   e.g., [1,2] computes <x_i x_{i-1} x{i-2}>
     %   e.g., [1,1,3] computes <x_i x_{i-1}^2 x{i-3}>
-    % doabs [opt] -- a boolean (0,1) -- if one, takes an absolute value before
+    % doAbs [opt] -- a boolean (0,1) -- if one, takes an absolute value before
     %                taking the final mean -- useful for an odd number of
     %                contributions to the sum. Default is to do this for odd
     %                numbers anyway, if not specified.
     %
-    % Note: for odd numbers of regressions (i.e., even number length
+    %---NOTES:
+    % (*) For odd numbers of regressions (i.e., even number length
     %         taus vectors) the result will be near zero due to fluctuations
-    %         below the mean; even for highly-correlated signals. (doabs)
-    % Note: doabs = 1 is really a different operation that can't be compared with
-    %         the values obtained from taking doabs = 0 (i.e., for odd lengths
+    %         below the mean; even for highly-correlated signals. (doAbs)
+    %         
+    % (*) doAbs = 1 is really a different operation that can't be compared with
+    %         the values obtained from taking doAbs = 0 (i.e., for odd lengths
     %         of taus)
-    % Note: It can be helpful to look at nlac at each iteration.
-    % 
-    %---HISTORY
-    % Ben Fulcher, 8/6/09
+    % (*) It can be helpful to look at nlac at each iteration.
     % 
     ----------------------------------------
     """
@@ -565,17 +539,17 @@ class CO_NonlinearAutocorr(HCTSASuper):
 
     TAGS = ('autocorrelation', 'correlation', 'nonlinearautocorr')
 
-    def __init__(self, taus=(0.0, 4.0, 5.0), doabs=None):
+    def __init__(self, taus=(0.0, 4.0, 5.0), doAbs=None):
         super(CO_NonlinearAutocorr, self).__init__()
         self.taus = taus
-        self.doabs = doabs
+        self.doAbs = doAbs
 
     def _eval_hook(self, eng, x):
         if self.taus is None:
             return eng.run_function(1, 'CO_NonlinearAutocorr', x, )
-        elif self.doabs is None:
+        elif self.doAbs is None:
             return eng.run_function(1, 'CO_NonlinearAutocorr', x, self.taus)
-        return eng.run_function(1, 'CO_NonlinearAutocorr', x, self.taus, self.doabs)
+        return eng.run_function(1, 'CO_NonlinearAutocorr', x, self.taus, self.doAbs)
 
 
 class CO_RM_AMInformation(HCTSASuper):
@@ -628,9 +602,6 @@ class CO_StickAngles(HCTSASuper):
     % the angles, stationarity, autocorrelation, and measures of the distribution of
     % these stick angles.
     % 
-    %---HISTORY:
-    % Ben Fulcher, September 2009
-    % 
     ----------------------------------------
     """
 
@@ -666,9 +637,6 @@ class CO_TSTL_AutoCorrMethod(HCTSASuper):
     % maxlag, the maximum time lag to compute up to -- will compare autocorrelations
     %         up to this value
     % 
-    %---HISTORY:
-    % Ben Fulcher, October 2009
-    % 
     ----------------------------------------
     """
 
@@ -701,18 +669,17 @@ class CO_TSTL_amutual(HCTSASuper):
     % 
     % y, the time series
     % 
-    % maxtau, the maximum lag for which to calculate the auto mutual information
+    % maxTau, the maximum lag for which to calculate the auto mutual information
     % 
     % numBins, the number of bins for histogram calculation
+    % 
+    % versionTwo, uses amutual2 instead of amutual (from the TSTOOL package)
     % 
     %---OUTPUTS:
     % A number of statistics of the function over the range of tau, including the
     % mean mutual information, its standard deviation, first minimum, proportion of
     % extrema, and measures of periodicity in the positions of local maxima.
     % 
-    %---HISTORY:
-    % Ben Fulcher, October 2009
-    % 
     ----------------------------------------
     """
 
@@ -720,53 +687,20 @@ class CO_TSTL_amutual(HCTSASuper):
 
     TAGS = ()
 
-    def __init__(self, maxtau=None, numBins=None):
+    def __init__(self, maxTau=None, numBins=None, versionTwo=None):
         super(CO_TSTL_amutual, self).__init__()
-        self.maxtau = maxtau
+        self.maxTau = maxTau
         self.numBins = numBins
+        self.versionTwo = versionTwo
 
     def _eval_hook(self, eng, x):
-        if self.maxtau is None:
+        if self.maxTau is None:
             return eng.run_function(1, 'CO_TSTL_amutual', x, )
         elif self.numBins is None:
-            return eng.run_function(1, 'CO_TSTL_amutual', x, self.maxtau)
-        return eng.run_function(1, 'CO_TSTL_amutual', x, self.maxtau, self.numBins)
-
-
-class CO_TSTL_amutual2(HCTSASuper):
-    """
-    Matlab doc:
-    ----------------------------------------
-    % 
-    % Uses amutual2 code from TSTOOL to compute the mutual information up to a given
-    % maximum time-delay.
-    % 
-    % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
-    %---INPUTS:
-    % y, column vector of time series data
-    % maxtau, maximal lag
-    % 
-    %---OUTPUTS: Statistics on the output of amutual2 over this range, as for
-    % CO_TSTL_amutual.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
-    ----------------------------------------
-    """
-
-    KNOWN_OUTPUTS_SIZES = ()
-
-    TAGS = ()
-
-    def __init__(self, maxtau=None):
-        super(CO_TSTL_amutual2, self).__init__()
-        self.maxtau = maxtau
-
-    def _eval_hook(self, eng, x):
-        if self.maxtau is None:
-            return eng.run_function(1, 'CO_TSTL_amutual2', x, )
-        return eng.run_function(1, 'CO_TSTL_amutual2', x, self.maxtau)
+            return eng.run_function(1, 'CO_TSTL_amutual', x, self.maxTau)
+        elif self.versionTwo is None:
+            return eng.run_function(1, 'CO_TSTL_amutual', x, self.maxTau, self.numBins)
+        return eng.run_function(1, 'CO_TSTL_amutual', x, self.maxTau, self.numBins, self.versionTwo)
 
 
 class CO_TranslateShape(HCTSASuper):
@@ -792,11 +726,8 @@ class CO_TranslateShape(HCTSASuper):
     % 
     % d, a parameter specifying the size of the shape (e.g., d = 2)
     % 
-    % howtomove, a method specifying how to move the shape about, e.g., 'pts'
-    %               places the shape on each point in the time series
-    % 
-    %---HISTORY:
-    % Ben Fulcher, September 2009
+    % howToMove, a method specifying how to move the shape about, e.g., 'pts'
+    %               places the shape on each point in the time series.
     % 
     ----------------------------------------
     """
@@ -805,20 +736,20 @@ class CO_TranslateShape(HCTSASuper):
 
     TAGS = ('correlation',)
 
-    def __init__(self, shape='circle', d=2.5, howtomove='pts'):
+    def __init__(self, shape='circle', d=2.5, howToMove='pts'):
         super(CO_TranslateShape, self).__init__()
         self.shape = shape
         self.d = d
-        self.howtomove = howtomove
+        self.howToMove = howToMove
 
     def _eval_hook(self, eng, x):
         if self.shape is None:
             return eng.run_function(1, 'CO_TranslateShape', x, )
         elif self.d is None:
             return eng.run_function(1, 'CO_TranslateShape', x, self.shape)
-        elif self.howtomove is None:
+        elif self.howToMove is None:
             return eng.run_function(1, 'CO_TranslateShape', x, self.shape, self.d)
-        return eng.run_function(1, 'CO_TranslateShape', x, self.shape, self.d, self.howtomove)
+        return eng.run_function(1, 'CO_TranslateShape', x, self.shape, self.d, self.howToMove)
 
 
 class CO_f1ecac(HCTSASuper):
@@ -827,13 +758,10 @@ class CO_f1ecac(HCTSASuper):
     ----------------------------------------
     % 
     % Finds where autocorrelation function first crosses 1/e, the 1/e correlation
-    % length
+    % length.
     % 
     %---INPUTS:
-    % y, the input time series
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2008
+    % y, the input time series.
     % 
     ----------------------------------------
     """
@@ -862,14 +790,11 @@ class CO_fzcglscf(HCTSASuper):
     % Keeps calculating until the function finds a minimum, and returns this lag.
     % 
     %---INPUTS:
-    % y, the input time series
-    % alpha, the parameter alpha
-    % beta, the parameter beta
+    % y, the input time series.
+    % alpha, the parameter alpha.
+    % beta, the parameter beta.
     % maxtau [opt], a maximum time delay to search up to (default is the time-series
-    %                length)
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
+    %                length).
     % 
     ----------------------------------------
     """
@@ -904,7 +829,8 @@ class CO_glscf(HCTSASuper):
     % 10--15 (2007) in the paper "Yet on statistical properties of traded volume: 
     % Correlation and mutual information at different value magnitudes"
     % 
-    % The function considers magnitude correlations:
+    % The function considers magnitude correlations.
+    % 
     %---INPUTS:
     % y, the input time series
     % alpha and beta are real and nonzero parameters
@@ -914,9 +840,6 @@ class CO_glscf(HCTSASuper):
     % related in time
     % When alpha ~= beta, estimates correlations between different magnitudes of the
     % time series.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, September 2009
     % 
     ----------------------------------------
     """
@@ -957,9 +880,6 @@ class CO_tc3(HCTSASuper):
     % 
     % See documentation of the TSTOOL package (http://www.physik3.gwdg.de/tstool/)
     % for further details about this function.
-    %
-    %---HISTORY:
-    % Ben Fulcher, 15/11/2009
     % 
     ----------------------------------------
     """
@@ -1001,9 +921,6 @@ class CO_trev(HCTSASuper):
     % 
     %---OUTPUTS: the raw trev expression, its magnitude, the numerator and its
     % magnitude, and the denominator.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 15/11/2009
     % 
     ----------------------------------------
     """
@@ -1065,10 +982,6 @@ class CP_ML_StepDetect(HCTSASuper):
     % variance from removing the piece-wise constants, and stationarity in the
     % occurrence of change points.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 2014-10-08 Commented out Chung-Kennedy.
-    % Ben Fulcher, 12/4/2010
-    % 
     ----------------------------------------
     """
 
@@ -1113,11 +1026,6 @@ class CP_l1pwc_sweep_lambda(HCTSASuper):
     % from removing the piecewise constants was recorded. Outputs summarize how the
     % these quantities vary with lambda.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 2010-04-13
-    % Ben Fulcher, 2014-02-24. Fixed a problem with no matches giving an error
-    % instead of a NaN.
-    % 
     ----------------------------------------
     """
 
@@ -1155,7 +1063,7 @@ class CP_wavelet_varchg(HCTSASuper):
     % 
     % maxnchpts, the maximum number of change points
     % 
-    % mindelay, the minimum delay between consecutive change points (can be
+    % minDelay, the minimum delay between consecutive change points (can be
     %           specified as a proportion of the time-series length, e.g., 0.02
     %           ensures that change points are separated by at least 2% of the
     %           time-series length)
@@ -1163,9 +1071,6 @@ class CP_wavelet_varchg(HCTSASuper):
     % 
     %---OUTPUT: 
     % The optimal number of change points.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 23/1/2010
     %
     ----------------------------------------
     """
@@ -1174,12 +1079,12 @@ class CP_wavelet_varchg(HCTSASuper):
 
     TAGS = ('varchg', 'wavelet', 'waveletTB')
 
-    def __init__(self, wname='db3', level=3.0, maxnchpts=10.0, mindelay=0.01):
+    def __init__(self, wname='db3', level=3.0, maxnchpts=10.0, minDelay=0.01):
         super(CP_wavelet_varchg, self).__init__()
         self.wname = wname
         self.level = level
         self.maxnchpts = maxnchpts
-        self.mindelay = mindelay
+        self.minDelay = minDelay
 
     def _eval_hook(self, eng, x):
         if self.wname is None:
@@ -1188,9 +1093,9 @@ class CP_wavelet_varchg(HCTSASuper):
             return eng.run_function(1, 'CP_wavelet_varchg', x, self.wname)
         elif self.maxnchpts is None:
             return eng.run_function(1, 'CP_wavelet_varchg', x, self.wname, self.level)
-        elif self.mindelay is None:
+        elif self.minDelay is None:
             return eng.run_function(1, 'CP_wavelet_varchg', x, self.wname, self.level, self.maxnchpts)
-        return eng.run_function(1, 'CP_wavelet_varchg', x, self.wname, self.level, self.maxnchpts, self.mindelay)
+        return eng.run_function(1, 'CP_wavelet_varchg', x, self.wname, self.level, self.maxnchpts, self.minDelay)
 
 
 class DN_Burstiness(HCTSASuper):
@@ -1208,16 +1113,13 @@ class DN_Burstiness(HCTSASuper):
     % 
     %---OUTPUT:
     % The burstiness statistic, B.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2008
     %
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (1,)
 
-    TAGS = ('burstiness', 'locdep', 'raw')
+    TAGS = ('locdep', 'raw')
 
     def __init__(self):
         super(DN_Burstiness, self).__init__()
@@ -1247,9 +1149,6 @@ class DN_CompareKSFit(HCTSASuper):
     % 
     %---OUTPUTS: include the absolute area between the two distributions, the peak
     % separation, overlap integral, and relative entropy.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
     % 
     ----------------------------------------
     """
@@ -1287,7 +1186,7 @@ class DN_Compare_zscore(HCTSASuper):
 
     KNOWN_OUTPUTS_SIZES = (3,)
 
-    TAGS = ('compare', 'distribution', 'entropy', 'ksdensity', 'max', 'numpeaks', 'raw', 'spreaddep')
+    TAGS = ('compare', 'distribution', 'entropy', 'ksdensity', 'raw', 'spreaddep')
 
     def __init__(self):
         super(DN_Compare_zscore, self).__init__()
@@ -1302,13 +1201,14 @@ class DN_Cumulants(HCTSASuper):
     ----------------------------------------
     % 
     % Very simple function that uses the skewness and kurtosis functions in 
-    % Matlab's Statistics Toolbox to calculate these higher order moments of input time series, y
+    % Matlab's Statistics Toolbox to calculate these higher order moments of input
+    % time series, y
     % 
     %---INPUTS:
     % 
     % y, the input time series
     % 
-    % whatcum, the type of higher order moment:
+    % cumWhatMay, the type of higher order moment:
     %           (i) 'skew1', skewness
     %           (ii) 'skew2', skewness correcting for bias
     %           (iii) 'kurt1', kurtosis
@@ -1321,14 +1221,14 @@ class DN_Cumulants(HCTSASuper):
 
     TAGS = ()
 
-    def __init__(self, whatcum=None):
+    def __init__(self, cumWhatMay=None):
         super(DN_Cumulants, self).__init__()
-        self.whatcum = whatcum
+        self.cumWhatMay = cumWhatMay
 
     def _eval_hook(self, eng, x):
-        if self.whatcum is None:
+        if self.cumWhatMay is None:
             return eng.run_function(1, 'DN_Cumulants', x, )
-        return eng.run_function(1, 'DN_Cumulants', x, self.whatcum)
+        return eng.run_function(1, 'DN_Cumulants', x, self.cumWhatMay)
 
 
 class DN_CustomSkewness(HCTSASuper):
@@ -1338,10 +1238,10 @@ class DN_CustomSkewness(HCTSASuper):
     % 
     % Estimates custom skewness measures, the Pearson and Bowley skewnesses.
     % 
-    % INPUTS:
+    %---INPUTS:
     % y, the input time series
     % 
-    % whichskew, the skewness measure to calculate, either 'pearson' or 'bowley'
+    % whatSkew, the skewness measure to calculate, either 'pearson' or 'bowley'
     % 
     % The Bowley skewness uses the quantile function from Matlab's Statistics
     % Toolbox.
@@ -1353,14 +1253,14 @@ class DN_CustomSkewness(HCTSASuper):
 
     TAGS = ('distribution', 'locdep', 'moment', 'raw', 'shape')
 
-    def __init__(self, whichskew='pearson'):
+    def __init__(self, whatSkew='pearson'):
         super(DN_CustomSkewness, self).__init__()
-        self.whichskew = whichskew
+        self.whatSkew = whatSkew
 
     def _eval_hook(self, eng, x):
-        if self.whichskew is None:
+        if self.whatSkew is None:
             return eng.run_function(1, 'DN_CustomSkewness', x, )
-        return eng.run_function(1, 'DN_CustomSkewness', x, self.whichskew)
+        return eng.run_function(1, 'DN_CustomSkewness', x, self.whatSkew)
 
 
 class DN_FitKernelSmooth(HCTSASuper):
@@ -1393,16 +1293,13 @@ class DN_FitKernelSmooth(HCTSASuper):
     % probability thresholds, the arc length, and the symmetry of probability
     % density above and below the mean.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
-    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (21, 2)
 
-    TAGS = ('arclength', 'area', 'areaconst', 'crossconst', 'distribution', 'entropy', 'ksdensity'
-            'numpeaks', 'peakmax', 'raw', 'spreaddep', 'symmetry')
+    TAGS = ('arclength', 'areaconst', 'crossconst', 'distribution', 'entropy', 'ksdensity'
+            'raw', 'spreaddep', 'symmetry')
 
     def __init__(self, varargin='numcross'):
         super(DN_FitKernelSmooth, self).__init__()
@@ -1426,7 +1323,7 @@ class DN_Fit_mle(HCTSASuper):
     % 
     %---INPUTS:
     % y, the time series
-    % fitwhat, the type of fit to do: 'gaussian', 'uniform', or 'geometric'.
+    % fitWhat, the type of fit to do: 'gaussian', 'uniform', or 'geometric'.
     % 
     %---OUTPUTS: parameters from the fit.
     % 
@@ -1437,14 +1334,14 @@ class DN_Fit_mle(HCTSASuper):
 
     TAGS = ('distribution', 'fit', 'location', 'locdep', 'raw', 'spread', 'spreaddep')
 
-    def __init__(self, fitwhat='geometric'):
+    def __init__(self, fitWhat='geometric'):
         super(DN_Fit_mle, self).__init__()
-        self.fitwhat = fitwhat
+        self.fitWhat = fitWhat
 
     def _eval_hook(self, eng, x):
-        if self.fitwhat is None:
+        if self.fitWhat is None:
             return eng.run_function(1, 'DN_Fit_mle', x, )
-        return eng.run_function(1, 'DN_Fit_mle', x, self.fitwhat)
+        return eng.run_function(1, 'DN_Fit_mle', x, self.fitWhat)
 
 
 class DN_HighLowMu(HCTSASuper):
@@ -1464,7 +1361,7 @@ class DN_HighLowMu(HCTSASuper):
 
     KNOWN_OUTPUTS_SIZES = (1,)
 
-    TAGS = ('distribution', 'locdep', 'raw', 'skewness', 'spreaddep')
+    TAGS = ('distribution', 'locdep', 'raw', 'spreaddep')
 
     def __init__(self):
         super(DN_HighLowMu, self).__init__()
@@ -1485,7 +1382,7 @@ class DN_HistogramMode(HCTSASuper):
     % 
     % y, the input time series.
     % 
-    % nbins, the number of bins to use in the histogram.
+    % numBins, the number of bins to use in the histogram.
     % 
     ----------------------------------------
     """
@@ -1494,14 +1391,14 @@ class DN_HistogramMode(HCTSASuper):
 
     TAGS = ('location',)
 
-    def __init__(self, nbins=10.0):
+    def __init__(self, numBins=10.0):
         super(DN_HistogramMode, self).__init__()
-        self.nbins = nbins
+        self.numBins = numBins
 
     def _eval_hook(self, eng, x):
-        if self.nbins is None:
+        if self.numBins is None:
             return eng.run_function(1, 'DN_HistogramMode', x, )
-        return eng.run_function(1, 'DN_HistogramMode', x, self.nbins)
+        return eng.run_function(1, 'DN_HistogramMode', x, self.numBins)
 
 
 class DN_Mean(HCTSASuper):
@@ -1515,7 +1412,7 @@ class DN_Mean(HCTSASuper):
     % 
     % y, the input time series
     % 
-    % meantype, (i) 'norm' or 'arithmetic', arithmetic mean
+    % meanType, (i) 'norm' or 'arithmetic', arithmetic mean
     %           (ii) 'median', median
     %           (iii) 'geom', geometric mean
     %           (iv) 'harm', harmonic mean
@@ -1530,14 +1427,14 @@ class DN_Mean(HCTSASuper):
 
     TAGS = ('location', 'locdep', 'raw', 'spreaddep')
 
-    def __init__(self, meantype='median'):
+    def __init__(self, meanType='median'):
         super(DN_Mean, self).__init__()
-        self.meantype = meantype
+        self.meanType = meanType
 
     def _eval_hook(self, eng, x):
-        if self.meantype is None:
+        if self.meanType is None:
             return eng.run_function(1, 'DN_Mean', x, )
-        return eng.run_function(1, 'DN_Mean', x, self.meantype)
+        return eng.run_function(1, 'DN_Mean', x, self.meanType)
 
 
 class DN_MinMax(HCTSASuper):
@@ -1551,7 +1448,7 @@ class DN_MinMax(HCTSASuper):
     % 
     % y, the input time series
     % 
-    % minormax, either 'min' or 'max' to return either the minimum or maximum of y
+    % minOrMax, either 'min' or 'max' to return either the minimum or maximum of y
     % 
     ----------------------------------------
     """
@@ -1560,14 +1457,14 @@ class DN_MinMax(HCTSASuper):
 
     TAGS = ('distribution', 'misc')
 
-    def __init__(self, minormax='max'):
+    def __init__(self, minOrMax='max'):
         super(DN_MinMax, self).__init__()
-        self.minormax = minormax
+        self.minOrMax = minOrMax
 
     def _eval_hook(self, eng, x):
-        if self.minormax is None:
+        if self.minOrMax is None:
             return eng.run_function(1, 'DN_MinMax', x, )
-        return eng.run_function(1, 'DN_MinMax', x, self.minormax)
+        return eng.run_function(1, 'DN_MinMax', x, self.minOrMax)
 
 
 class DN_Moments(HCTSASuper):
@@ -1624,7 +1521,7 @@ class DN_OutlierInclude(HCTSASuper):
     %---INPUTS:
     % y, the input time series (ideally z-scored)
     % 
-    % howth, the method of how to determine outliers: 'abs', 'p', or 'n' (see above
+    % thresholdHow, the method of how to determine outliers: 'abs', 'p', or 'n' (see above
     %           for descriptions)
     % 
     % inc, the increment to move through (fraction of std if input time series is
@@ -1637,9 +1534,6 @@ class DN_OutlierInclude(HCTSASuper):
     % [future: could compare differences in outputs obtained with 'p', 'n', and
     %               'abs' -- could give an idea as to asymmetries/nonstationarities??]
     % 
-    %---HISTORY:
-    % Ben Fulcher, June 2009
-    % 
     ----------------------------------------
     """
 
@@ -1647,17 +1541,17 @@ class DN_OutlierInclude(HCTSASuper):
 
     TAGS = ('distribution', 'outliers')
 
-    def __init__(self, howth='abs', inc=None):
+    def __init__(self, thresholdHow='n', inc=None):
         super(DN_OutlierInclude, self).__init__()
-        self.howth = howth
+        self.thresholdHow = thresholdHow
         self.inc = inc
 
     def _eval_hook(self, eng, x):
-        if self.howth is None:
+        if self.thresholdHow is None:
             return eng.run_function(1, 'DN_OutlierInclude', x, )
         elif self.inc is None:
-            return eng.run_function(1, 'DN_OutlierInclude', x, self.howth)
-        return eng.run_function(1, 'DN_OutlierInclude', x, self.howth, self.inc)
+            return eng.run_function(1, 'DN_OutlierInclude', x, self.thresholdHow)
+        return eng.run_function(1, 'DN_OutlierInclude', x, self.thresholdHow, self.inc)
 
 
 class DN_OutlierTest(HCTSASuper):
@@ -1673,12 +1567,9 @@ class DN_OutlierTest(HCTSASuper):
     %---INPUTS:
     % y, the input time series
     % p, the percentage of values to remove beyond upper and lower percentiles
-    % justme [opt], just returns a number:
+    % justMe [opt], just returns a number:
     %               (i) 'mean' -- returns the mean of the middle portion of the data
     %               (ii) 'std' -- returns the std of the middle portion of the data
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
     % 
     ----------------------------------------
     """
@@ -1687,17 +1578,17 @@ class DN_OutlierTest(HCTSASuper):
 
     TAGS = ('distribution', 'outliers', 'spread')
 
-    def __init__(self, p=2.0, justme=None):
+    def __init__(self, p=2.0, justMe=None):
         super(DN_OutlierTest, self).__init__()
         self.p = p
-        self.justme = justme
+        self.justMe = justMe
 
     def _eval_hook(self, eng, x):
         if self.p is None:
             return eng.run_function(1, 'DN_OutlierTest', x, )
-        elif self.justme is None:
+        elif self.justMe is None:
             return eng.run_function(1, 'DN_OutlierTest', x, self.p)
-        return eng.run_function(1, 'DN_OutlierTest', x, self.p, self.justme)
+        return eng.run_function(1, 'DN_OutlierTest', x, self.p, self.justMe)
 
 
 class DN_ProportionValues(HCTSASuper):
@@ -1712,7 +1603,7 @@ class DN_ProportionValues(HCTSASuper):
     %---INPUTS:
     % x, the input time series
     % 
-    % propwhat, the proportion of a given type of value in the time series:
+    % propWhat, the proportion of a given type of value in the time series:
     %           (i) 'zeros': values that equal zero
     %           (ii) 'positive': values that are strictly positive
     %           (iii) 'geq0': values that are greater than or equal to zero
@@ -1724,14 +1615,14 @@ class DN_ProportionValues(HCTSASuper):
 
     TAGS = ('locdep', 'raw')
 
-    def __init__(self, propwhat='geq0'):
+    def __init__(self, propWhat='geq0'):
         super(DN_ProportionValues, self).__init__()
-        self.propwhat = propwhat
+        self.propWhat = propWhat
 
     def _eval_hook(self, eng, x):
-        if self.propwhat is None:
+        if self.propWhat is None:
             return eng.run_function(1, 'DN_ProportionValues', x, )
-        return eng.run_function(1, 'DN_ProportionValues', x, self.propwhat)
+        return eng.run_function(1, 'DN_ProportionValues', x, self.propWhat)
 
 
 class DN_Quantile(HCTSASuper):
@@ -1776,7 +1667,7 @@ class DN_RemovePoints(HCTSASuper):
     % 
     % INPUTS:
     % y, the input time series
-    % howtorem, how to remove points from the time series:
+    % removeHow, how to remove points from the time series:
     %               (i) 'absclose': those that are the closest to the mean,
     %               (ii) 'absfar': those that are the furthest from the mean,
     %               (iii) 'min': the lowest values,
@@ -1790,9 +1681,6 @@ class DN_RemovePoints(HCTSASuper):
     % 
     % Note that this is a similar idea to that implemented in DN_OutlierInclude.
     % 
-    %---HISTORY:
-    % Ben Fulcher, September 2009
-    % 
     ----------------------------------------
     """
 
@@ -1800,17 +1688,17 @@ class DN_RemovePoints(HCTSASuper):
 
     TAGS = ('correlation', 'distribution', 'outliers')
 
-    def __init__(self, howtorem='absclose', p=0.1):
+    def __init__(self, removeHow='absclose', p=0.1):
         super(DN_RemovePoints, self).__init__()
-        self.howtorem = howtorem
+        self.removeHow = removeHow
         self.p = p
 
     def _eval_hook(self, eng, x):
-        if self.howtorem is None:
+        if self.removeHow is None:
             return eng.run_function(1, 'DN_RemovePoints', x, )
         elif self.p is None:
-            return eng.run_function(1, 'DN_RemovePoints', x, self.howtorem)
-        return eng.run_function(1, 'DN_RemovePoints', x, self.howtorem, self.p)
+            return eng.run_function(1, 'DN_RemovePoints', x, self.removeHow)
+        return eng.run_function(1, 'DN_RemovePoints', x, self.removeHow, self.p)
 
 
 class DN_SimpleFit(HCTSASuper):
@@ -1823,7 +1711,7 @@ class DN_SimpleFit(HCTSASuper):
     % 
     % The distribution of time-series values is estimated using either a
     % kernel-smoothed density via the Matlab function ksdensity with the default
-    % width parameter, or by a histogram with a specified number of bins, nbins.
+    % width parameter, or by a histogram with a specified number of bins, numBins.
     % 
     %---INPUTS:
     % x, the input time series
@@ -1842,36 +1730,31 @@ class DN_SimpleFit(HCTSASuper):
     %           (v) 'fourier2'
     %           (vi) 'fourier3'
     % 
-    % nbins, the number of bins for a histogram-estimate of the distribution of
-    %       time-series values. If nbins = 0, uses ksdensity instead of histogram.
+    % numBins, the number of bins for a histogram-estimate of the distribution of
+    %       time-series values. If numBins = 0, uses ksdensity instead of histogram.
     % 
     % 
     %---OUTPUTS: the goodness of fifit, R^2, rootmean square error, the
     % autocorrelation of the residuals, and a runs test on the residuals.
-    % 
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
     % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (6,)
 
-    TAGS = ('adjr2', 'distribution', 'exp1', 'fourier1', 'gauss1', 'gauss2', 'gof', 'model'
-            'power1', 'r2', 'resAC1', 'resAC2', 'resruns', 'rmse', 'sin1', 'sin2', 'sin3')
+    TAGS = ('distribution', 'exp1', 'fourier1', 'gauss1', 'gauss2', 'gof', 'model', 'power1', 'sin1', 'sin2', 'sin3')
 
-    def __init__(self, dmodel='exp1', nbins=0.0):
+    def __init__(self, dmodel='exp1', numBins=0.0):
         super(DN_SimpleFit, self).__init__()
         self.dmodel = dmodel
-        self.nbins = nbins
+        self.numBins = numBins
 
     def _eval_hook(self, eng, x):
         if self.dmodel is None:
             return eng.run_function(1, 'DN_SimpleFit', x, )
-        elif self.nbins is None:
+        elif self.numBins is None:
             return eng.run_function(1, 'DN_SimpleFit', x, self.dmodel)
-        return eng.run_function(1, 'DN_SimpleFit', x, self.dmodel, self.nbins)
+        return eng.run_function(1, 'DN_SimpleFit', x, self.dmodel, self.numBins)
 
 
 class DN_Spread(HCTSASuper):
@@ -1885,29 +1768,27 @@ class DN_Spread(HCTSASuper):
     %---INPUTS:
     % y, the input time series
     % 
-    % SpreadMeasure, the spead measure:
+    % spreadMeasure, the spead measure:
     %               (i) 'std': standard deviation
     %               (ii) 'iqr': interquartile range
     %               (iii) 'mad': mean absolute deviation
     %               (iv) 'mead': median absolute deviation
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2008
+    %               
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (1,)
 
-    TAGS = ('diff', 'raw', 'spread', 'spreaddep')
+    TAGS = ('raw', 'spread', 'spreaddep')
 
-    def __init__(self, SpreadMeasure='std'):
+    def __init__(self, spreadMeasure='std'):
         super(DN_Spread, self).__init__()
-        self.SpreadMeasure = SpreadMeasure
+        self.spreadMeasure = spreadMeasure
 
     def _eval_hook(self, eng, x):
-        if self.SpreadMeasure is None:
+        if self.spreadMeasure is None:
             return eng.run_function(1, 'DN_Spread', x, )
-        return eng.run_function(1, 'DN_Spread', x, self.SpreadMeasure)
+        return eng.run_function(1, 'DN_Spread', x, self.spreadMeasure)
 
 
 class DN_TrimmedMean(HCTSASuper):
@@ -1981,9 +1862,6 @@ class DN_cv(HCTSASuper):
     % x, the input time series
     % 
     % k, the order of coefficient of variation (k = 1 is usual)
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
     % 
     ----------------------------------------
     """
@@ -2102,10 +1980,13 @@ class EN_ApEn(HCTSASuper):
     %
     % For more information, cf. http://physionet.org/physiotools/ApEn/
     % 
-    %--INPUTS:
+    %---INPUTS:
     % y, the input time series
     % mnom, the embedding dimension
     % rth, the threshold for judging closeness/similarity
+    %
+    %---NOTES:
+    % No record of where this was obtained from.
     %
     ----------------------------------------
     """
@@ -2127,32 +2008,65 @@ class EN_ApEn(HCTSASuper):
         return eng.run_function(1, 'EN_ApEn', x, self.mnom, self.rth)
 
 
+class EN_CID(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    % 
+    % Estimates of 'complexity' of a time series as the stretched-out length of the
+    % lines resulting from a line-graph of the time series.
+    % 
+    % cf. Batista, G. E. A. P. A., Keogh, E. J., Tataw, O. M. & de Souza, V. M. A.
+    % CID: an efficient complexity-invariant distance for time series. Data Min.
+    % Knowl. Disc. 28, 634–669 (2014).
+    % 
+    %---INPUTS:
+    %
+    % y, the input time series
+    % 
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = (2,)
+
+    TAGS = ('complexity', 'entropy')
+
+    def __init__(self):
+        super(EN_CID, self).__init__()
+
+    def _eval_hook(self, eng, x):
+        return eng.run_function(1, 'EN_CID', x, )
+
+
 class EN_DistributionEntropy(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
     % 
     % Estimates of entropy from the static distribution of the time series. The
-    % distribution is estimated either using a histogram with nbins bins, or as a
+    % distribution is estimated either using a histogram with numBins bins, or as a
     % kernel-smoothed distribution, using the ksdensity function from Matlab's
-    % Statistics Toolbox with width parameter, w (specified as the iunput nbins).
+    % Statistics Toolbox with width parameter, w (specified as the iunput numBins).
     % 
     % An optional additional parameter can be used to remove a proportion of the
     % most extreme positive and negative deviations from the mean as an initial
     % pre-processing.
     % 
     %---INPUTS:
-    % y, the input time series
-    % HistorKS: 'hist' for histogram, or 'ks' for ksdensity
-    % nbins: (*) (for 'hist'): an integer, uses a histogram with that many bins (for 'hist')
-    %        (*) (for 'ks'): a positive real number, for the width parameter for ksdensity
-    %                        (can also be empty for default width parameter, optimum for Gaussian)
-    % olremp [opt]: the proportion of outliers at both extremes to remove
-    %               (e.g., if olremp = 0.01; keeps only the middle 98% of data; 0 keeps all data.
-    %               This parameter ought to be less than 0.5, which keeps none of the data)
     %
-    %---HISTORY:
-    % Ben Fulcher, August 2009
+    % y, the input time series
+    % 
+    % histOrKS: 'hist' for histogram, or 'ks' for ksdensity
+    % 
+    % numBins: (*) (for 'hist'): an integer, uses a histogram with that many bins
+    %          (*) (for 'ks'): a positive real number, for the width parameter for
+    %                       ksdensity (can also be empty for default width
+    %                                       parameter, optimum for Gaussian)
+    %                                       
+    % olremp [opt]: the proportion of outliers at both extremes to remove
+    %               (e.g., if olremp = 0.01; keeps only the middle 98% of data; 0
+    %               keeps all data. This parameter ought to be less than 0.5, which
+    %               keeps none of the data).
     % 
     ----------------------------------------
     """
@@ -2161,20 +2075,20 @@ class EN_DistributionEntropy(HCTSASuper):
 
     TAGS = ('entropy', 'raw', 'spreaddep')
 
-    def __init__(self, HistorKS='ks', nbins=(), olremp=0.1):
+    def __init__(self, histOrKS='ks', numBins=(), olremp=0.1):
         super(EN_DistributionEntropy, self).__init__()
-        self.HistorKS = HistorKS
-        self.nbins = nbins
+        self.histOrKS = histOrKS
+        self.numBins = numBins
         self.olremp = olremp
 
     def _eval_hook(self, eng, x):
-        if self.HistorKS is None:
+        if self.histOrKS is None:
             return eng.run_function(1, 'EN_DistributionEntropy', x, )
-        elif self.nbins is None:
-            return eng.run_function(1, 'EN_DistributionEntropy', x, self.HistorKS)
+        elif self.numBins is None:
+            return eng.run_function(1, 'EN_DistributionEntropy', x, self.histOrKS)
         elif self.olremp is None:
-            return eng.run_function(1, 'EN_DistributionEntropy', x, self.HistorKS, self.nbins)
-        return eng.run_function(1, 'EN_DistributionEntropy', x, self.HistorKS, self.nbins, self.olremp)
+            return eng.run_function(1, 'EN_DistributionEntropy', x, self.histOrKS, self.numBins)
+        return eng.run_function(1, 'EN_DistributionEntropy', x, self.histOrKS, self.numBins, self.olremp)
 
 
 class EN_MS_shannon(HCTSASuper):
@@ -2196,7 +2110,7 @@ class EN_MS_shannon(HCTSASuper):
     % also across a range of depth and nbin to return statistics on how the obtained
     % entropies change.
     % 
-    % INPUTS:
+    %---INPUTS:
     % y, the input time series
     % nbin, the number of bins to discretize the time series into (i.e., alphabet size)
     % depth, the length of strings to analyze
@@ -2226,41 +2140,38 @@ class EN_PermEn(HCTSASuper):
     Matlab doc:
     ----------------------------------------
     % 
-    % Computes the permutation entropy of order, ord, of a time series.
-    % This is wrapper code for a Land and Elias implementation.
+    % Estimates the Permutation Entropy of the time series
     % 
     % "Permutation Entropy: A Natural Complexity Measure for Time Series"
     % C. Bandt and B. Pompe, Phys. Rev. Lett. 88(17) 174102 (2002)
     % 
-    % Code is adapted from logisticPE.m code obtained from
-    % http://people.ece.cornell.edu/land/PROJECTS/Complexity/
-    % http://people.ece.cornell.edu/land/PROJECTS/Complexity/logisticPE.m
-    % 
     %---INPUTS:
-    % y, a time series
-    % ord, the order of permutation entropy
+    % y, the input time series
+    % m, the embedding dimension (or order of the permutation entropy)
+    % tau, the time-delay for the embedding
     % 
     %---OUTPUT:
-    % out is the permutation entropy, using Land and Elias code
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
-    % 
+    % Outputs the permutation entropy and normalized version computed according to
+    % different implementations
+    %
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (1,)
+    KNOWN_OUTPUTS_SIZES = (3,)
 
     TAGS = ('entropy',)
 
-    def __init__(self, ordd=3.0):
+    def __init__(self, m=3.0, tau='ac'):
         super(EN_PermEn, self).__init__()
-        self.ordd = ordd
+        self.m = m
+        self.tau = tau
 
     def _eval_hook(self, eng, x):
-        if self.ordd is None:
+        if self.m is None:
             return eng.run_function(1, 'EN_PermEn', x, )
-        return eng.run_function(1, 'EN_PermEn', x, self.ordd)
+        elif self.tau is None:
+            return eng.run_function(1, 'EN_PermEn', x, self.m)
+        return eng.run_function(1, 'EN_PermEn', x, self.m, self.tau)
 
 
 class EN_RM_entropy(HCTSASuper):
@@ -2327,10 +2238,6 @@ class EN_Randomize(HCTSASuper):
     % Most statistics measure how these properties decay with randomization, by
     % fitting a function f(x) = Aexp(Bx).
     % 
-    %---HISTORY:
-    % Ben Fulcher, October 2009
-    % Ben Fulcher, 2015-03-19 added random seed for reproducibility
-    % 
     ----------------------------------------
     """
 
@@ -2380,9 +2287,6 @@ class EN_SampEn(HCTSASuper):
     % r, the threshold
     % preProcessHow [opt], (i) 'diff1', incremental difference preProcessingHow.
     % 
-    %---HISTORY:
-    % Ben Fulcher, November 2009
-    % 
     ----------------------------------------
     """
 
@@ -2415,20 +2319,74 @@ class EN_Shannonpdf(HCTSASuper):
     % series.
     % 
     %---INPUT:
-    % y, the input time series
+    % y, the input time series.
     % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (1,)
 
-    TAGS = ('entropy', 'shannonpdf')
+    TAGS = ('entropy',)
 
     def __init__(self):
         super(EN_Shannonpdf, self).__init__()
 
     def _eval_hook(self, eng, x):
         return eng.run_function(1, 'EN_Shannonpdf', x, )
+
+
+class EN_rpde(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    % Performs fast recurrence period density entropy (RPDE) analysis on an input
+    % signal to obtain an estimate of the H_norm value and other related statistics.
+    % 
+    % Based on Max Little's code rpde (see below)
+    %
+    %---USAGE:
+    % [H_norm, rpd] = rpde(x, m, tau)
+    % [H_norm, rpd] = rpde(x, m, tau, epsilon)
+    % [H_norm, rpd] = rpde(x, m, tau, epsilon, T_max)
+    % 
+    %---INPUTS:
+    %    x       - input signal: must be a row vector
+    %    m       - embedding dimension
+    %    tau     - embedding time delay
+    %    
+    %---OPTIONAL INPUTS:
+    %    epsilon - recurrence neighbourhood radius
+    %              (If not specified, then a suitable value is chosen automatically)
+    %    T_max   - maximum recurrence time
+    %              (If not specified, then all recurrence times are returned)
+    %---OUTPUTS:
+    %    H_norm  - Estimated RPDE value
+    %    rpd     - Estimated recurrence period density
+    % 
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = (5,)
+
+    TAGS = ('entropy',)
+
+    def __init__(self, m=3.0, tau='ac', epsilon=None, T_max=None):
+        super(EN_rpde, self).__init__()
+        self.m = m
+        self.tau = tau
+        self.epsilon = epsilon
+        self.T_max = T_max
+
+    def _eval_hook(self, eng, x):
+        if self.m is None:
+            return eng.run_function(1, 'EN_rpde', x, )
+        elif self.tau is None:
+            return eng.run_function(1, 'EN_rpde', x, self.m)
+        elif self.epsilon is None:
+            return eng.run_function(1, 'EN_rpde', x, self.m, self.tau)
+        elif self.T_max is None:
+            return eng.run_function(1, 'EN_rpde', x, self.m, self.tau, self.epsilon)
+        return eng.run_function(1, 'EN_rpde', x, self.m, self.tau, self.epsilon, self.T_max)
 
 
 class EN_wentropy(HCTSASuper):
@@ -2449,18 +2407,15 @@ class EN_wentropy(HCTSASuper):
     %               (see the wentropy documentaiton for information)
     % p, the additional parameter needed for threshold and sure entropies
     % 
-    % Author's cautionary note: it seems likely that this implementation of wentropy
-    % is nonsense.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
+    %---NOTE:
+    % It seems likely that this implementation of wentropy is nonsense.
     % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (1,)
 
-    TAGS = ('entropy', 'logenergy', 'shannon', 'sure', 'threshold')
+    TAGS = ('entropy', 'shannon')
 
     def __init__(self, whaten='threshold', p=0.1):
         super(EN_wentropy, self).__init__()
@@ -2549,9 +2504,6 @@ class FC_LocalSimple(HCTSASuper):
     %---OUTPUTS: the mean error, stationarity of residuals, Gaussianity of
     % residuals, and their autocorrelation structure.
     % 
-    %---HISTORY:
-    % Ben Fulcher, Nov 2009
-    % 
     ----------------------------------------
     """
 
@@ -2591,9 +2543,6 @@ class FC_LoopLocalSimple(HCTSASuper):
     %---OUTPUTS: statistics including whether the mean square error increases or
     % decreases, testing for peaks, variability, autocorrelation, stationarity, and
     % a fit of exponential decay, f(x) = A*exp(Bx) + C, to the variation.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
     % 
     ----------------------------------------
     """
@@ -2663,10 +2612,6 @@ class FC_Surprise(HCTSASuper):
     %            minimum, maximum, mean, median, lower and upper quartiles, and
     %            standard deviation.
     % 
-    %---HISTORY:
-    % Ben Fulcher, September 2009
-    % Ben Fulcher, 2015-03-19 Added random seed input
-    % 
     ----------------------------------------
     """
 
@@ -2715,12 +2660,12 @@ class HT_DistributionTest(HCTSASuper):
     % 
     %---INPUTS:
     % x, the input time series
-    % thetest, the hypothesis test to perform:
+    % theTest, the hypothesis test to perform:
     %           (i) 'chi2gof': chi^2 goodness of fit test
     %           (ii) 'ks': Kolmogorov-Smirnov test
     %           (iii) 'lillie': Lilliefors test
     % 
-    % thedistn, the distribution to fit:
+    % theDistn, the distribution to fit:
     %           (i) 'norm' (Normal)
     %           (ii) 'ev' (Extreme value)
     %           (iii) 'uni' (Uniform)
@@ -2731,7 +2676,7 @@ class HT_DistributionTest(HCTSASuper):
     %           (viii) 'logn' (Log-normal)
     %           (ix) 'wbl' (Weibull)
     % 
-    % nbins, the number of bins to use for the chi2 goodness of fit test
+    % numBins, the number of bins to use for the chi2 goodness of fit test
     % 
     % All of these functions for hypothesis testing are implemented in Matlab's
     % Statistics Toolbox.
@@ -2743,20 +2688,20 @@ class HT_DistributionTest(HCTSASuper):
 
     TAGS = ('chi2gof', 'distribution', 'hypothesistest', 'ks', 'lillie', 'locdep', 'raw')
 
-    def __init__(self, thetest='chi2gof', thedistn='rayleigh', nbins=50.0):
+    def __init__(self, theTest='chi2gof', theDistn='rayleigh', numBins=50.0):
         super(HT_DistributionTest, self).__init__()
-        self.thetest = thetest
-        self.thedistn = thedistn
-        self.nbins = nbins
+        self.theTest = theTest
+        self.theDistn = theDistn
+        self.numBins = numBins
 
     def _eval_hook(self, eng, x):
-        if self.thetest is None:
+        if self.theTest is None:
             return eng.run_function(1, 'HT_DistributionTest', x, )
-        elif self.thedistn is None:
-            return eng.run_function(1, 'HT_DistributionTest', x, self.thetest)
-        elif self.nbins is None:
-            return eng.run_function(1, 'HT_DistributionTest', x, self.thetest, self.thedistn)
-        return eng.run_function(1, 'HT_DistributionTest', x, self.thetest, self.thedistn, self.nbins)
+        elif self.theDistn is None:
+            return eng.run_function(1, 'HT_DistributionTest', x, self.theTest)
+        elif self.numBins is None:
+            return eng.run_function(1, 'HT_DistributionTest', x, self.theTest, self.theDistn)
+        return eng.run_function(1, 'HT_DistributionTest', x, self.theTest, self.theDistn, self.numBins)
 
 
 class HT_HypothesisTest(HCTSASuper):
@@ -2785,16 +2730,12 @@ class HT_HypothesisTest(HCTSASuper):
     %---OUTPUT:
     % the p-value from the statistical test
     % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
-    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (1,)
 
-    TAGS = ('econometricstoolbox', 'hypothesistest', 'jbtest', 'lbq', 'randomness', 'raw', 'runstest'
-            'signrank', 'signtest', 'ztest')
+    TAGS = ('econometricstoolbox', 'hypothesistest', 'randomness', 'raw', 'signtest')
 
     def __init__(self, theTest='runstest'):
         super(HT_HypothesisTest, self).__init__()
@@ -2828,9 +2769,6 @@ class IN_AutoMutualInfo(HCTSASuper):
     % 
     % cf. Kraskov, A., Stoegbauer, H., Grassberger, P., Estimating mutual
     % information: http://dx.doi.org/10.1103/PhysRevE.69.066138
-    % 
-    %---HISTORY
-    % Ben Fulcher, 2015-03-27
     % 
     ----------------------------------------
     """
@@ -2874,8 +2812,6 @@ class IN_AutoMutualInfoStats(HCTSASuper):
     % Statistics on the AMIs and their pattern across the range of specified time
     % delays
     % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
     ----------------------------------------
     """
 
@@ -2917,9 +2853,6 @@ class IN_Initialize_MI(HCTSASuper):
     % cf. Kraskov, A., Stoegbauer, H., Grassberger, P., Estimating mutual
     % information: http://dx.doi.org/10.1103/PhysRevE.69.066138
     % 
-    %---HISTORY
-    % Ben Fulcher, 2015-03-28
-    % 
     ----------------------------------------
     """
 
@@ -2958,9 +2891,6 @@ class IN_MutualInfo(HCTSASuper):
     % 
     % cf. Kraskov, A., Stoegbauer, H., Grassberger, P., Estimating mutual
     % information: http://dx.doi.org/10.1103/PhysRevE.69.066138
-    % 
-    %---HISTORY
-    % Ben Fulcher, 2015-03-28
     % 
     ----------------------------------------
     """
@@ -3053,9 +2983,6 @@ class MD_pNN(HCTSASuper):
     % 
     % Code is heavily derived from that provided by Max A. Little:
     % http://www.maxlittle.net/
-    %
-    %---HISTORY:
-    % Ben Fulcher 24/2/2011
     % 
     ----------------------------------------
     """
@@ -3217,15 +3144,12 @@ class MF_AR_arcov(HCTSASuper):
     % white noise input to the AR model, the root-mean-square (RMS) error of a
     % reconstructed time series, and the autocorrelation of residuals.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
-    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (11, 10, 9, 8, 6)
 
-    TAGS = ('AR', 'fit', 'gof', 'model', 'var')
+    TAGS = ('ar', 'fit', 'gof', 'model')
 
     def __init__(self, p=3.0):
         super(MF_AR_arcov, self).__init__()
@@ -3250,7 +3174,7 @@ class MF_CompareAR(HCTSASuper):
     %---INPUTS:
     % y, vector of equally-spaced time series data
     % orders, a vector of possible model orders
-    % howtotest, specify a fraction, or provide a string 'all' to train and test on
+    % testHow, specify a fraction, or provide a string 'all' to train and test on
     %            all the data
     % 
     %---OUTPUTS: statistics on the loss at each model order, which are obtained by
@@ -3263,17 +3187,17 @@ class MF_CompareAR(HCTSASuper):
 
     TAGS = ('ar', 'model', 'systemidentificationtoolbox')
 
-    def __init__(self, orders=MatlabSequence('1:10'), howtotest=0.5):
+    def __init__(self, orders=MatlabSequence('1:10'), testHow=0.5):
         super(MF_CompareAR, self).__init__()
         self.orders = orders
-        self.howtotest = howtotest
+        self.testHow = testHow
 
     def _eval_hook(self, eng, x):
         if self.orders is None:
             return eng.run_function(1, 'MF_CompareAR', x, )
-        elif self.howtotest is None:
+        elif self.testHow is None:
             return eng.run_function(1, 'MF_CompareAR', x, self.orders)
-        return eng.run_function(1, 'MF_CompareAR', x, self.orders, self.howtotest)
+        return eng.run_function(1, 'MF_CompareAR', x, self.orders, self.testHow)
 
 
 class MF_CompareTestSets(HCTSASuper):
@@ -3318,9 +3242,6 @@ class MF_CompareTestSets(HCTSASuper):
     % 
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     %               (when 'rand' specified for subsetHow)
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 12/2/2010
     % 
     ----------------------------------------
     """
@@ -3453,9 +3374,6 @@ class MF_FitSubsegments(HCTSASuper):
     %               (for when subsetHow is 'rand')
     % 
     %---OUTPUTS: depend on the model, as described above.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 12/2/2010
     %
     ----------------------------------------
     """
@@ -3509,7 +3427,7 @@ class MF_GARCHcompare(HCTSASuper):
     % 
     %---INPUTS:
     % y, the input time series
-    % preproc, a preprocessing to apply:
+    % preProc, a preprocessing to apply:
     %           (i) 'none': no preprocessing is performed
     %           (ii) 'ar': performs a preprocessing that maximizes AR(2) whiteness,
     %           
@@ -3524,9 +3442,6 @@ class MF_GARCHcompare(HCTSASuper):
     % Akaike's Information Criteria (AIC), outputs from Engle's ARCH test and the
     % Ljung-Box Q-test, and estimates of optimal model orders.
     % 
-    %---HISTORY:
-    % Ben Fulcher 26/2/2010
-    % 
     ----------------------------------------
     """
 
@@ -3534,23 +3449,27 @@ class MF_GARCHcompare(HCTSASuper):
 
     TAGS = ('aic', 'bic', 'econometricstoolbox', 'garch', 'model')
 
-    def __init__(self, preproc='ar', pr=MatlabSequence('1:3'), qr=MatlabSequence('1:3'), randomSeed=None):
+    def __init__(self, preProc='ar', pr=MatlabSequence('1:3'), qr=MatlabSequence('1:3'),
+                 randomSeed=None, beVocal=None):
         super(MF_GARCHcompare, self).__init__()
-        self.preproc = preproc
+        self.preProc = preProc
         self.pr = pr
         self.qr = qr
         self.randomSeed = randomSeed
+        self.beVocal = beVocal
 
     def _eval_hook(self, eng, x):
-        if self.preproc is None:
+        if self.preProc is None:
             return eng.run_function(1, 'MF_GARCHcompare', x, )
         elif self.pr is None:
-            return eng.run_function(1, 'MF_GARCHcompare', x, self.preproc)
+            return eng.run_function(1, 'MF_GARCHcompare', x, self.preProc)
         elif self.qr is None:
-            return eng.run_function(1, 'MF_GARCHcompare', x, self.preproc, self.pr)
+            return eng.run_function(1, 'MF_GARCHcompare', x, self.preProc, self.pr)
         elif self.randomSeed is None:
-            return eng.run_function(1, 'MF_GARCHcompare', x, self.preproc, self.pr, self.qr)
-        return eng.run_function(1, 'MF_GARCHcompare', x, self.preproc, self.pr, self.qr, self.randomSeed)
+            return eng.run_function(1, 'MF_GARCHcompare', x, self.preProc, self.pr, self.qr)
+        elif self.beVocal is None:
+            return eng.run_function(1, 'MF_GARCHcompare', x, self.preProc, self.pr, self.qr, self.randomSeed)
+        return eng.run_function(1, 'MF_GARCHcompare', x, self.preProc, self.pr, self.qr, self.randomSeed, self.beVocal)
 
 
 class MF_GARCHfit(HCTSASuper):
@@ -3605,9 +3524,6 @@ class MF_GARCHfit(HCTSASuper):
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     %               (for pre-processing: PP_PreProcess)
     % 
-    %---HISTORY:
-    % Ben Fulcher, 25/2/2010
-    % 
     ----------------------------------------
     """
 
@@ -3655,9 +3571,6 @@ class MF_GP_FitAcross(HCTSASuper):
     % In future could do a better job of the sampling of points -- perhaps to take
     % into account the autocorrelation of the time series.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 22/1/2010
-    % 
     ----------------------------------------
     """
 
@@ -3692,14 +3605,13 @@ class MF_GP_LearnHyperp(HCTSASuper):
     % 
     %---INPUTS:
     % 
-    % covFunc,       the covariance function, formated as gpml likes it
-    % nfevals,       the number of function evaluations
     % t,             time
     % y,             data
-    % init_loghyper, inital values for hyperparameters
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2010
+    % covFunc,       the covariance function, formatted as gpml likes it
+    % meanFunc, the mean function, formatted as gpml likes it
+    % likFunc, the likelihood function, formatted as gpml likes it
+    % infAlg, the inference algorithm (in gpml form)
+    % nfevals,       the number of function evaluations
     % 
     ----------------------------------------
     """
@@ -3778,10 +3690,6 @@ class MF_GP_LocalPrediction(HCTSASuper):
     %---OUTPUTS: summaries of the quality of predictions made, the mean and
     % spread of obtained hyperparameter values, and marginal likelihoods.
     % 
-    % ---HISTORY:
-    % Ben Fulcher, 20/1/2010
-    % Ben Fulcher, 2015-03-20 added random seed input
-    % 
     ----------------------------------------
     """
 
@@ -3855,10 +3763,6 @@ class MF_GP_hyperparameters(HCTSASuper):
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed,
     %             for settings of resampleHow that involve random number generation
     % 
-    %---HISTORY:
-    % Ben Fulcher, 19/1/2010
-    % Ben Fulcher, 2015-03-20 Added randomSeed input
-    % 
     ----------------------------------------
     """
 
@@ -3905,9 +3809,6 @@ class MF_ResidualAnalysis(HCTSASuper):
     % e, should be raw residuals as prediction minus data (e = yp - y) as a column
     %       vector. Will take absolute values / even powers of e as necessary.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 10/2/2010
-    % 
     ----------------------------------------
     """
 
@@ -3928,7 +3829,7 @@ class MF_StateSpaceCompOrder(HCTSASuper):
     ----------------------------------------
     % 
     % Fits state space models using n4sid (from Matlab's System Identification
-    % Toolbox) of orders 1, 2, ..., maxorder and returns statistics on how the
+    % Toolbox) of orders 1, 2, ..., maxOrder and returns statistics on how the
     % goodness of fit changes across this range.
     % 
     % c.f., MF_CompareAR -- does a similar thing for AR models
@@ -3937,7 +3838,7 @@ class MF_StateSpaceCompOrder(HCTSASuper):
     % 
     %---INPUTS:
     % y, the input time series
-    % maxorder, the maximum model order to consider.
+    % maxOrder, the maximum model order to consider.
     % 
     ----------------------------------------
     """
@@ -3946,14 +3847,14 @@ class MF_StateSpaceCompOrder(HCTSASuper):
 
     TAGS = ('model', 'statespace', 'systemidentificationtoolbox')
 
-    def __init__(self, maxorder=8.0):
+    def __init__(self, maxOrder=8.0):
         super(MF_StateSpaceCompOrder, self).__init__()
-        self.maxorder = maxorder
+        self.maxOrder = maxOrder
 
     def _eval_hook(self, eng, x):
-        if self.maxorder is None:
+        if self.maxOrder is None:
             return eng.run_function(1, 'MF_StateSpaceCompOrder', x, )
-        return eng.run_function(1, 'MF_StateSpaceCompOrder', x, self.maxorder)
+        return eng.run_function(1, 'MF_StateSpaceCompOrder', x, self.maxOrder)
 
 
 class MF_StateSpace_n4sid(HCTSASuper):
@@ -3984,9 +3885,6 @@ class MF_StateSpace_n4sid(HCTSASuper):
     % 
     %---OUTPUTS: parameters from the model fitted to the entire time series, and
     % goodness of fit and residual analysis from n4sid prediction.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 1/2/2010
     % 
     ----------------------------------------
     """
@@ -4094,8 +3992,6 @@ class MF_armax(HCTSASuper):
     % the training data, and statistics on the residuals from using the fitted model
     % to predict the testing data.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 1/2/2010
     ----------------------------------------
     """
 
@@ -4186,8 +4082,6 @@ class MF_hmm_fit(HCTSASuper):
     % trainp, the proportion of data to train on, 0 < trainp < 1
     % numStates, the number of states in the HMM
     % 
-    %---HISTORY:
-    % Ben Fulcher 9/4/2010
     ----------------------------------------
     """
 
@@ -4277,15 +4171,12 @@ class NL_BoxCorrDim(HCTSASuper):
     %---INPUTS:
     % y, column vector of time series data
     % 
-    % nbins, maximum number of partitions per axis
+    % numBins, maximum number of partitions per axis
     % 
-    % embedparams [opt], embedding parameters as {tau,m} in 2-entry cell for a
+    % embedParams [opt], embedding parameters as {tau,m} in 2-entry cell for a
     %                   time-delay, tau, and embedding dimension, m. As inputs to BF_embed.
     % 
     %---OUTPUTS: Simple summaries of the outputs from corrdim.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, November 2009
     % 
     ----------------------------------------
     """
@@ -4294,17 +4185,17 @@ class NL_BoxCorrDim(HCTSASuper):
 
     TAGS = ('corrdim', 'correlation', 'nonlinear', 'tstool')
 
-    def __init__(self, nbins=50.0, embedparams=('ac', 5)):
+    def __init__(self, numBins=50.0, embedParams=('ac', 5)):
         super(NL_BoxCorrDim, self).__init__()
-        self.nbins = nbins
-        self.embedparams = embedparams
+        self.numBins = numBins
+        self.embedParams = embedParams
 
     def _eval_hook(self, eng, x):
-        if self.nbins is None:
+        if self.numBins is None:
             return eng.run_function(1, 'NL_BoxCorrDim', x, )
-        elif self.embedparams is None:
-            return eng.run_function(1, 'NL_BoxCorrDim', x, self.nbins)
-        return eng.run_function(1, 'NL_BoxCorrDim', x, self.nbins, self.embedparams)
+        elif self.embedParams is None:
+            return eng.run_function(1, 'NL_BoxCorrDim', x, self.numBins)
+        return eng.run_function(1, 'NL_BoxCorrDim', x, self.numBins, self.embedParams)
 
 
 class NL_CaosMethod(HCTSASuper):
@@ -4351,17 +4242,14 @@ class NL_CaosMethod(HCTSASuper):
     %---OUTPUTS: statistics on the result, including when the output quantity first
     % passes a given threshold, and the m at which it levels off.
     % 
-    %---HISTORY:
-    % Ben Fulcher, October 2009
-    % 
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (48,)
+    KNOWN_OUTPUTS_SIZES = ()
 
-    TAGS = ('cao', 'dimension', 'nonlinear', 'stochastic', 'tstool')
+    TAGS = ()
 
-    def __init__(self, maxdim=10.0, tau='mi', NNR=2.0, Nref=100.0, justanum=None):
+    def __init__(self, maxdim=None, tau=None, NNR=None, Nref=None, justanum=None):
         super(NL_CaosMethod, self).__init__()
         self.maxdim = maxdim
         self.tau = tau
@@ -4381,6 +4269,87 @@ class NL_CaosMethod(HCTSASuper):
         elif self.justanum is None:
             return eng.run_function(1, 'NL_CaosMethod', x, self.maxdim, self.tau, self.NNR, self.Nref)
         return eng.run_function(1, 'NL_CaosMethod', x, self.maxdim, self.tau, self.NNR, self.Nref, self.justanum)
+
+
+class NL_DVV(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    % 
+    % Delay Vector Variance method for real and complex signals. Uses predictability
+    % of the signal in phase space to characterize the time series.
+    % 
+    % This function uses the original code from the DVV toolbox to do the computation
+    % and produces statistics on the outputs -- comparing the DVV curves for both
+    % the real and the surrogate data.
+    %
+    %
+    %---USAGE:
+    % outputStats = NL_DVV(x, m, numDVs, nd, Ntv, numSurr, randomSeed)
+    %
+    %---INPUTS:
+    % x:            Original real-valued or complex time series
+    % m:            Delay embedding dimension
+    % Ntv:          Number of points on horizontal axes
+    % numDVs:	    Number of reference DVs to consider
+    % nd:           Span over which to perform DVV
+    % Ntv:          Number of points on the horizontal axis
+    % numSurr:      Number of surrogates to compare to
+    % randomSeed:   How to control the random seed for reproducibility
+    %
+    % A Delay Vector Variance (DVV) toolbox for MATLAB
+    % (c) Copyright Danilo P. Mandic 2008
+    % http://www.commsp.ee.ic.ac.uk/~mandic/dvv.htm
+    % http://www.commsp.ee.ic.ac.uk/~mandic/dvv/papers/dvv_proj.pdf
+    % 
+    % Modified by Ben Fulcher, 2015-05-13, for use in hctsa.
+    % 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %   This program is free software; you can redistribute it and/or modify it
+    %   under the terms of the GNU General Public License as published by the Free
+    %   Software Foundation; either version 2 of the License, or (at your option)
+    %   any later version.
+    %
+    %   This program is distributed in the hope that it will be useful, but WITHOUT
+    %   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    %   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+    %   more details.
+    %
+    %   You can obtain a copy of the GNU General Public License from
+    %   http://www.gnu.org/copyleft/gpl.html or by writing to Free Software
+    %   Foundation, Inc.,675 Mass Ave, Cambridge, MA 02139, USA.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = (15,)
+
+    TAGS = ('delayVectorVariance',)
+
+    def __init__(self, m=3.0, numDVs=100.0, nd=2.0, Ntv=50.0, numSurr=10.0, randomSeed='default'):
+        super(NL_DVV, self).__init__()
+        self.m = m
+        self.numDVs = numDVs
+        self.nd = nd
+        self.Ntv = Ntv
+        self.numSurr = numSurr
+        self.randomSeed = randomSeed
+
+    def _eval_hook(self, eng, x):
+        if self.m is None:
+            return eng.run_function(1, 'NL_DVV', x, )
+        elif self.numDVs is None:
+            return eng.run_function(1, 'NL_DVV', x, self.m)
+        elif self.nd is None:
+            return eng.run_function(1, 'NL_DVV', x, self.m, self.numDVs)
+        elif self.Ntv is None:
+            return eng.run_function(1, 'NL_DVV', x, self.m, self.numDVs, self.nd)
+        elif self.numSurr is None:
+            return eng.run_function(1, 'NL_DVV', x, self.m, self.numDVs, self.nd, self.Ntv)
+        elif self.randomSeed is None:
+            return eng.run_function(1, 'NL_DVV', x, self.m, self.numDVs, self.nd, self.Ntv, self.numSurr)
+        return eng.run_function(1, 'NL_DVV', x, self.m, self.numDVs, self.nd, self.Ntv, self.numSurr, self.randomSeed)
 
 
 class NL_MS_LZcomplexity(HCTSASuper):
@@ -4403,16 +4372,13 @@ class NL_MS_LZcomplexity(HCTSASuper):
     %---INPUTS:
     % y, the input time series
     % n, the (integer) number of bits to encode the data into
-    % PreProc [opt], first apply a given PreProcessing to the time series. For now,
+    % preProc [opt], first apply a given preProcessing to the time series. For now,
     %               just 'diff' is implemented, which zscores incremental
     %               differences and then applies the complexity method.
     % 
     %---OUTPUT: the normalized Lempel-Ziv complexity: i.e., the number of distinct
     %           symbol sequences in the time series divided by the expected number
     %           of distinct symbols for a noise sequence.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 19/2/2010
     %
     ----------------------------------------
     """
@@ -4421,17 +4387,17 @@ class NL_MS_LZcomplexity(HCTSASuper):
 
     TAGS = ('LempelZiv', 'MichaelSmall', 'complexity', 'mex')
 
-    def __init__(self, n=7.0, PreProc='diff'):
+    def __init__(self, n=7.0, preProc='diff'):
         super(NL_MS_LZcomplexity, self).__init__()
         self.n = n
-        self.PreProc = PreProc
+        self.preProc = preProc
 
     def _eval_hook(self, eng, x):
         if self.n is None:
             return eng.run_function(1, 'NL_MS_LZcomplexity', x, )
-        elif self.PreProc is None:
+        elif self.preProc is None:
             return eng.run_function(1, 'NL_MS_LZcomplexity', x, self.n)
-        return eng.run_function(1, 'NL_MS_LZcomplexity', x, self.n, self.PreProc)
+        return eng.run_function(1, 'NL_MS_LZcomplexity', x, self.n, self.preProc)
 
 
 class NL_MS_fnn(HCTSASuper):
@@ -4474,9 +4440,6 @@ class NL_MS_fnn(HCTSASuper):
     %---OUTPUTS: include the proportion of false nearest neighbors at each m, the mean
     % and spread, and the smallest m at which the proportion of false nearest
     % neighbors drops below each of a set of fixed thresholds.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 19/2/2010
     % 
     ----------------------------------------
     """
@@ -4536,9 +4499,6 @@ class NL_MS_nlpe(HCTSASuper):
     % 
     %---OUTPUTS: include measures of the meanerror of the nonlinear predictor, and a
     % set of measures on the correlation, Gaussianity, etc. of the residuals.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 19/2/2010
     % 
     ----------------------------------------
     """
@@ -4603,9 +4563,6 @@ class NL_TISEAN_c1(HCTSASuper):
     %---OUTPUTS: optimal scaling ranges and dimension estimates for a time delay,
     % tau, embedding dimensions, m, ranging from m_{min} to m_{max}, a time
     % separation, tsep, and a number of reference points, Nref.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 20/11/2009
     % 
     ----------------------------------------
     """
@@ -4683,9 +4640,6 @@ class NL_TISEAN_d2(HCTSASuper):
     % range of scales and shows the best fit to the data, and return the range, a
     % goodness of fit statistic, and a dimension estimate.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 18/11/2009
-    % 
     ----------------------------------------
     """
 
@@ -4749,9 +4703,6 @@ class NL_TISEAN_fnn(HCTSASuper):
     % summaries of neighborhood size, and embedding dimensions at which the
     % proportion of nearest neighbours falls below a range of thresholds
     % 
-    %---HISTORY:
-    % Ben Fulcher, 2015-03-20
-    % 
     ----------------------------------------
     """
 
@@ -4811,14 +4762,11 @@ class NL_TSTL_FractalDimensions(HCTSASuper):
     % 
     % steps [opt], number of moments to calculate (default=32);
     % 
-    % embedparams, how to embed the time series using a time-delay reconstruction
+    % embedParams, how to embed the time series using a time-delay reconstruction
     % 
     % 
     %---OUTPUTS: include basic statistics of D(q) and q, statistics from a linear fit,
     % and an exponential fit of the form D(q) = Aexp(Bq) + C.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, November 2009
     % 
     ----------------------------------------
     """
@@ -4828,7 +4776,7 @@ class NL_TSTL_FractalDimensions(HCTSASuper):
     TAGS = ('correlation', 'dimension', 'nonlinear', 'stochastic', 'tstool')
 
     def __init__(self, kmin=2.0, kmax=100.0, Nref=0.2, gstart=1.0,
-                 gend=5.0, past=10.0, steps=32.0, embedparams=(1, 5, '_celltrick_')):
+                 gend=5.0, past=10.0, steps=32.0, embedParams=(1, 5, '_celltrick_')):
         super(NL_TSTL_FractalDimensions, self).__init__()
         self.kmin = kmin
         self.kmax = kmax
@@ -4837,7 +4785,7 @@ class NL_TSTL_FractalDimensions(HCTSASuper):
         self.gend = gend
         self.past = past
         self.steps = steps
-        self.embedparams = embedparams
+        self.embedParams = embedParams
 
     def _eval_hook(self, eng, x):
         if self.kmin is None:
@@ -4856,11 +4804,11 @@ class NL_TSTL_FractalDimensions(HCTSASuper):
         elif self.steps is None:
             return eng.run_function(1, 'NL_TSTL_FractalDimensions', x, self.kmin, self.kmax,
                                     self.Nref, self.gstart, self.gend, self.past)
-        elif self.embedparams is None:
+        elif self.embedParams is None:
             return eng.run_function(1, 'NL_TSTL_FractalDimensions', x, self.kmin, self.kmax,
                                     self.Nref, self.gstart, self.gend, self.past, self.steps)
         return eng.run_function(1, 'NL_TSTL_FractalDimensions', x, self.kmin, self.kmax, self.Nref,
-                                self.gstart, self.gend, self.past, self.steps, self.embedparams)
+                                self.gstart, self.gend, self.past, self.steps, self.embedParams)
 
 
 class NL_TSTL_GPCorrSum(HCTSASuper):
@@ -4901,18 +4849,15 @@ class NL_TSTL_GPCorrSum(HCTSASuper):
     %---OUTPUTS: basic statistics on the outputs of corrsum, including iteratively
     % re-weighted least squares linear fits to log-log plots using the robustfit
     % function in Matlab's Statistics Toolbox.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, November 2009
     %
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (15,)
 
-    TAGS = ('correlation', 'corrsum', 'corrsum2', 'nonlinear', 'stochastic', 'tstool')
+    TAGS = ('correlation', 'corrsum', 'nonlinear', 'stochastic', 'tstool')
 
-    def __init__(self, Nref=-1.0, r=0.1, thwin=40.0, nbins=20.0, embedparams=('ac', 'cao'), doTwo=2.0):
+    def __init__(self, Nref=-1.0, r=0.1, thwin=40.0, nbins=40.0, embedparams=('ac', 'fnnmar'), doTwo=None):
         super(NL_TSTL_GPCorrSum, self).__init__()
         self.Nref = Nref
         self.r = r
@@ -4966,7 +4911,7 @@ class NL_TSTL_LargestLyap(HCTSASuper):
     % 
     % NNR, number of nearest neighbours
     % 
-    % embedparams, input to BF_embed, how to time-delay-embed the time series, in
+    % embedParams, input to BF_embed, how to time-delay-embed the time series, in
     %               the form {tau,m}, where string specifiers can indicate standard
     %               methods of determining tau or m.
     % 
@@ -4975,23 +4920,20 @@ class NL_TSTL_LargestLyap(HCTSASuper):
     % much of the range of scales as possible while simultaneously achieving the
     % best possible linear fit.
     % 
-    %---HISTORY:
-    % Ben Fulcher, November 2009
-    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (29,)
 
-    TAGS = ('largelyap', 'nonlinear', 'stochastic', 'tstool')
+    TAGS = ('largelyap', 'nonlinear', 'tstool')
 
-    def __init__(self, Nref=0.5, maxtstep=0.1, past=0.01, NNR=3.0, embedparams=('mi', 'cao')):
+    def __init__(self, Nref=-1.0, maxtstep=0.1, past=0.01, NNR=3.0, embedParams=(1, 4, '_celltrick_')):
         super(NL_TSTL_LargestLyap, self).__init__()
         self.Nref = Nref
         self.maxtstep = maxtstep
         self.past = past
         self.NNR = NNR
-        self.embedparams = embedparams
+        self.embedParams = embedParams
 
     def _eval_hook(self, eng, x):
         if self.Nref is None:
@@ -5002,10 +4944,10 @@ class NL_TSTL_LargestLyap(HCTSASuper):
             return eng.run_function(1, 'NL_TSTL_LargestLyap', x, self.Nref, self.maxtstep)
         elif self.NNR is None:
             return eng.run_function(1, 'NL_TSTL_LargestLyap', x, self.Nref, self.maxtstep, self.past)
-        elif self.embedparams is None:
+        elif self.embedParams is None:
             return eng.run_function(1, 'NL_TSTL_LargestLyap', x, self.Nref, self.maxtstep, self.past, self.NNR)
         return eng.run_function(1, 'NL_TSTL_LargestLyap', x, self.Nref, self.maxtstep, self.past,
-                                self.NNR, self.embedparams)
+                                self.NNR, self.embedParams)
 
 
 class NL_TSTL_PoincareSection(HCTSASuper):
@@ -5039,9 +4981,6 @@ class NL_TSTL_PoincareSection(HCTSASuper):
     % Another thing that could be cool to do is to analyze variation in the plots as
     % ref changes... (not done here)
     % 
-    %---HISTORY:
-    % Ben Fulcher, November 2009
-    % 
     ----------------------------------------
     """
 
@@ -5049,7 +4988,7 @@ class NL_TSTL_PoincareSection(HCTSASuper):
 
     TAGS = ('nonlinear', 'poincare', 'tstool')
 
-    def __init__(self, ref='max', embedparams=('ac', 3)):
+    def __init__(self, ref='max', embedparams=(1, 3, '_celltrick_')):
         super(NL_TSTL_PoincareSection, self).__init__()
         self.ref = ref
         self.embedparams = embedparams
@@ -5082,13 +5021,10 @@ class NL_TSTL_ReturnTime(HCTSASuper):
     % maxT, maximum return time to consider
     % past, Theiler window
     % Nref, number of reference indicies
-    % embedparams, to feed into BF_embed
+    % embedParams, to feed into BF_embed
     % 
     %---OUTPUTS: include basic measures from the histogram, including the occurrence of
     % peaks, spread, proportion of zeros, and the distributional entropy.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 12/11/2009
     % 
     ----------------------------------------
     """
@@ -5097,13 +5033,13 @@ class NL_TSTL_ReturnTime(HCTSASuper):
 
     TAGS = ('nonlinear', 'returntime', 'tstool')
 
-    def __init__(self, NNR=0.05, maxT=1.0, past=0.05, Nref=-1.0, embedparams=(1, 3, '_celltrick_')):
+    def __init__(self, NNR=0.05, maxT=1.0, past=0.05, Nref=-1.0, embedParams=(1, 3, '_celltrick_')):
         super(NL_TSTL_ReturnTime, self).__init__()
         self.NNR = NNR
         self.maxT = maxT
         self.past = past
         self.Nref = Nref
-        self.embedparams = embedparams
+        self.embedParams = embedParams
 
     def _eval_hook(self, eng, x):
         if self.NNR is None:
@@ -5114,10 +5050,10 @@ class NL_TSTL_ReturnTime(HCTSASuper):
             return eng.run_function(1, 'NL_TSTL_ReturnTime', x, self.NNR, self.maxT)
         elif self.Nref is None:
             return eng.run_function(1, 'NL_TSTL_ReturnTime', x, self.NNR, self.maxT, self.past)
-        elif self.embedparams is None:
+        elif self.embedParams is None:
             return eng.run_function(1, 'NL_TSTL_ReturnTime', x, self.NNR, self.maxT, self.past, self.Nref)
         return eng.run_function(1, 'NL_TSTL_ReturnTime', x, self.NNR, self.maxT, self.past,
-                                self.Nref, self.embedparams)
+                                self.Nref, self.embedParams)
 
 
 class NL_TSTL_TakensEstimator(HCTSASuper):
@@ -5142,15 +5078,12 @@ class NL_TSTL_TakensEstimator(HCTSASuper):
     % 
     %---OUTPUT: the Taken's estimator of the correlation dimension, d2.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 14/11/2009
-    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (1,)
 
-    TAGS = ('crptool', 'dimension', 'nonlinear', 'scaling', 'stochastic', 'takens', 'tstool')
+    TAGS = ('crptool', 'dimension', 'nonlinear', 'scaling', 'takens', 'tstool')
 
     def __init__(self, Nref=-1.0, rad=0.05, past=0.05, embedParams=('ac', 3), randomSeed=None):
         super(NL_TSTL_TakensEstimator, self).__init__()
@@ -5212,16 +5145,12 @@ class NL_TSTL_acp(HCTSASuper):
     % metrics on both absolute values at each dimension but also some
     % indication of the shape
     % 
-    %---HISTORY:
-    % Ben Fulcher, October 2009
-    % Ben Fulcher, 2015-03-19 added randomSeed for reproducibility
-    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (52,)
 
-    TAGS = ('acp', 'correlation', 'nonlinear', 'slow')
+    TAGS = ('acp', 'correlation', 'nonlinear')
 
     def __init__(self, tau='mi', past=1.0, maxDelay=(), maxDim=10.0, Nref=(), randomSeed=None):
         super(NL_TSTL_acp, self).__init__()
@@ -5270,23 +5199,19 @@ class NL_TSTL_dimensions(HCTSASuper):
     % embedParams, embedding parameters to feed BF_embed.m for embedding the
     %              signal in the form {tau,m}
     % 
-    % 
     %---OUTPUTS:
     % A range of statistics are returned about how each dimension estimate changes
     % with m, the scaling range in r, and the embedding dimension at which the best
     % fit is obtained.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, November 2009
     % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (198,)
 
-    TAGS = ('dimension', 'nonlinear', 'scaling', 'stochastic', 'tstool')
+    TAGS = ('dimension', 'nonlinear', 'scaling', 'tstool')
 
-    def __init__(self, nbins=50.0, embedParams=('ac', 'cao')):
+    def __init__(self, nbins=50.0, embedParams=('ac', 'fnnmar')):
         super(NL_TSTL_dimensions, self).__init__()
         self.nbins = nbins
         self.embedParams = embedParams
@@ -5321,10 +5246,6 @@ class NL_crptool_fnn(HCTSASuper):
     %           under this threshold
     % 
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
-    %---HISTORY:
-    % Ben Fulcher, October 2009
-    % Ben Fulcher, 2015-03-19 added random seed input
     % 
     ----------------------------------------
     """
@@ -5383,9 +5304,6 @@ class NL_embed_PCA(HCTSASuper):
     % The suggestion to implement this idea was provided by Siddarth Arora.
     % (Siddharth Arora, <arora@maths.ox.ac.uk>)
     % 
-    %---HISTORY:
-    % Ben Fulcher, 25/2/2010
-    % 
     ----------------------------------------
     """
 
@@ -5438,12 +5356,10 @@ class NW_VisibilityGraph(HCTSASuper):
     %               samples.
     % 
     % 
-    %---OUTPUTS: statistics on the degree distribution, including the mode, mean,
+    %---OUTPUTS:
+    % Statistics on the degree distribution, including the mode, mean,
     % spread, histogram entropy, and fits to gaussian, exponential, and powerlaw
     % distributions.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, October 2009
     % 
     ----------------------------------------
     """
@@ -5489,9 +5405,6 @@ class PD_PeriodicityWang(HCTSASuper):
     % uses a range of thresholds: 0, 0.01, 0.1, 0.2, 1\sqrt{N}, 5\sqrt{N}, and
     % 10\sqrt{N}, where N is the length of the time series.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 9/7/09
-    % 
     ----------------------------------------
     """
 
@@ -5524,7 +5437,7 @@ class PH_ForcePotential(HCTSASuper):
     %---INPUTS:
     % y, the input time series
     % 
-    % whatpot, the potential function to simulate:
+    % whatPotential, the potential function to simulate:
     %               (i) 'dblwell' (a double well potential function)
     %               (ii) 'sine' (a sinusoidal potential function)
     % 
@@ -5541,7 +5454,8 @@ class PH_ForcePotential(HCTSASuper):
     %               * kappa is the coefficient of friction,
     %               * deltat sets the time step for the simulation.
     % 
-    %---OUTPUTS: statistics summarizing the trajectory of the simulated particle,
+    %---OUTPUTS:
+    % Statistics summarizing the trajectory of the simulated particle,
     % including its mean, the range, proportion positive, proportion of times it
     % crosses zero, its autocorrelation, final position, and standard deviation.
     % 
@@ -5552,17 +5466,17 @@ class PH_ForcePotential(HCTSASuper):
 
     TAGS = ('dblwell', 'dynsys', 'sine')
 
-    def __init__(self, whatpot='dblwell', params=(1.0, 0.20000000000000001, 0.10000000000000001)):
+    def __init__(self, whatPotential='dblwell', params=(1.0, 0.20000000000000001, 0.10000000000000001)):
         super(PH_ForcePotential, self).__init__()
-        self.whatpot = whatpot
+        self.whatPotential = whatPotential
         self.params = params
 
     def _eval_hook(self, eng, x):
-        if self.whatpot is None:
+        if self.whatPotential is None:
             return eng.run_function(1, 'PH_ForcePotential', x, )
         elif self.params is None:
-            return eng.run_function(1, 'PH_ForcePotential', x, self.whatpot)
-        return eng.run_function(1, 'PH_ForcePotential', x, self.whatpot, self.params)
+            return eng.run_function(1, 'PH_ForcePotential', x, self.whatPotential)
+        return eng.run_function(1, 'PH_ForcePotential', x, self.whatPotential, self.params)
 
 
 class PH_Walker(HCTSASuper):
@@ -5580,32 +5494,32 @@ class PH_Walker(HCTSASuper):
     % 
     % y, the input time series
     % 
-    % walkerrule, the kinematic rule by which the walker moves in response to the
+    % walkerRule, the kinematic rule by which the walker moves in response to the
     %             time series over time:
     %             
     %             (i) 'prop': the walker narrows the gap between its value and that
     %                         of the time series by a given proportion p.
-    %                         wparam = p;
+    %                         walkerParams = p;
     %                         
     %             (ii) 'biasprop': the walker is biased to move more in one
     %                          direction; when it is being pushed up by the time
     %                          series, it narrows the gap by a proportion p_{up},
     %                          and when it is being pushed down by the time series,
     %                          it narrows the gap by a (potentially different)
-    %                          proportion p_{down}. wparam = [pup,pdown].
+    %                          proportion p_{down}. walkerParams = [pup,pdown].
     %                          
     %             (iii) 'momentum': the walker moves as if it has mass m and inertia
     %                          from the previous time step and the time series acts
     %                          as a force altering its motion in a classical
-    %                          Newtonian dynamics framework. [wparam = m], the mass.
+    %                          Newtonian dynamics framework. [walkerParams = m], the mass.
     %                          
     %              (iv) 'runningvar': the walker moves with inertia as above, but
     %                          its values are also adjusted so as to match the local
     %                          variance of time series by a multiplicative factor.
-    %                          wparam = [m,wl], where m is the inertial mass and wl
+    %                          walkerParams = [m,wl], where m is the inertial mass and wl
     %                          is the window length.
     % 
-    % wparam, the parameters for the specified walkerrule, explained above.
+    % walkerParams, the parameters for the specified walkerRule, explained above.
     % 
     %---OUTPUTS: include the mean, spread, maximum, minimum, and autocorrelation of the
     % walker's trajectory, the number of crossings between the walker and the
@@ -5622,17 +5536,17 @@ class PH_Walker(HCTSASuper):
 
     TAGS = ('trend',)
 
-    def __init__(self, walkerrule='prop', wparam=0.9):
+    def __init__(self, walkerRule='momentum', walkerParams=5.0):
         super(PH_Walker, self).__init__()
-        self.walkerrule = walkerrule
-        self.wparam = wparam
+        self.walkerRule = walkerRule
+        self.walkerParams = walkerParams
 
     def _eval_hook(self, eng, x):
-        if self.walkerrule is None:
+        if self.walkerRule is None:
             return eng.run_function(1, 'PH_Walker', x, )
-        elif self.wparam is None:
-            return eng.run_function(1, 'PH_Walker', x, self.walkerrule)
-        return eng.run_function(1, 'PH_Walker', x, self.walkerrule, self.wparam)
+        elif self.walkerParams is None:
+            return eng.run_function(1, 'PH_Walker', x, self.walkerRule)
+        return eng.run_function(1, 'PH_Walker', x, self.walkerRule, self.walkerParams)
 
 
 class PP_Compare(HCTSASuper):
@@ -5702,9 +5616,6 @@ class PP_Compare(HCTSASuper):
     %---OUTPUTS: include comparisons of stationarity and distributional measures
     % between the original and transformed time series.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 9/7/09
-    % 
     ----------------------------------------
     """
 
@@ -5742,14 +5653,11 @@ class PP_Iterate(HCTSASuper):
     %           (iv) 'rav' applies a running mean filter,
     %           (v) 'resampleup' progressively upsamples the time series,
     %           (vi) 'resampledown' progressively downsamples the time series.
-    %
-    %---HISTORY:
-    % Ben Fulcher, 10/7/09
     % 
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (40,)
+    KNOWN_OUTPUTS_SIZES = (21,)
 
     TAGS = ('preprocessing', 'raw')
 
@@ -5797,9 +5705,6 @@ class PP_ModelFit(HCTSASuper):
     % 
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     % 
-    %---HISTORY:
-    % Ben Fulcher, 18/2/2010
-    % 
     ----------------------------------------
     """
 
@@ -5834,16 +5739,19 @@ class SB_BinaryStats(HCTSASuper):
     % Provides information about the coarse-grained behavior of the time series
     % 
     %---INPUTS:
+    %
     % y, the input time series
     % 
-    % binarymeth, the symbolization rule:
+    % binaryMethod, the symbolization rule:
     %         (i) 'diff': by whether incremental differences of the time series are
     %                      positive (1), or negative (0),
     %          (ii) 'mean': by whether each point is above (1) or below the mean (0)
     %          (iii) 'iqr': by whether the time series is within the interquartile range
     %                      (1), or not (0).
     % 
-    %---OUTPUTS: include the Shannon entropy of the string, the longest stretches of 0s
+    %---OUTPUTS:
+    %
+    % Include the Shannon entropy of the string, the longest stretches of 0s
     % or 1s, the mean length of consecutive 0s or 1s, and the spread of consecutive
     % strings of 0s or 1s.
     % 
@@ -5854,14 +5762,14 @@ class SB_BinaryStats(HCTSASuper):
 
     TAGS = ('distribution', 'stationarity')
 
-    def __init__(self, binarymeth='diff'):
+    def __init__(self, binaryMethod='diff'):
         super(SB_BinaryStats, self).__init__()
-        self.binarymeth = binarymeth
+        self.binaryMethod = binaryMethod
 
     def _eval_hook(self, eng, x):
-        if self.binarymeth is None:
+        if self.binaryMethod is None:
             return eng.run_function(1, 'SB_BinaryStats', x, )
-        return eng.run_function(1, 'SB_BinaryStats', x, self.binarymeth)
+        return eng.run_function(1, 'SB_BinaryStats', x, self.binaryMethod)
 
 
 class SB_BinaryStretch(HCTSASuper):
@@ -5869,19 +5777,22 @@ class SB_BinaryStretch(HCTSASuper):
     Matlab doc:
     ----------------------------------------
     % 
-    % Measures the longest stretch of consecutive zeros or ones in a symbolized time
-    % series as a proportion of the time-series length.
+    % (DOESN'T ACTUALLY, see note) measure the longest stretch of consecutive zeros or ones in
+    % a symbolized time series as a proportion of the time-series length.
     % 
     % The time series is symbolized to a binary string by whether it's above (1) or
     % below (0) its mean.
     % 
-    % It doesn't actually measure this correctly, due to an error in the code, but
-    % it's still kind of an interesting operation...?!
-    % 
     %---INPUTS:
+    %
     % x, the input time series
-    % stretchwhat, (i) 'lseq1', measures something related to consecutive 1s
+    % 
+    % stretchWhat, (i) 'lseq1', measures something related to consecutive 1s
     %              (ii) 'lseq0', measures something related to consecutive 0s
+    % 
+    %---NOTES:
+    % It doesn't actually measure what it's supposed to measure correctly, due to an
+    % implementation error, but it's still kind of an interesting operation...!
     % 
     ----------------------------------------
     """
@@ -5890,14 +5801,14 @@ class SB_BinaryStretch(HCTSASuper):
 
     TAGS = ('binary',)
 
-    def __init__(self, stretchwhat='lseq0'):
+    def __init__(self, stretchWhat='lseq0'):
         super(SB_BinaryStretch, self).__init__()
-        self.stretchwhat = stretchwhat
+        self.stretchWhat = stretchWhat
 
     def _eval_hook(self, eng, x):
-        if self.stretchwhat is None:
+        if self.stretchWhat is None:
             return eng.run_function(1, 'SB_BinaryStretch', x, )
-        return eng.run_function(1, 'SB_BinaryStretch', x, self.stretchwhat)
+        return eng.run_function(1, 'SB_BinaryStretch', x, self.stretchWhat)
 
 
 class SB_CoarseGrain(HCTSASuper):
@@ -5911,11 +5822,8 @@ class SB_CoarseGrain(HCTSASuper):
     %---INPUTS:
     % howtocg, the method of coarse-graining
     % 
-    % ng, either specifies the size of the alphabet for 'quantile' and 'updown'
+    % numGroups, either specifies the size of the alphabet for 'quantile' and 'updown'
     %       or sets the timedelay for the embedding subroutines
-    % 
-    %---HISTORY:
-    % Ben Fulcher, September 2009
     % 
     ----------------------------------------
     """
@@ -5924,17 +5832,17 @@ class SB_CoarseGrain(HCTSASuper):
 
     TAGS = ()
 
-    def __init__(self, howtocg=None, ng=None):
+    def __init__(self, howtocg=None, numGroups=None):
         super(SB_CoarseGrain, self).__init__()
         self.howtocg = howtocg
-        self.ng = ng
+        self.numGroups = numGroups
 
     def _eval_hook(self, eng, x):
         if self.howtocg is None:
             return eng.run_function(1, 'SB_CoarseGrain', x, )
-        elif self.ng is None:
+        elif self.numGroups is None:
             return eng.run_function(1, 'SB_CoarseGrain', x, self.howtocg)
-        return eng.run_function(1, 'SB_CoarseGrain', x, self.howtocg, self.ng)
+        return eng.run_function(1, 'SB_CoarseGrain', x, self.howtocg, self.numGroups)
 
 
 class SB_MotifThree(HCTSASuper):
@@ -5947,15 +5855,12 @@ class SB_MotifThree(HCTSASuper):
     % 
     %---INPUTS:
     % y, time series to analyze
-    % trit, the coarse-graining method to use:
+    % cgHow, the coarse-graining method to use:
     %       (i) 'quantile': equiprobable alphabet by time-series value
     %       (ii) 'diffquant': equiprobably alphabet by time-series increments
     % 
     %---OUTPUTS:
     % Statistics on words of length 1, 2, 3, and 4.
-    % 
-    %---HISTORY:
-    % This code was laboriously written by Ben Fulcher, 2009.
     % 
     ----------------------------------------
     """
@@ -5964,14 +5869,14 @@ class SB_MotifThree(HCTSASuper):
 
     TAGS = ('motifs',)
 
-    def __init__(self, trit='quantile'):
+    def __init__(self, cgHow='quantile'):
         super(SB_MotifThree, self).__init__()
-        self.trit = trit
+        self.cgHow = cgHow
 
     def _eval_hook(self, eng, x):
-        if self.trit is None:
+        if self.cgHow is None:
             return eng.run_function(1, 'SB_MotifThree', x, )
-        return eng.run_function(1, 'SB_MotifThree', x, self.trit)
+        return eng.run_function(1, 'SB_MotifThree', x, self.cgHow)
 
 
 class SB_MotifTwo(HCTSASuper):
@@ -6045,9 +5950,6 @@ class SB_TransitionMatrix(HCTSASuper):
     % of the transition matrix, measures of asymmetry, and eigenvalues of the
     % transition matrix.
     % 
-    %---HISTORY:
-    % Ben Fulcher, August 2009
-    % 
     ----------------------------------------
     """
 
@@ -6055,7 +5957,7 @@ class SB_TransitionMatrix(HCTSASuper):
 
     TAGS = ('transitionmat',)
 
-    def __init__(self, howtocg='quantile', numGroups=3.0, tau='ac'):
+    def __init__(self, howtocg='quantile', numGroups=4.0, tau='ac'):
         super(SB_TransitionMatrix, self).__init__()
         self.howtocg = howtocg
         self.numGroups = numGroups
@@ -6085,8 +5987,8 @@ class SB_TransitionpAlphabet(HCTSASuper):
     % 
     % y, the input time series
     % 
-    % ng, the number of groups in the coarse-graining (scalar for constant, or a
-    %       vector of ng to compare across this range)
+    % numGroups, the number of groups in the coarse-graining (scalar for constant, or a
+    %       vector of numGroups to compare across this range)
     % 
     % tau: the time-delay; transition matricies corresponding to this time-delay. We
     %      can either downsample the time series at this lag and then do the
@@ -6105,17 +6007,17 @@ class SB_TransitionpAlphabet(HCTSASuper):
 
     TAGS = ('transitionmat',)
 
-    def __init__(self, ng=MatlabSequence('2:40'), tau=1.0):
+    def __init__(self, numGroups=MatlabSequence('2:40'), tau=1.0):
         super(SB_TransitionpAlphabet, self).__init__()
-        self.ng = ng
+        self.numGroups = numGroups
         self.tau = tau
 
     def _eval_hook(self, eng, x):
-        if self.ng is None:
+        if self.numGroups is None:
             return eng.run_function(1, 'SB_TransitionpAlphabet', x, )
         elif self.tau is None:
-            return eng.run_function(1, 'SB_TransitionpAlphabet', x, self.ng)
-        return eng.run_function(1, 'SB_TransitionpAlphabet', x, self.ng, self.tau)
+            return eng.run_function(1, 'SB_TransitionpAlphabet', x, self.numGroups)
+        return eng.run_function(1, 'SB_TransitionpAlphabet', x, self.numGroups, self.tau)
 
 
 class SC_FluctAnal(HCTSASuper):
@@ -6166,7 +6068,7 @@ class SC_FluctAnal(HCTSASuper):
     %           analysis of nonstationary signals" J. Alvarez-Ramirez et al. Phys.
     %           Rev. E 79(5) 057202 (2009)
     % 
-    % taustep, increments in tau for linear range (i.e., if loginc = 0), or number of tau
+    % tauStep, increments in tau for linear range (i.e., if logInc = 0), or number of tau
     %           steps in logarithmic range if login = 1
     %           The spacing of time scales, tau, is commonly logarithmic through a range from
     %           5 samples to a quarter of the length of the time series, as suggested in
@@ -6181,7 +6083,7 @@ class SC_FluctAnal(HCTSASuper):
     % 
     % lag, optional time-lag, as in Alvarez-Ramirez (see (vii) above)
     % 
-    % loginc, whether to use logarithmic increments in tau (it should be logarithmic).
+    % logInc, whether to use logarithmic increments in tau (it should be logarithmic).
     % 
     %---OUTPUTS: include statistics of fitting a linear function to a plot of log(F) as
     % a function of log(tau), and for fitting two straight lines to the same data,
@@ -6196,9 +6098,6 @@ class SC_FluctAnal(HCTSASuper):
     % All results are obtained with both linearly, and logarithmically-spaced time
     % scales tau.
     % 
-    %---HISTORY:
-    % Ben Fulcher, September 2009
-    % 
     ----------------------------------------
     """
 
@@ -6206,29 +6105,61 @@ class SC_FluctAnal(HCTSASuper):
 
     TAGS = ('dfa', 'fa', 'lengthdep', 'lini', 'rsrange', 'scaling')
 
-    def __init__(self, q=2.0, wtf='dfa', taustep=2.0, k=2.0, lag=(), loginc=0.0):
+    def __init__(self, q=2.0, wtf='dfa', tauStep=2.0, k=2.0, lag=(), logInc=0.0):
         super(SC_FluctAnal, self).__init__()
         self.q = q
         self.wtf = wtf
-        self.taustep = taustep
+        self.tauStep = tauStep
         self.k = k
         self.lag = lag
-        self.loginc = loginc
+        self.logInc = logInc
 
     def _eval_hook(self, eng, x):
         if self.q is None:
             return eng.run_function(1, 'SC_FluctAnal', x, )
         elif self.wtf is None:
             return eng.run_function(1, 'SC_FluctAnal', x, self.q)
-        elif self.taustep is None:
+        elif self.tauStep is None:
             return eng.run_function(1, 'SC_FluctAnal', x, self.q, self.wtf)
         elif self.k is None:
-            return eng.run_function(1, 'SC_FluctAnal', x, self.q, self.wtf, self.taustep)
+            return eng.run_function(1, 'SC_FluctAnal', x, self.q, self.wtf, self.tauStep)
         elif self.lag is None:
-            return eng.run_function(1, 'SC_FluctAnal', x, self.q, self.wtf, self.taustep, self.k)
-        elif self.loginc is None:
-            return eng.run_function(1, 'SC_FluctAnal', x, self.q, self.wtf, self.taustep, self.k, self.lag)
-        return eng.run_function(1, 'SC_FluctAnal', x, self.q, self.wtf, self.taustep, self.k, self.lag, self.loginc)
+            return eng.run_function(1, 'SC_FluctAnal', x, self.q, self.wtf, self.tauStep, self.k)
+        elif self.logInc is None:
+            return eng.run_function(1, 'SC_FluctAnal', x, self.q, self.wtf, self.tauStep, self.k, self.lag)
+        return eng.run_function(1, 'SC_FluctAnal', x, self.q, self.wtf, self.tauStep, self.k, self.lag, self.logInc)
+
+
+class SC_MMA(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    % 
+    % Physionet implementation of multiscale multifractal analysis
+    % 
+    % Scale-dependent estimates of multifractal scaling in a time series
+    % 
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = (14,)
+
+    TAGS = ('fractal', 'scaling')
+
+    def __init__(self, doOverlap=0.0, scaleRange=(), qRange=(-5.0, 5.0)):
+        super(SC_MMA, self).__init__()
+        self.doOverlap = doOverlap
+        self.scaleRange = scaleRange
+        self.qRange = qRange
+
+    def _eval_hook(self, eng, x):
+        if self.doOverlap is None:
+            return eng.run_function(1, 'SC_MMA', x, )
+        elif self.scaleRange is None:
+            return eng.run_function(1, 'SC_MMA', x, self.doOverlap)
+        elif self.qRange is None:
+            return eng.run_function(1, 'SC_MMA', x, self.doOverlap, self.scaleRange)
+        return eng.run_function(1, 'SC_MMA', x, self.doOverlap, self.scaleRange, self.qRange)
 
 
 class SC_fastdfa(HCTSASuper):
@@ -6265,7 +6196,7 @@ class SD_MakeSurrogates(HCTSASuper):
     ----------------------------------------
     % 
     % Generates surrogate time series given a method (surrogates), number of
-    % surrogates (numSurrs), and any extra parameters (extrap)
+    % surrogates (numSurrs), and any extra parameters (extraParams)
     % 
     % Method described relatively clearly in Guarin Lopez et al. (arXiv, 2010)
     % Used bits of aaft code that references (and presumably was obtained from)
@@ -6286,12 +6217,9 @@ class SD_MakeSurrogates(HCTSASuper):
     % 
     % numSurrs, the number of surrogates to generate
     % 
-    % extrap, extra parameters required by the selected surrogate generation method
+    % extraParams, extra parameters required by the selected surrogate generation method
     %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    %
-    %---HISTORY: 
-    % Ben Fulcher, 27/1/2011
     % 
     ----------------------------------------
     """
@@ -6300,11 +6228,11 @@ class SD_MakeSurrogates(HCTSASuper):
 
     TAGS = ()
 
-    def __init__(self, surrMethod=None, numSurrs=None, extrap=None, randomSeed=None):
+    def __init__(self, surrMethod=None, numSurrs=None, extraParams=None, randomSeed=None):
         super(SD_MakeSurrogates, self).__init__()
         self.surrMethod = surrMethod
         self.numSurrs = numSurrs
-        self.extrap = extrap
+        self.extraParams = extraParams
         self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
@@ -6312,11 +6240,11 @@ class SD_MakeSurrogates(HCTSASuper):
             return eng.run_function(1, 'SD_MakeSurrogates', x, )
         elif self.numSurrs is None:
             return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrMethod)
-        elif self.extrap is None:
+        elif self.extraParams is None:
             return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrMethod, self.numSurrs)
         elif self.randomSeed is None:
-            return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrMethod, self.numSurrs, self.extrap)
-        return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrMethod, self.numSurrs, self.extrap,
+            return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrMethod, self.numSurrs, self.extraParams)
+        return eng.run_function(1, 'SD_MakeSurrogates', x, self.surrMethod, self.numSurrs, self.extraParams,
                                 self.randomSeed)
 
 
@@ -6373,9 +6301,6 @@ class SD_SurrogateTest(HCTSASuper):
     %                 some comparative rank-based statistics.
     % 
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 28/1/2011
     % 
     ----------------------------------------
     """
@@ -6442,10 +6367,6 @@ class SD_TSTL_surrogates(HCTSASuper):
     %---OUTPUTS: include the Gaussianity of the test statistics, a z-test, and
     % various tests based on fitted kernel densities.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 15/11/2009
-    % Ben Fulcher, 2015-03-19 added random seed
-    % 
     ----------------------------------------
     """
 
@@ -6511,14 +6432,12 @@ class SP_Summaries(HCTSASuper):
     % doPower, analyzes the power spectrum rather than amplitudes of a Fourier
     %          transform
     % 
-    %---OUTPUTS: statistics summarizing various properties of the spectrum,
+    %---OUTPUTS:
+    % Statistics summarizing various properties of the spectrum,
     % including its maximum, minimum, spread, correlation, centroid, area in certain
     % (normalized) frequency bands, moments of the spectrum, Shannon spectral
     % entropy, a spectral flatness measure, power-law fits, and the number of
     % crossings of the spectrum at various amplitude thresholds.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, August 2009
     % 
     ----------------------------------------
     """
@@ -6567,8 +6486,6 @@ class ST_FitPolynomial(HCTSASuper):
     %---OUTPUT:
     % RMS error of the fit.
     %
-    %---HISTORY:
-    % Ben Fulcher, 2009
     ----------------------------------------
     """
 
@@ -6576,7 +6493,7 @@ class ST_FitPolynomial(HCTSASuper):
 
     TAGS = ('raw', 'spreaddep', 'trend')
 
-    def __init__(self, k=10.0):
+    def __init__(self, k=1.0):
         super(ST_FitPolynomial, self).__init__()
         self.k = k
 
@@ -6687,9 +6604,6 @@ class ST_MomentCorr(HCTSASuper):
     %                            data points
     %               (iii) 'sq': takes the square of every data point
     %               (iv) 'none': does no whatTransformormation
-    %           
-    %---HISTORY:
-    % Ben Fulcher, 5 July 2010
     % 
     ----------------------------------------
     """
@@ -6837,7 +6751,9 @@ class SY_DynWin(HCTSASuper):
     %           segments to maxnseg.
     % 
     % 
-    %---OUTPUTS: the standard deviation of this set of 'stationarity' estimates
+    %---OUTPUTS:
+    %
+    % The standard deviation of this set of 'stationarity' estimates
     % across these window sizes.
     % 
     ----------------------------------------
@@ -6898,35 +6814,6 @@ class SY_KPSStest(HCTSASuper):
         return eng.run_function(1, 'SY_KPSStest', x, self.lags)
 
 
-class SY_LinearTrend(HCTSASuper):
-    """
-    Matlab doc:
-    ----------------------------------------
-    % 
-    % Linearly detrends the time series using the Matlab algorithm detrend,
-    % and returns the ratio of standard deviations before and after the linear
-    % detrending.
-    % 
-    % If a strong linear trend is present in the time series, this  operation should
-    % output a low value.
-    % 
-    %---INPUT:
-    % x, the input time series
-    % 
-    ----------------------------------------
-    """
-
-    KNOWN_OUTPUTS_SIZES = (1,)
-
-    TAGS = ('raw', 'stationarity')
-
-    def __init__(self):
-        super(SY_LinearTrend, self).__init__()
-
-    def _eval_hook(self, eng, x):
-        return eng.run_function(1, 'SY_LinearTrend', x, )
-
-
 class SY_LocalDistributions(HCTSASuper):
     """
     Matlab doc:
@@ -6956,9 +6843,6 @@ class SY_LocalDistributions(HCTSASuper):
     % 
     %---OUTPUTS: measures of the sum of absolute deviations between distributions
     % across the different pairwise comparisons.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, August 2009
     % 
     ----------------------------------------
     """
@@ -6994,7 +6878,7 @@ class SY_LocalGlobal(HCTSASuper):
     %---INPUTS:
     % y, the time series to analyze
     % 
-    % lorp, the local subset of time series to study:
+    % subsetHow, the local subset of time series to study:
     %             (i) 'l': the first n points in a time series,
     %             (ii) 'p': an initial proportion of the full time series, n
     %             (iii) 'unicg': n evenly-spaced points throughout the time series
@@ -7014,11 +6898,6 @@ class SY_LocalGlobal(HCTSASuper):
     % A better approach would be to repeat over many local subsets and compare the
     % statistics of these local regions to the full time series.
     % 
-    % 
-    %---HISTORY:
-    % Ben Fulcher, September 2009
-    % Ben Fulcher, 2015-03-19 added randomSeed input
-    % 
     ----------------------------------------
     """
 
@@ -7026,20 +6905,20 @@ class SY_LocalGlobal(HCTSASuper):
 
     TAGS = ('stationarity',)
 
-    def __init__(self, lorp='l', n=50.0, randomSeed=None):
+    def __init__(self, subsetHow='l', n=50.0, randomSeed=None):
         super(SY_LocalGlobal, self).__init__()
-        self.lorp = lorp
+        self.subsetHow = subsetHow
         self.n = n
         self.randomSeed = randomSeed
 
     def _eval_hook(self, eng, x):
-        if self.lorp is None:
+        if self.subsetHow is None:
             return eng.run_function(1, 'SY_LocalGlobal', x, )
         elif self.n is None:
-            return eng.run_function(1, 'SY_LocalGlobal', x, self.lorp)
+            return eng.run_function(1, 'SY_LocalGlobal', x, self.subsetHow)
         elif self.randomSeed is None:
-            return eng.run_function(1, 'SY_LocalGlobal', x, self.lorp, self.n)
-        return eng.run_function(1, 'SY_LocalGlobal', x, self.lorp, self.n, self.randomSeed)
+            return eng.run_function(1, 'SY_LocalGlobal', x, self.subsetHow, self.n)
+        return eng.run_function(1, 'SY_LocalGlobal', x, self.subsetHow, self.n, self.randomSeed)
 
 
 class SY_PPtest(HCTSASuper):
@@ -7061,7 +6940,7 @@ class SY_PPtest(HCTSASuper):
     %               'ts': trend stationary,
     %               (see Matlab documentation for information)
     %               
-    % teststat, the test statistic:
+    % testStatistic, the test statistic:
     %               't1': the standard t-statistic, or
     %               't2' a lag-adjusted, 'unStudentized' t statistic.
     %               (see Matlab documentation for information)
@@ -7076,20 +6955,20 @@ class SY_PPtest(HCTSASuper):
 
     TAGS = ('aic', 'bic', 'econometricstoolbox', 'hqc', 'pptest', 'pvalue', 'rmse', 'unitroot')
 
-    def __init__(self, lags=MatlabSequence('0:5'), model='ts', teststat='t1'):
+    def __init__(self, lags=MatlabSequence('0:5'), model='ts', testStatistic='t1'):
         super(SY_PPtest, self).__init__()
         self.lags = lags
         self.model = model
-        self.teststat = teststat
+        self.testStatistic = testStatistic
 
     def _eval_hook(self, eng, x):
         if self.lags is None:
             return eng.run_function(1, 'SY_PPtest', x, )
         elif self.model is None:
             return eng.run_function(1, 'SY_PPtest', x, self.lags)
-        elif self.teststat is None:
+        elif self.testStatistic is None:
             return eng.run_function(1, 'SY_PPtest', x, self.lags, self.model)
-        return eng.run_function(1, 'SY_PPtest', x, self.lags, self.model, self.teststat)
+        return eng.run_function(1, 'SY_PPtest', x, self.lags, self.model, self.testStatistic)
 
 
 class SY_RangeEvolve(HCTSASuper):
@@ -7129,14 +7008,14 @@ class SY_SlidingWindow(HCTSASuper):
     % some quantity in each window, and outputting some summary of this set of local
     % estimates of that quantity.
     % 
-    % Another way of saying it: calculate 'windowstat' in each window, and computes
-    % 'acrosswindowstat' for the set of statistics calculated in each window.
+    % Another way of saying it: calculate 'windowStat' in each window, and computes
+    % 'acrossWinStat' for the set of statistics calculated in each window.
     % 
     %---INPUTS:
     % 
     % y, the input time series
     % 
-    % windowstat, the measure to calculate in each window:
+    % windowStat, the measure to calculate in each window:
     %               (i) 'mean', mean
     %               (ii) 'std', standard deviation
     %               (iii) 'ent', distribution entropy
@@ -7147,7 +7026,7 @@ class SY_SlidingWindow(HCTSASuper):
     %               (viii) 'AC1', the lag-1 autocorrelation
     %               (ix) 'apen', Approximate Entropy
     % 
-    % acrosswindowstat, controls how the obtained sequence of local estimates is
+    % acrossWinStat, controls how the obtained sequence of local estimates is
     %                   compared (as a ratio to the full time series):
     %                       (i) 'std': standard deviation
     %                       (ii) 'ent' histogram entropy
@@ -7156,11 +7035,11 @@ class SY_SlidingWindow(HCTSASuper):
     %                               complexity", S. M. Pincus, P. Natl. Acad. Sci.
     %                               USA 88(6) 2297 (1991)
     % 
-    % nseg, the number of segments to divide the time series up into, thus
+    % numSeg, the number of segments to divide the time series up into, thus
     %       controlling the window length
     % 
-    % nmov, the increment to move the window at each iteration, as 1/fraction of the
-    %       window length (e.g., nmov = 2, means the window moves half the length of the
+    % incMove, the increment to move the window at each iteration, as 1/fraction of the
+    %       window length (e.g., incMove = 2, means the window moves half the length of the
     %       window at each increment)
     % 
     ----------------------------------------
@@ -7170,23 +7049,24 @@ class SY_SlidingWindow(HCTSASuper):
 
     TAGS = ('slidingwin', 'stationarity')
 
-    def __init__(self, windowstat='ent', acrosswindowstat='ent', nseg=5.0, nmov=2.0):
+    def __init__(self, windowStat='ent', acrossWinStat='ent', numSeg=5.0, incMove=2.0):
         super(SY_SlidingWindow, self).__init__()
-        self.windowstat = windowstat
-        self.acrosswindowstat = acrosswindowstat
-        self.nseg = nseg
-        self.nmov = nmov
+        self.windowStat = windowStat
+        self.acrossWinStat = acrossWinStat
+        self.numSeg = numSeg
+        self.incMove = incMove
 
     def _eval_hook(self, eng, x):
-        if self.windowstat is None:
+        if self.windowStat is None:
             return eng.run_function(1, 'SY_SlidingWindow', x, )
-        elif self.acrosswindowstat is None:
-            return eng.run_function(1, 'SY_SlidingWindow', x, self.windowstat)
-        elif self.nseg is None:
-            return eng.run_function(1, 'SY_SlidingWindow', x, self.windowstat, self.acrosswindowstat)
-        elif self.nmov is None:
-            return eng.run_function(1, 'SY_SlidingWindow', x, self.windowstat, self.acrosswindowstat, self.nseg)
-        return eng.run_function(1, 'SY_SlidingWindow', x, self.windowstat, self.acrosswindowstat, self.nseg, self.nmov)
+        elif self.acrossWinStat is None:
+            return eng.run_function(1, 'SY_SlidingWindow', x, self.windowStat)
+        elif self.numSeg is None:
+            return eng.run_function(1, 'SY_SlidingWindow', x, self.windowStat, self.acrossWinStat)
+        elif self.incMove is None:
+            return eng.run_function(1, 'SY_SlidingWindow', x, self.windowStat, self.acrossWinStat, self.numSeg)
+        return eng.run_function(1, 'SY_SlidingWindow', x, self.windowStat, self.acrossWinStat,
+                                self.numSeg, self.incMove)
 
 
 class SY_SpreadRandomLocal(HCTSASuper):
@@ -7216,9 +7096,6 @@ class SY_SpreadRandomLocal(HCTSASuper):
     % 
     %---OUTPUTS: the mean and also the standard deviation of this set of 100 local
     % estimates.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, August 2009
     % 
     ----------------------------------------
     """
@@ -7259,14 +7136,11 @@ class SY_StatAv(HCTSASuper):
     % 
     % y, the input time series
     % 
-    % WhatType, the type of StatAv to perform:
+    % whatType, the type of StatAv to perform:
     %           (i) 'seg': divide the time series into n segments
     %           (ii) 'len': divide the time series into segments of length n
     % 
     % n, either the number of subsegments ('seg') or their length ('len')
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 2009
     % 
     ----------------------------------------
     """
@@ -7275,17 +7149,17 @@ class SY_StatAv(HCTSASuper):
 
     TAGS = ('StatAv', 'stationarity')
 
-    def __init__(self, WhatType='len', n=100.0):
+    def __init__(self, whatType='len', n=100.0):
         super(SY_StatAv, self).__init__()
-        self.WhatType = WhatType
+        self.whatType = whatType
         self.n = n
 
     def _eval_hook(self, eng, x):
-        if self.WhatType is None:
+        if self.whatType is None:
             return eng.run_function(1, 'SY_StatAv', x, )
         elif self.n is None:
-            return eng.run_function(1, 'SY_StatAv', x, self.WhatType)
-        return eng.run_function(1, 'SY_StatAv', x, self.WhatType, self.n)
+            return eng.run_function(1, 'SY_StatAv', x, self.whatType)
+        return eng.run_function(1, 'SY_StatAv', x, self.whatType, self.n)
 
 
 class SY_StdNthDer(HCTSASuper):
@@ -7397,10 +7271,10 @@ class SY_TISEAN_nstat_z(HCTSASuper):
     % 
     % y, the input time series
     % 
-    % nseg, the number of equally-spaced segments to divide the time series into,
+    % numSeg, the number of equally-spaced segments to divide the time series into,
     %       and used to predict the other time series segments
     % 
-    % embedparams, in the form {tau,m}, as usual for BF_embed. That is, for an
+    % embedParams, in the form {tau,m}, as usual for BF_embed. That is, for an
     %               embedding dimension, tau, and embedding dimension, m. E.g.,
     %               {1,3} has a time-delay of 1 and embedding dimension of 3.
     % 
@@ -7409,9 +7283,6 @@ class SY_TISEAN_nstat_z(HCTSASuper):
     % minimum, and maximum cross-prediction error, the minimum off-diagonal
     % cross-prediction error, and eigenvalues of the cross-prediction error matrix.
     % 
-    %---HISTORY:
-    % Ben Fulcher, 17/11/2009
-    % 
     ----------------------------------------
     """
 
@@ -7419,17 +7290,50 @@ class SY_TISEAN_nstat_z(HCTSASuper):
 
     TAGS = ('model', 'nonlinear', 'stationarity', 'tisean')
 
-    def __init__(self, nseg=5.0, embedparams=(1, 3, '_celltrick_')):
+    def __init__(self, numSeg=5.0, embedParams=(1, 3, '_celltrick_')):
         super(SY_TISEAN_nstat_z, self).__init__()
-        self.nseg = nseg
-        self.embedparams = embedparams
+        self.numSeg = numSeg
+        self.embedParams = embedParams
 
     def _eval_hook(self, eng, x):
-        if self.nseg is None:
+        if self.numSeg is None:
             return eng.run_function(1, 'SY_TISEAN_nstat_z', x, )
-        elif self.embedparams is None:
-            return eng.run_function(1, 'SY_TISEAN_nstat_z', x, self.nseg)
-        return eng.run_function(1, 'SY_TISEAN_nstat_z', x, self.nseg, self.embedparams)
+        elif self.embedParams is None:
+            return eng.run_function(1, 'SY_TISEAN_nstat_z', x, self.numSeg)
+        return eng.run_function(1, 'SY_TISEAN_nstat_z', x, self.numSeg, self.embedParams)
+
+
+class SY_Trend(HCTSASuper):
+    """
+    Matlab doc:
+    ----------------------------------------
+    % 
+    % Quantifies various measures of trend in the time series.
+    % 
+    %---INPUT:
+    % y, the input time series
+    % 
+    %---OUTPUTS:
+    %
+    % Linearly detrends the time series using detrend, and returns the ratio of
+    % standard deviations before and after the linear detrending. If a strong linear
+    % trend is present in the time series, this operation should output a low value.
+    % 
+    % Also fits a line and gives parameters from that fit, as well as statistics on
+    % a cumulative sum of the time series.
+    % 
+    ----------------------------------------
+    """
+
+    KNOWN_OUTPUTS_SIZES = (9,)
+
+    TAGS = ('stationarity',)
+
+    def __init__(self):
+        super(SY_Trend, self).__init__()
+
+    def _eval_hook(self, eng, x):
+        return eng.run_function(1, 'SY_Trend', x, )
 
 
 class SY_VarRatioTest(HCTSASuper):
@@ -7451,9 +7355,6 @@ class SY_VarRatioTest(HCTSASuper):
     % IIDs, a vector (or scalar) representing boolean values indicating whether to
     %       assume independent and identically distributed (IID) innovations for
     %       each period.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 26/2/2010
     % 
     ----------------------------------------
     """
@@ -7496,9 +7397,6 @@ class TSTL_delaytime(HCTSASuper):
     %       relatively uninformative.
     % 
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
-    %---HISTORY:
-    % Ben Fulcher, November 2009
     % 
     ----------------------------------------
     """
@@ -7550,17 +7448,14 @@ class TSTL_localdensity(HCTSASuper):
     % the time-delay embedding, including the minimum and maximum values, the range,
     % the standard deviation, mean, median, and autocorrelation.
     % 
-    %---HISTORY:
-    % Ben Fulcher, November 2009
-    % 
     ----------------------------------------
     """
 
     KNOWN_OUTPUTS_SIZES = (14,)
 
-    TAGS = ('localdensity', 'nonlinear', 'stochastic', 'tstool')
+    TAGS = ('localdensity', 'nonlinear', 'tstool')
 
-    def __init__(self, NNR=5.0, past=40.0, embedParams=('ac', 'cao')):
+    def __init__(self, NNR=5.0, past=40.0, embedParams=('ac', 'fnnmar')):
         super(TSTL_localdensity, self).__init__()
         self.NNR = NNR
         self.past = past
@@ -7595,7 +7490,7 @@ class TSTL_predict(HCTSASuper):
     % 
     % NNR, number of nearest neighbours
     % 
-    % stepsize, number of samples to step for each prediction
+    % stepSize, number of samples to step for each prediction
     % 
     % pmode, prediction mode, four options:
     %           (i) 0: output vectors are means of images of nearest neighbours
@@ -7605,7 +7500,7 @@ class TSTL_predict(HCTSASuper):
     %                    mean of the images of the neighbours
     %           (iv) 3: output vectors are calculated using local flow and the
     %                    weighted mean of the images of the neighbours
-    % embedparams, as usual to feed into BF_embed, except that now you can set
+    % embedParams, as usual to feed into BF_embed, except that now you can set
     %              to zero to not embed.
     % 
     ----------------------------------------
@@ -7615,26 +7510,26 @@ class TSTL_predict(HCTSASuper):
 
     TAGS = ()
 
-    def __init__(self, plen=None, NNR=None, stepsize=None, pmode=None, embedparams=None):
+    def __init__(self, plen=None, NNR=None, stepSize=None, pmode=None, embedParams=None):
         super(TSTL_predict, self).__init__()
         self.plen = plen
         self.NNR = NNR
-        self.stepsize = stepsize
+        self.stepSize = stepSize
         self.pmode = pmode
-        self.embedparams = embedparams
+        self.embedParams = embedParams
 
     def _eval_hook(self, eng, x):
         if self.plen is None:
             return eng.run_function(1, 'TSTL_predict', x, )
         elif self.NNR is None:
             return eng.run_function(1, 'TSTL_predict', x, self.plen)
-        elif self.stepsize is None:
+        elif self.stepSize is None:
             return eng.run_function(1, 'TSTL_predict', x, self.plen, self.NNR)
         elif self.pmode is None:
-            return eng.run_function(1, 'TSTL_predict', x, self.plen, self.NNR, self.stepsize)
-        elif self.embedparams is None:
-            return eng.run_function(1, 'TSTL_predict', x, self.plen, self.NNR, self.stepsize, self.pmode)
-        return eng.run_function(1, 'TSTL_predict', x, self.plen, self.NNR, self.stepsize, self.pmode, self.embedparams)
+            return eng.run_function(1, 'TSTL_predict', x, self.plen, self.NNR, self.stepSize)
+        elif self.embedParams is None:
+            return eng.run_function(1, 'TSTL_predict', x, self.plen, self.NNR, self.stepSize, self.pmode)
+        return eng.run_function(1, 'TSTL_predict', x, self.plen, self.NNR, self.stepSize, self.pmode, self.embedParams)
 
 
 class WL_DetailCoeffs(HCTSASuper):
@@ -7656,10 +7551,8 @@ class WL_DetailCoeffs(HCTSASuper):
     % maxlevel, the maximum wavelet decomposition level (can also set to 'max' to be
     %               that determined by wmaxlev)
     % 
-    %---OUTPUTS: A set of statistics on the detail coefficients.
-    %       
-    %---HISTORY:
-    % Ben Fulcher 23/1/2010
+    %---OUTPUTS:
+    % A set of statistics on the detail coefficients.
     % 
     ----------------------------------------
     """
@@ -7699,9 +7592,6 @@ class WL_coeffs(HCTSASuper):
     % 
     % level, the level of wavelet decomposition
     % 
-    %---HISTORY:
-    % Ben Fulcher, 23/1/2010
-    % 
     ----------------------------------------
     """
 
@@ -7737,14 +7627,11 @@ class WL_cwt(HCTSASuper):
     %                           etc. (see Wavelet Toolbox Documentation for all
     %                           options)
     % 
-    % maxscale, the maximum scale of wavelet analysis.
+    % maxScale, the maximum scale of wavelet analysis.
     % 
     % 
     %---OUTPUTS: statistics on the coefficients, entropy, and results of
     % coefficients summed across scales.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 26/1/2010
     % 
     ----------------------------------------
     """
@@ -7753,17 +7640,17 @@ class WL_cwt(HCTSASuper):
 
     TAGS = ('cwt', 'lengthdep', 'statTB', 'wavelet', 'waveletTB')
 
-    def __init__(self, wname='sym2', maxscale=32.0):
+    def __init__(self, wname='sym2', maxScale=32.0):
         super(WL_cwt, self).__init__()
         self.wname = wname
-        self.maxscale = maxscale
+        self.maxScale = maxScale
 
     def _eval_hook(self, eng, x):
         if self.wname is None:
             return eng.run_function(1, 'WL_cwt', x, )
-        elif self.maxscale is None:
+        elif self.maxScale is None:
             return eng.run_function(1, 'WL_cwt', x, self.wname)
-        return eng.run_function(1, 'WL_cwt', x, self.wname, self.maxscale)
+        return eng.run_function(1, 'WL_cwt', x, self.wname, self.maxScale)
 
 
 class WL_dwtcoeff(HCTSASuper):
@@ -7783,9 +7670,6 @@ class WL_dwtcoeff(HCTSASuper):
     %           
     % level, the level of wavelet decomposition (can be set to 'max' for the maximum
     %               level determined by wmaxlev)
-    % 
-    %---HISTORY:
-    % Ben Fulcher, January 2010
     % 
     ----------------------------------------
     """
@@ -7820,9 +7704,6 @@ class WL_fBM(HCTSASuper):
     % y, the time series to analyze.
     % 
     %---OUTPUTS: All three outputs of wfbmesti are returned from this function.
-    % 
-    %---HISTORY:
-    % Ben Fulcher 23/1/2010
     % 
     ----------------------------------------
     """
@@ -7861,9 +7742,6 @@ class WL_scal2frq(HCTSASuper):
     % 
     % Adapted from example in Matlab Wavelet Toolbox documentation. It's kind of a
     % weird idea to apply the method to generic time series.
-    % 
-    %---HISTORY:
-    % Ben Fulcher, 26/1/2010
     % 
     ----------------------------------------
     """
@@ -7906,7 +7784,6 @@ HCTSA_ALL_CLASSES = (
     CO_StickAngles,
     CO_TSTL_AutoCorrMethod,
     CO_TSTL_amutual,
-    CO_TSTL_amutual2,
     CO_TranslateShape,
     CO_f1ecac,
     CO_fzcglscf,
@@ -7942,6 +7819,7 @@ HCTSA_ALL_CLASSES = (
     DN_pleft,
     DT_IsSeasonal,
     EN_ApEn,
+    EN_CID,
     EN_DistributionEntropy,
     EN_MS_shannon,
     EN_PermEn,
@@ -7949,6 +7827,7 @@ HCTSA_ALL_CLASSES = (
     EN_Randomize,
     EN_SampEn,
     EN_Shannonpdf,
+    EN_rpde,
     EN_wentropy,
     EX_MovingThreshold,
     FC_LocalSimple,
@@ -7986,6 +7865,7 @@ HCTSA_ALL_CLASSES = (
     MF_steps_ahead,
     NL_BoxCorrDim,
     NL_CaosMethod,
+    NL_DVV,
     NL_MS_LZcomplexity,
     NL_MS_fnn,
     NL_MS_nlpe,
@@ -8017,6 +7897,7 @@ HCTSA_ALL_CLASSES = (
     SB_TransitionMatrix,
     SB_TransitionpAlphabet,
     SC_FluctAnal,
+    SC_MMA,
     SC_fastdfa,
     SD_MakeSurrogates,
     SD_SurrogateTest,
@@ -8030,7 +7911,6 @@ HCTSA_ALL_CLASSES = (
     SY_DriftingMean,
     SY_DynWin,
     SY_KPSStest,
-    SY_LinearTrend,
     SY_LocalDistributions,
     SY_LocalGlobal,
     SY_PPtest,
@@ -8041,6 +7921,7 @@ HCTSA_ALL_CLASSES = (
     SY_StdNthDer,
     SY_StdNthDerChange,
     SY_TISEAN_nstat_z,
+    SY_Trend,
     SY_VarRatioTest,
     TSTL_delaytime,
     TSTL_localdensity,
@@ -8074,32 +7955,21 @@ class HCTSAOperations(object):
     # outs: fitexprmse,fitlina,fitlinb,meanch,mse
     # outs: pcrossmean,pdec
     # tags: AMI,correlation,entropy
-    CO_AddNoise_ac_kraskov1 = HCTSAOperation(
-        'CO_AddNoise_ac_kraskov1',
-        "CO_AddNoise(y,'ac','kraskov1',[],'default')",
-        CO_AddNoise(tau='ac', amiMethod='kraskov1', extraParam=(), randomSeed='default'))
-
-    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
-    # tags: AMI,correlation,entropy
-    CO_AddNoise_1_kraskov1 = HCTSAOperation(
-        'CO_AddNoise_1_kraskov1',
-        "CO_AddNoise(y,1,'kraskov1',[],'default')",
-        CO_AddNoise(tau=1, amiMethod='kraskov1', extraParam=(), randomSeed='default'))
-
-    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
-    # tags: AMI,correlation,entropy
     CO_AddNoise_ac_even_10 = HCTSAOperation(
         'CO_AddNoise_ac_even_10',
         "CO_AddNoise(y,'ac','even',10,'default')",
         CO_AddNoise(tau='ac', amiMethod='even', extraParam=10, randomSeed='default'))
+
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
+    CO_AddNoise_ac_kraskov1_4 = HCTSAOperation(
+        'CO_AddNoise_ac_kraskov1_4',
+        "CO_AddNoise(y,'ac','kraskov1','4','default')",
+        CO_AddNoise(tau='ac', amiMethod='kraskov1', extraParam='4', randomSeed='default'))
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
     # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
@@ -8122,6 +7992,17 @@ class HCTSAOperations(object):
         'CO_AddNoise_ac_gaussian',
         "CO_AddNoise(y,'ac','gaussian',[],'default')",
         CO_AddNoise(tau='ac', amiMethod='gaussian', extraParam=(), randomSeed='default'))
+
+    # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
+    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
+    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
+    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
+    # outs: pcrossmean,pdec
+    # tags: AMI,correlation,entropy
+    CO_AddNoise_1_kraskov1_4 = HCTSAOperation(
+        'CO_AddNoise_1_kraskov1_4',
+        "CO_AddNoise(y,1,'kraskov1','4','default')",
+        CO_AddNoise(tau=1, amiMethod='kraskov1', extraParam='4', randomSeed='default'))
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
     # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
@@ -8746,7 +8627,7 @@ class HCTSAOperations(object):
     CO_CompareMinAMI_std2_2_80 = HCTSAOperation(
         'CO_CompareMinAMI_std2_2_80',
         "CO_CompareMinAMI(y,'std2',[2:80])",
-        CO_CompareMinAMI(meth='std2', nbins=[MatlabSequence('2:80')]))
+        CO_CompareMinAMI(meth='std2', numBins=[MatlabSequence('2:80')]))
 
     # outs: conv4,iqr,max,maxp,mean
     # outs: median,min,mode,modef,nlocmax
@@ -8755,7 +8636,7 @@ class HCTSAOperations(object):
     CO_CompareMinAMI_quantiles_2_80 = HCTSAOperation(
         'CO_CompareMinAMI_quantiles_2_80',
         "CO_CompareMinAMI(y,'quantiles',[2:80])",
-        CO_CompareMinAMI(meth='quantiles', nbins=[MatlabSequence('2:80')]))
+        CO_CompareMinAMI(meth='quantiles', numBins=[MatlabSequence('2:80')]))
 
     # outs: conv4,iqr,max,maxp,mean
     # outs: median,min,mode,modef,nlocmax
@@ -8764,7 +8645,7 @@ class HCTSAOperations(object):
     CO_CompareMinAMI_even_2_80 = HCTSAOperation(
         'CO_CompareMinAMI_even_2_80',
         "CO_CompareMinAMI(y,'even',[2:80])",
-        CO_CompareMinAMI(meth='even', nbins=[MatlabSequence('2:80')]))
+        CO_CompareMinAMI(meth='even', numBins=[MatlabSequence('2:80')]))
 
     # outs: conv4,iqr,max,maxp,mean
     # outs: median,min,mode,modef,nlocmax
@@ -8773,7 +8654,7 @@ class HCTSAOperations(object):
     CO_CompareMinAMI_std1_2_80 = HCTSAOperation(
         'CO_CompareMinAMI_std1_2_80',
         "CO_CompareMinAMI(y,'std1',[2:80])",
-        CO_CompareMinAMI(meth='std1', nbins=[MatlabSequence('2:80')]))
+        CO_CompareMinAMI(meth='std1', numBins=[MatlabSequence('2:80')]))
 
     # outs: arearat,areas_50,areas_all,eucdm1,eucdm2
     # outs: eucdm3,eucdm4,eucdm5,eucds1,eucds2
@@ -8794,7 +8675,7 @@ class HCTSAOperations(object):
     CO_Embed2_AngleTau_50 = HCTSAOperation(
         'CO_Embed2_AngleTau_50',
         'CO_Embed2_AngleTau(y,50)',
-        CO_Embed2_AngleTau(maxtau=50))
+        CO_Embed2_AngleTau(maxTau=50))
 
     # outs: downdiag01,downdiag05,incircle_01,incircle_02,incircle_05
     # outs: incircle_1,incircle_2,incircle_3,medianincircle,parabdown01
@@ -8850,16 +8731,16 @@ class HCTSAOperations(object):
         CO_Embed2_Shapes(tau='tau', shape='circle', r=0.1))
 
     # tags: 
-    CO_FirstMin_mi_kraskov2_3 = HCTSAOperation(
-        'CO_FirstMin_mi_kraskov2_3',
-        "CO_FirstMin(y,'mi-kraskov2','3')",
-        CO_FirstMin(minWhat='mi-kraskov2', extraParam='3'))
+    CO_FirstMin_mi_kraskov1_4 = HCTSAOperation(
+        'CO_FirstMin_mi_kraskov1_4',
+        "CO_FirstMin(y,'mi-kraskov1','4')",
+        CO_FirstMin(minWhat='mi-kraskov1', extraParam='4'))
 
     # tags: 
-    CO_FirstMin_mi_kraskov1 = HCTSAOperation(
-        'CO_FirstMin_mi_kraskov1',
-        "CO_FirstMin(y,'mi-kraskov1')",
-        CO_FirstMin(minWhat='mi-kraskov1'))
+    CO_FirstMin_mi_kraskov2_4 = HCTSAOperation(
+        'CO_FirstMin_mi_kraskov2_4',
+        "CO_FirstMin(y,'mi-kraskov2','4')",
+        CO_FirstMin(minWhat='mi-kraskov2', extraParam='4'))
 
     # tags: 
     CO_FirstMin_mi_hist_5 = HCTSAOperation(
@@ -9497,7 +9378,7 @@ class HCTSAOperations(object):
     CO_TranslateShape_circle_25_pts = HCTSAOperation(
         'CO_TranslateShape_circle_25_pts',
         "CO_TranslateShape(y,'circle',2.5,'pts')",
-        CO_TranslateShape(shape='circle', d=2.5, howtomove='pts'))
+        CO_TranslateShape(shape='circle', d=2.5, howToMove='pts'))
 
     # outs: fives,fours,max,mode,npatmode
     # outs: ones,sevens,sixes,statav2_m,statav2_s
@@ -9507,7 +9388,7 @@ class HCTSAOperations(object):
     CO_TranslateShape_circle_35_pts = HCTSAOperation(
         'CO_TranslateShape_circle_35_pts',
         "CO_TranslateShape(y,'circle',3.5,'pts')",
-        CO_TranslateShape(shape='circle', d=3.5, howtomove='pts'))
+        CO_TranslateShape(shape='circle', d=3.5, howToMove='pts'))
 
     # outs: eights,elevens,fives,fours,mode
     # outs: nines,npatmode,ones,sevens,sixes
@@ -9517,7 +9398,7 @@ class HCTSAOperations(object):
     CO_TranslateShape_circle_55_pts = HCTSAOperation(
         'CO_TranslateShape_circle_55_pts',
         "CO_TranslateShape(y,'circle',5.5,'pts')",
-        CO_TranslateShape(shape='circle', d=5.5, howtomove='pts'))
+        CO_TranslateShape(shape='circle', d=5.5, howToMove='pts'))
 
     # outs: max,mode,npatmode,ones,statav2_m
     # outs: statav2_s,statav3_m,statav3_s,statav4_m,statav4_s
@@ -9526,7 +9407,7 @@ class HCTSAOperations(object):
     CO_TranslateShape_circle_15_pts = HCTSAOperation(
         'CO_TranslateShape_circle_15_pts',
         "CO_TranslateShape(y,'circle',1.5,'pts')",
-        CO_TranslateShape(shape='circle', d=1.5, howtomove='pts'))
+        CO_TranslateShape(shape='circle', d=1.5, howToMove='pts'))
 
     # outs: eights,fives,fours,mode,nines
     # outs: npatmode,ones,sevens,sixes,statav2_m
@@ -9536,7 +9417,7 @@ class HCTSAOperations(object):
     CO_TranslateShape_circle_45_pts = HCTSAOperation(
         'CO_TranslateShape_circle_45_pts',
         "CO_TranslateShape(y,'circle',4.5,'pts')",
-        CO_TranslateShape(shape='circle', d=4.5, howtomove='pts'))
+        CO_TranslateShape(shape='circle', d=4.5, howToMove='pts'))
 
     # outs: None
     # tags: autocorrelation,correlation,tau
@@ -10019,59 +9900,59 @@ class HCTSAOperations(object):
     CP_wavelet_varchg_db3_3_10_001 = HCTSAOperation(
         'CP_wavelet_varchg_db3_3_10_001',
         "CP_wavelet_varchg(y,'db3',3,10,0.01)",
-        CP_wavelet_varchg(wname='db3', level=3, maxnchpts=10, mindelay=0.01))
+        CP_wavelet_varchg(wname='db3', level=3, maxnchpts=10, minDelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_db3_2_10_001 = HCTSAOperation(
         'CP_wavelet_varchg_db3_2_10_001',
         "CP_wavelet_varchg(y,'db3',2,10,0.01)",
-        CP_wavelet_varchg(wname='db3', level=2, maxnchpts=10, mindelay=0.01))
+        CP_wavelet_varchg(wname='db3', level=2, maxnchpts=10, minDelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_db3_5_10_001 = HCTSAOperation(
         'CP_wavelet_varchg_db3_5_10_001',
         "CP_wavelet_varchg(y,'db3',5,10,0.01)",
-        CP_wavelet_varchg(wname='db3', level=5, maxnchpts=10, mindelay=0.01))
+        CP_wavelet_varchg(wname='db3', level=5, maxnchpts=10, minDelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_sym2_4_10_001 = HCTSAOperation(
         'CP_wavelet_varchg_sym2_4_10_001',
         "CP_wavelet_varchg(y,'sym2',4,10,0.01)",
-        CP_wavelet_varchg(wname='sym2', level=4, maxnchpts=10, mindelay=0.01))
+        CP_wavelet_varchg(wname='sym2', level=4, maxnchpts=10, minDelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_db3_4_10_001 = HCTSAOperation(
         'CP_wavelet_varchg_db3_4_10_001',
         "CP_wavelet_varchg(y,'db3',4,10,0.01)",
-        CP_wavelet_varchg(wname='db3', level=4, maxnchpts=10, mindelay=0.01))
+        CP_wavelet_varchg(wname='db3', level=4, maxnchpts=10, minDelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_sym2_3_10_001 = HCTSAOperation(
         'CP_wavelet_varchg_sym2_3_10_001',
         "CP_wavelet_varchg(y,'sym2',3,10,0.01)",
-        CP_wavelet_varchg(wname='sym2', level=3, maxnchpts=10, mindelay=0.01))
+        CP_wavelet_varchg(wname='sym2', level=3, maxnchpts=10, minDelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_sym2_5_10_001 = HCTSAOperation(
         'CP_wavelet_varchg_sym2_5_10_001',
         "CP_wavelet_varchg(y,'sym2',5,10,0.01)",
-        CP_wavelet_varchg(wname='sym2', level=5, maxnchpts=10, mindelay=0.01))
+        CP_wavelet_varchg(wname='sym2', level=5, maxnchpts=10, minDelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_sym2_2_10_001 = HCTSAOperation(
         'CP_wavelet_varchg_sym2_2_10_001',
         "CP_wavelet_varchg(y,'sym2',2,10,0.01)",
-        CP_wavelet_varchg(wname='sym2', level=2, maxnchpts=10, mindelay=0.01))
+        CP_wavelet_varchg(wname='sym2', level=2, maxnchpts=10, minDelay=0.01))
 
     # outs: None
-    # tags: burstiness,locdep,raw
+    # tags: locdep,raw
     DN_burstiness = HCTSAOperation(
         'DN_burstiness',
         'DN_Burstiness(x)',
@@ -10141,7 +10022,7 @@ class HCTSAOperations(object):
         DN_CompareKSFit(whatDistn='uni'))
 
     # outs: entropy,max,numpeaks
-    # tags: compare,distribution,entropy,ksdensity,max,numpeaks,raw,spreaddep
+    # tags: compare,distribution,entropy,ksdensity,raw,spreaddep
     DN_Compare_zscorex = HCTSAOperation(
         'DN_Compare_zscorex',
         'DN_Compare_zscore(x)',
@@ -10152,28 +10033,28 @@ class HCTSAOperations(object):
     DN_CustomSkewness_pearson = HCTSAOperation(
         'DN_CustomSkewness_pearson',
         "DN_CustomSkewness(x,'pearson')",
-        DN_CustomSkewness(whichskew='pearson'))
+        DN_CustomSkewness(whatSkew='pearson'))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_CustomSkewness_bowley = HCTSAOperation(
         'DN_CustomSkewness_bowley',
         "DN_CustomSkewness(y,'bowley')",
-        DN_CustomSkewness(whichskew='bowley'))
+        DN_CustomSkewness(whatSkew='bowley'))
 
     # outs: arclength_010,arclength_050,arclength_100,arclength_200,area_005
     # outs: area_010,area_020,area_030,area_040,area_050
     # outs: asym,entropy,max,npeaks,numcross_005
     # outs: numcross_010,numcross_020,numcross_030,numcross_040,numcross_050
     # outs: plsym
-    # tags: arclength,area,areaconst,crossconst,distribution,entropy,ksdensity,numpeaks,peakmax,raw,spreaddep,symmetry
+    # tags: arclength,areaconst,crossconst,distribution,entropy,ksdensity,raw,spreaddep,symmetry
     DN_FitKernelSmoothraw = HCTSAOperation(
         'DN_FitKernelSmoothraw',
         "DN_FitKernelSmooth(x,'numcross',[0.05,0.1,0.2,0.3,0.4,0.5],'area',[0.05,0.1,0.2,0.3,0.4,0.5],'arclength',[0.1,0.5,1,2])",
         DN_FitKernelSmooth(varargin='numcross'))
 
     # outs: entropy,max
-    # tags: distribution,entropy,ksdensity,peakmax
+    # tags: distribution,entropy,ksdensity
     DN_FitKernelSmoothzscore = HCTSAOperation(
         'DN_FitKernelSmoothzscore',
         'DN_FitKernelSmooth(y)',
@@ -10184,17 +10065,17 @@ class HCTSAOperations(object):
     DN_Fit_mle_geometric = HCTSAOperation(
         'DN_Fit_mle_geometric',
         "DN_Fit_mle(y,'geometric')",
-        DN_Fit_mle(fitwhat='geometric'))
+        DN_Fit_mle(fitWhat='geometric'))
 
     # outs: mean,std
     # tags: distribution,fit,location,locdep,raw,spread,spreaddep
     DN_Fit_mle_gaussian = HCTSAOperation(
         'DN_Fit_mle_gaussian',
         "DN_Fit_mle(x,'gaussian')",
-        DN_Fit_mle(fitwhat='gaussian'))
+        DN_Fit_mle(fitWhat='gaussian'))
 
     # outs: None
-    # tags: distribution,locdep,raw,skewness,spreaddep
+    # tags: distribution,locdep,raw,spreaddep
     DN_HighLowMu = HCTSAOperation(
         'DN_HighLowMu',
         'DN_HighLowMu(x)',
@@ -10205,77 +10086,77 @@ class HCTSAOperations(object):
     DN_HistogramMode_10 = HCTSAOperation(
         'DN_HistogramMode_10',
         'DN_HistogramMode(y,10)',
-        DN_HistogramMode(nbins=10))
+        DN_HistogramMode(numBins=10))
 
     # outs: None
     # tags: location
     DN_HistogramMode_5 = HCTSAOperation(
         'DN_HistogramMode_5',
         'DN_HistogramMode(y,5)',
-        DN_HistogramMode(nbins=5))
+        DN_HistogramMode(numBins=5))
 
     # outs: None
     # tags: location
     DN_HistogramMode_20 = HCTSAOperation(
         'DN_HistogramMode_20',
         'DN_HistogramMode(y,20)',
-        DN_HistogramMode(nbins=20))
+        DN_HistogramMode(numBins=20))
 
     # outs: None
     # tags: location,locdep,raw
     DN_median = HCTSAOperation(
         'DN_median',
         "DN_Mean(x,'median')",
-        DN_Mean(meantype='median'))
+        DN_Mean(meanType='median'))
 
     # outs: None
     # tags: location,locdep,raw
     DN_hmean = HCTSAOperation(
         'DN_hmean',
         "DN_Mean(x,'harm')",
-        DN_Mean(meantype='harm'))
+        DN_Mean(meanType='harm'))
 
     # outs: None
     # tags: location,locdep,raw,spreaddep
     DN_rms = HCTSAOperation(
         'DN_rms',
         "DN_Mean(x,'rms')",
-        DN_Mean(meantype='rms'))
+        DN_Mean(meanType='rms'))
 
     # outs: None
     # tags: location,locdep,raw
     DN_mean = HCTSAOperation(
         'DN_mean',
         "DN_Mean(x,'norm')",
-        DN_Mean(meantype='norm'))
+        DN_Mean(meanType='norm'))
 
     # outs: None
     # tags: location,locdep,raw
     DN_midhinge = HCTSAOperation(
         'DN_midhinge',
         "DN_Mean(x,'midhinge')",
-        DN_Mean(meantype='midhinge'))
+        DN_Mean(meanType='midhinge'))
 
     # outs: None
     # tags: location,locdep,raw
     DN_iqm = HCTSAOperation(
         'DN_iqm',
         "DN_Mean(x,'iqm')",
-        DN_Mean(meantype='iqm'))
+        DN_Mean(meanType='iqm'))
 
     # outs: None
     # tags: distribution
     DN_max = HCTSAOperation(
         'DN_max',
         "DN_MinMax(y,'max')",
-        DN_MinMax(minormax='max'))
+        DN_MinMax(minOrMax='max'))
 
     # outs: None
     # tags: misc
     DN_min = HCTSAOperation(
         'DN_min',
         "DN_MinMax(y,'min')",
-        DN_MinMax(minormax='min'))
+        DN_MinMax(minOrMax='min'))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
@@ -10412,10 +10293,24 @@ class HCTSAOperations(object):
     # outs: stdrfladjr2,stdrflb,stdrflr2,stdrflrmse,xcmerr1
     # outs: xcmerrn1
     # tags: distribution,outliers
+    DN_OutlierInclude_n = HCTSAOperation(
+        'DN_OutlierInclude_n',
+        "DN_OutlierInclude(y,'n')",
+        DN_OutlierInclude(thresholdHow='n'))
+
+    # outs: mdrm,mdrmd,mdrstd,mfexpa,mfexpadjr2
+    # outs: mfexpb,mfexpc,mfexpr2,mfexprmse,mrm
+    # outs: mrmd,mrstd,nfexpa,nfexpadjr2,nfexpb
+    # outs: nfexpc,nfexpr2,nfexprmse,nfla,nfladjr2
+    # outs: nflb,nflr2,nflrmse,stdrfexpa,stdrfexpadjr2
+    # outs: stdrfexpb,stdrfexpc,stdrfexpr2,stdrfexprmse,stdrfla
+    # outs: stdrfladjr2,stdrflb,stdrflr2,stdrflrmse,xcmerr1
+    # outs: xcmerrn1
+    # tags: distribution,outliers
     DN_OutlierInclude_abs = HCTSAOperation(
         'DN_OutlierInclude_abs',
         "DN_OutlierInclude(y,'abs')",
-        DN_OutlierInclude(howth='abs'))
+        DN_OutlierInclude(thresholdHow='abs'))
 
     # outs: mdrm,mdrmd,mdrstd,mfexpa,mfexpadjr2
     # outs: mfexpb,mfexpc,mfexpr2,mfexprmse,mrm
@@ -10429,21 +10324,7 @@ class HCTSAOperations(object):
     DN_OutlierInclude_p = HCTSAOperation(
         'DN_OutlierInclude_p',
         "DN_OutlierInclude(y,'p')",
-        DN_OutlierInclude(howth='p'))
-
-    # outs: mdrm,mdrmd,mdrstd,mfexpa,mfexpadjr2
-    # outs: mfexpb,mfexpc,mfexpr2,mfexprmse,mrm
-    # outs: mrmd,mrstd,nfexpa,nfexpadjr2,nfexpb
-    # outs: nfexpc,nfexpr2,nfexprmse,nfla,nfladjr2
-    # outs: nflb,nflr2,nflrmse,stdrfexpa,stdrfexpadjr2
-    # outs: stdrfexpb,stdrfexpc,stdrfexpr2,stdrfexprmse,stdrfla
-    # outs: stdrfladjr2,stdrflb,stdrflr2,stdrflrmse,xcmerr1
-    # outs: xcmerrn1
-    # tags: distribution,outliers
-    DN_OutlierInclude_n = HCTSAOperation(
-        'DN_OutlierInclude_n',
-        "DN_OutlierInclude(y,'n')",
-        DN_OutlierInclude(howth='n'))
+        DN_OutlierInclude(thresholdHow='p'))
 
     # outs: mean,std
     # tags: distribution,outliers,spread
@@ -10471,21 +10352,21 @@ class HCTSAOperations(object):
     DN_ProportionValues_geq0 = HCTSAOperation(
         'DN_ProportionValues_geq0',
         "DN_ProportionValues(x,'geq0')",
-        DN_ProportionValues(propwhat='geq0'))
+        DN_ProportionValues(propWhat='geq0'))
 
     # outs: None
     # tags: locdep,raw
     DN_ProportionValues_positive = HCTSAOperation(
         'DN_ProportionValues_positive',
         "DN_ProportionValues(x,'positive')",
-        DN_ProportionValues(propwhat='positive'))
+        DN_ProportionValues(propWhat='positive'))
 
     # outs: None
     # tags: raw
     DN_ProportionValues_zeros = HCTSAOperation(
         'DN_ProportionValues_zeros',
         "DN_ProportionValues(x,'zeros')",
-        DN_ProportionValues(propwhat='zeros'))
+        DN_ProportionValues(propWhat='zeros'))
 
     # outs: None
     # tags: distribution
@@ -10655,7 +10536,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_absclose_01 = HCTSAOperation(
         'DN_RemovePoints_absclose_01',
         "DN_RemovePoints(y,'absclose',0.1)",
-        DN_RemovePoints(howtorem='absclose', p=0.1))
+        DN_RemovePoints(removeHow='absclose', p=0.1))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10664,7 +10545,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_absclose_05 = HCTSAOperation(
         'DN_RemovePoints_absclose_05',
         "DN_RemovePoints(y,'absclose',0.5)",
-        DN_RemovePoints(howtorem='absclose', p=0.5))
+        DN_RemovePoints(removeHow='absclose', p=0.5))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10673,7 +10554,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_absfar_08 = HCTSAOperation(
         'DN_RemovePoints_absfar_08',
         "DN_RemovePoints(y,'absfar',0.8)",
-        DN_RemovePoints(howtorem='absfar', p=0.8))
+        DN_RemovePoints(removeHow='absfar', p=0.8))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10682,7 +10563,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_absfar_05 = HCTSAOperation(
         'DN_RemovePoints_absfar_05',
         "DN_RemovePoints(y,'absfar',0.5)",
-        DN_RemovePoints(howtorem='absfar', p=0.5))
+        DN_RemovePoints(removeHow='absfar', p=0.5))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10691,7 +10572,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_min_05 = HCTSAOperation(
         'DN_RemovePoints_min_05',
         "DN_RemovePoints(y,'min',0.5)",
-        DN_RemovePoints(howtorem='min', p=0.5))
+        DN_RemovePoints(removeHow='min', p=0.5))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10700,7 +10581,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_absclose_08 = HCTSAOperation(
         'DN_RemovePoints_absclose_08',
         "DN_RemovePoints(y,'absclose',0.8)",
-        DN_RemovePoints(howtorem='absclose', p=0.8))
+        DN_RemovePoints(removeHow='absclose', p=0.8))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10709,7 +10590,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_min_08 = HCTSAOperation(
         'DN_RemovePoints_min_08',
         "DN_RemovePoints(y,'min',0.8)",
-        DN_RemovePoints(howtorem='min', p=0.8))
+        DN_RemovePoints(removeHow='min', p=0.8))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10718,7 +10599,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_max_08 = HCTSAOperation(
         'DN_RemovePoints_max_08',
         "DN_RemovePoints(y,'max',0.8)",
-        DN_RemovePoints(howtorem='max', p=0.8))
+        DN_RemovePoints(removeHow='max', p=0.8))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10727,7 +10608,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_min_01 = HCTSAOperation(
         'DN_RemovePoints_min_01',
         "DN_RemovePoints(y,'min',0.1)",
-        DN_RemovePoints(howtorem='min', p=0.1))
+        DN_RemovePoints(removeHow='min', p=0.1))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10736,7 +10617,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_max_05 = HCTSAOperation(
         'DN_RemovePoints_max_05',
         "DN_RemovePoints(y,'max',0.5)",
-        DN_RemovePoints(howtorem='max', p=0.5))
+        DN_RemovePoints(removeHow='max', p=0.5))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10745,7 +10626,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_max_01 = HCTSAOperation(
         'DN_RemovePoints_max_01',
         "DN_RemovePoints(y,'max',0.1)",
-        DN_RemovePoints(howtorem='max', p=0.1))
+        DN_RemovePoints(removeHow='max', p=0.1))
 
     # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
     # outs: kurtosisrat,mean,median,skewnessrat,std
@@ -10754,7 +10635,7 @@ class HCTSAOperations(object):
     DN_RemovePoints_absfar_01 = HCTSAOperation(
         'DN_RemovePoints_absfar_01',
         "DN_RemovePoints(y,'absfar',0.1)",
-        DN_RemovePoints(howtorem='absfar', p=0.1))
+        DN_RemovePoints(removeHow='absfar', p=0.1))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -10762,11 +10643,11 @@ class HCTSAOperations(object):
     DN_SimpleFit_exp1_ks = HCTSAOperation(
         'DN_SimpleFit_exp1_ks',
         "DN_SimpleFit(y,'exp1',0)",
-        DN_SimpleFit(dmodel='exp1', nbins=0))
+        DN_SimpleFit(dmodel='exp1', numBins=0))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
-    # tags: adjr2,model,r2,resAC1,resAC2,resruns,rmse,sin1
+    # tags: gof,model,sin1
     DN_SimpleFit_sin1 = HCTSAOperation(
         'DN_SimpleFit_sin1',
         "DN_SimpleFit(y,'sin1')",
@@ -10774,7 +10655,7 @@ class HCTSAOperations(object):
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
-    # tags: adjr2,model,r2,resAC1,resAC2,resruns,rmse,sin2
+    # tags: gof,model,sin2
     DN_SimpleFit_sin2 = HCTSAOperation(
         'DN_SimpleFit_sin2',
         "DN_SimpleFit(y,'sin2')",
@@ -10782,7 +10663,7 @@ class HCTSAOperations(object):
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
-    # tags: adjr2,model,r2,resAC1,resAC2,resruns,rmse,sin3
+    # tags: gof,model,sin3
     DN_SimpleFit_sin3 = HCTSAOperation(
         'DN_SimpleFit_sin3',
         "DN_SimpleFit(y,'sin3')",
@@ -10790,7 +10671,7 @@ class HCTSAOperations(object):
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
-    # tags: adjr2,fourier1,model,r2,resAC1,resAC2,resruns,rmse
+    # tags: fourier1,gof,model
     DN_SimpleFit_fourier1 = HCTSAOperation(
         'DN_SimpleFit_fourier1',
         "DN_SimpleFit(y,'fourier1')",
@@ -10802,7 +10683,7 @@ class HCTSAOperations(object):
     DN_SimpleFit_gauss1_h30 = HCTSAOperation(
         'DN_SimpleFit_gauss1_h30',
         "DN_SimpleFit(y,'gauss1',30)",
-        DN_SimpleFit(dmodel='gauss1', nbins=30))
+        DN_SimpleFit(dmodel='gauss1', numBins=30))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -10810,7 +10691,7 @@ class HCTSAOperations(object):
     DN_SimpleFit_gauss2_h10 = HCTSAOperation(
         'DN_SimpleFit_gauss2_h10',
         "DN_SimpleFit(y,'gauss2',10)",
-        DN_SimpleFit(dmodel='gauss2', nbins=10))
+        DN_SimpleFit(dmodel='gauss2', numBins=10))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -10818,7 +10699,7 @@ class HCTSAOperations(object):
     DN_SimpleFit_power1_h10 = HCTSAOperation(
         'DN_SimpleFit_power1_h10',
         "DN_SimpleFit(y,'power1',10)",
-        DN_SimpleFit(dmodel='power1', nbins=10))
+        DN_SimpleFit(dmodel='power1', numBins=10))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -10826,7 +10707,7 @@ class HCTSAOperations(object):
     DN_SimpleFit_exp1_h10 = HCTSAOperation(
         'DN_SimpleFit_exp1_h10',
         "DN_SimpleFit(y,'exp1',10)",
-        DN_SimpleFit(dmodel='exp1', nbins=10))
+        DN_SimpleFit(dmodel='exp1', numBins=10))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -10834,7 +10715,7 @@ class HCTSAOperations(object):
     DN_SimpleFit_power1_ks = HCTSAOperation(
         'DN_SimpleFit_power1_ks',
         "DN_SimpleFit(y,'power1',0)",
-        DN_SimpleFit(dmodel='power1', nbins=0))
+        DN_SimpleFit(dmodel='power1', numBins=0))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -10842,7 +10723,7 @@ class HCTSAOperations(object):
     DN_SimpleFit_gauss1_h10 = HCTSAOperation(
         'DN_SimpleFit_gauss1_h10',
         "DN_SimpleFit(y,'gauss1',10)",
-        DN_SimpleFit(dmodel='gauss1', nbins=10))
+        DN_SimpleFit(dmodel='gauss1', numBins=10))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -10850,7 +10731,7 @@ class HCTSAOperations(object):
     DN_SimpleFit_power1_h30 = HCTSAOperation(
         'DN_SimpleFit_power1_h30',
         "DN_SimpleFit(y,'power1',30)",
-        DN_SimpleFit(dmodel='power1', nbins=30))
+        DN_SimpleFit(dmodel='power1', numBins=30))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -10858,7 +10739,7 @@ class HCTSAOperations(object):
     DN_SimpleFit_gauss2_ks = HCTSAOperation(
         'DN_SimpleFit_gauss2_ks',
         "DN_SimpleFit(y,'gauss2',0)",
-        DN_SimpleFit(dmodel='gauss2', nbins=0))
+        DN_SimpleFit(dmodel='gauss2', numBins=0))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -10866,7 +10747,7 @@ class HCTSAOperations(object):
     DN_SimpleFit_gauss2_h30 = HCTSAOperation(
         'DN_SimpleFit_gauss2_h30',
         "DN_SimpleFit(y,'gauss2',30)",
-        DN_SimpleFit(dmodel='gauss2', nbins=30))
+        DN_SimpleFit(dmodel='gauss2', numBins=30))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -10874,7 +10755,7 @@ class HCTSAOperations(object):
     DN_SimpleFit_exp1_h30 = HCTSAOperation(
         'DN_SimpleFit_exp1_h30',
         "DN_SimpleFit(y,'exp1',30)",
-        DN_SimpleFit(dmodel='exp1', nbins=30))
+        DN_SimpleFit(dmodel='exp1', numBins=30))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -10882,42 +10763,42 @@ class HCTSAOperations(object):
     DN_SimpleFit_gauss1_ks = HCTSAOperation(
         'DN_SimpleFit_gauss1_ks',
         "DN_SimpleFit(y,'gauss1',0)",
-        DN_SimpleFit(dmodel='gauss1', nbins=0))
+        DN_SimpleFit(dmodel='gauss1', numBins=0))
 
     # outs: None
     # tags: raw,spread,spreaddep
     DN_Spread_std = HCTSAOperation(
         'DN_Spread_std',
         "DN_Spread(x,'std')",
-        DN_Spread(SpreadMeasure='std'))
+        DN_Spread(spreadMeasure='std'))
 
     # outs: None
-    # tags: diff,raw,spread,spreaddep
+    # tags: raw,spread,spreaddep
     DN_Spread_std_diff = HCTSAOperation(
         'DN_Spread_std_diff',
         "DN_Spread(diff(x),'std')",
-        DN_Spread(SpreadMeasure='std'))
+        DN_Spread(spreadMeasure='std'))
 
     # outs: None
     # tags: raw,spread,spreaddep
     DN_Spread_iqr = HCTSAOperation(
         'DN_Spread_iqr',
         "DN_Spread(x,'iqr')",
-        DN_Spread(SpreadMeasure='iqr'))
+        DN_Spread(spreadMeasure='iqr'))
 
     # outs: None
     # tags: raw,spread,spreaddep
     DN_Spread_mead = HCTSAOperation(
         'DN_Spread_mead',
         "DN_Spread(x,'mead')",
-        DN_Spread(SpreadMeasure='mead'))
+        DN_Spread(spreadMeasure='mead'))
 
     # outs: None
     # tags: raw,spread,spreaddep
     DN_Spread_mad = HCTSAOperation(
         'DN_Spread_mad',
         "DN_Spread(x,'mad')",
-        DN_Spread(SpreadMeasure='mad'))
+        DN_Spread(spreadMeasure='mad'))
 
     # outs: None
     # tags: location,locdep,raw
@@ -11129,243 +11010,250 @@ class HCTSAOperations(object):
         'EN_ApEn(y,1,0.1)',
         EN_ApEn(mnom=1, rth=0.1))
 
+    # outs: CE1,CE2
+    # tags: complexity,entropy
+    EN_CID = HCTSAOperation(
+        'EN_CID',
+        'EN_CID(y)',
+        EN_CID())
+
     # outs: None
     # tags: entropy
     EN_histen_ks__01 = HCTSAOperation(
         'EN_histen_ks__01',
         "EN_DistributionEntropy(y,'ks',[],0.1)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.1))
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.1))
 
     # outs: None
     # tags: entropy
     EN_histen_ks__02 = HCTSAOperation(
         'EN_histen_ks__02',
         "EN_DistributionEntropy(y,'ks',[],0.2)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.2))
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.2))
 
     # outs: None
     # tags: entropy
     EN_histen_ks__03 = HCTSAOperation(
         'EN_histen_ks__03',
         "EN_DistributionEntropy(y,'ks',[],0.3)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.3))
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.3))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_10_005 = HCTSAOperation(
         'EN_histen_hist_10_005',
         "EN_DistributionEntropy(y,'hist',10,0.05)",
-        EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.05))
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.05))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_10_001 = HCTSAOperation(
         'EN_histen_hist_10_001',
         "EN_DistributionEntropy(y,'hist',10,0.01)",
-        EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.01))
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.01))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_10_002 = HCTSAOperation(
         'EN_histen_hist_10_002',
         "EN_DistributionEntropy(y,'hist',10,0.02)",
-        EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.02))
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.02))
 
     # outs: None
     # tags: entropy
     EN_histen_ks_01_0 = HCTSAOperation(
         'EN_histen_ks_01_0',
         "EN_DistributionEntropy(y,'ks',0.1,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.1, olremp=0))
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.1, olremp=0))
 
     # outs: None
     # tags: entropy
     EN_histen_ks_001_0 = HCTSAOperation(
         'EN_histen_ks_001_0',
         "EN_DistributionEntropy(y,'ks',0.01,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.01, olremp=0))
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.01, olremp=0))
 
     # outs: None
     # tags: entropy
     EN_histen_ks_05_0 = HCTSAOperation(
         'EN_histen_ks_05_0',
         "EN_DistributionEntropy(y,'ks',0.5,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.5, olremp=0))
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.5, olremp=0))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_10_02 = HCTSAOperation(
         'EN_histen_hist_10_02',
         "EN_DistributionEntropy(y,'hist',10,0.2)",
-        EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.2))
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.2))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_10_01 = HCTSAOperation(
         'EN_histen_hist_10_01',
         "EN_DistributionEntropy(y,'hist',10,0.1)",
-        EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.1))
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.1))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_5_0 = HCTSAOperation(
         'EN_histen_hist_5_0',
         "EN_DistributionEntropy(y,'hist',5,0)",
-        EN_DistributionEntropy(HistorKS='hist', nbins=5, olremp=0))
+        EN_DistributionEntropy(histOrKS='hist', numBins=5, olremp=0))
 
     # outs: None
     # tags: entropy
     EN_histen_ks_1_0 = HCTSAOperation(
         'EN_histen_ks_1_0',
         "EN_DistributionEntropy(y,'ks',1,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=1, olremp=0))
+        EN_DistributionEntropy(histOrKS='ks', numBins=1, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks_01_0 = HCTSAOperation(
         'EN_histen_raw_ks_01_0',
         "EN_DistributionEntropy(x,'ks',0.1,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.1, olremp=0))
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.1, olremp=0))
 
     # outs: None
     # tags: entropy
     EN_histen_ks_02_0 = HCTSAOperation(
         'EN_histen_ks_02_0',
         "EN_DistributionEntropy(y,'ks',0.2,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.2, olremp=0))
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.2, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks__01 = HCTSAOperation(
         'EN_histen_raw_ks__01',
         "EN_DistributionEntropy(x,'ks',[],0.1)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.1))
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.1))
 
     # outs: None
     # tags: entropy
     EN_histen_hist_20_0 = HCTSAOperation(
         'EN_histen_hist_20_0',
         "EN_DistributionEntropy(y,'hist',20,0)",
-        EN_DistributionEntropy(HistorKS='hist', nbins=20, olremp=0))
+        EN_DistributionEntropy(histOrKS='hist', numBins=20, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks_1_0 = HCTSAOperation(
         'EN_histen_raw_ks_1_0',
         "EN_DistributionEntropy(x,'ks',1,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=1, olremp=0))
+        EN_DistributionEntropy(histOrKS='ks', numBins=1, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks__03 = HCTSAOperation(
         'EN_histen_raw_ks__03',
         "EN_DistributionEntropy(x,'ks',[],0.3)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.3))
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.3))
 
     # outs: None
     # tags: entropy
     EN_histen_ks_005_0 = HCTSAOperation(
         'EN_histen_ks_005_0',
         "EN_DistributionEntropy(y,'ks',0.05,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.05, olremp=0))
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.05, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks_05_0 = HCTSAOperation(
         'EN_histen_raw_ks_05_0',
         "EN_DistributionEntropy(x,'ks',0.5,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.5, olremp=0))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_hist_10_0 = HCTSAOperation(
-        'EN_histen_hist_10_0',
-        "EN_DistributionEntropy(y,'hist',10,0)",
-        EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0))
-
-    # outs: None
-    # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks_02_0 = HCTSAOperation(
-        'EN_histen_raw_ks_02_0',
-        "EN_DistributionEntropy(x,'ks',0.2,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.2, olremp=0))
-
-    # outs: None
-    # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks__02 = HCTSAOperation(
-        'EN_histen_raw_ks__02',
-        "EN_DistributionEntropy(x,'ks',[],0.2)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.2))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_hist_50_0 = HCTSAOperation(
-        'EN_histen_hist_50_0',
-        "EN_DistributionEntropy(y,'hist',50,0)",
-        EN_DistributionEntropy(HistorKS='hist', nbins=50, olremp=0))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_hist_10_03 = HCTSAOperation(
-        'EN_histen_hist_10_03',
-        "EN_DistributionEntropy(y,'hist',10,0.3)",
-        EN_DistributionEntropy(HistorKS='hist', nbins=10, olremp=0.3))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_ks__001 = HCTSAOperation(
-        'EN_histen_ks__001',
-        "EN_DistributionEntropy(y,'ks',[],0.01)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.01))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_ks__002 = HCTSAOperation(
-        'EN_histen_ks__002',
-        "EN_DistributionEntropy(y,'ks',[],0.02)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.02))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_ks__005 = HCTSAOperation(
-        'EN_histen_ks__005',
-        "EN_DistributionEntropy(y,'ks',[],0.05)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.05))
-
-    # outs: None
-    # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks__005 = HCTSAOperation(
-        'EN_histen_raw_ks__005',
-        "EN_DistributionEntropy(x,'ks',[],0.05)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.05))
-
-    # outs: None
-    # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks__002 = HCTSAOperation(
-        'EN_histen_raw_ks__002',
-        "EN_DistributionEntropy(x,'ks',[],0.02)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.02))
-
-    # outs: None
-    # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks__001 = HCTSAOperation(
-        'EN_histen_raw_ks__001',
-        "EN_DistributionEntropy(x,'ks',[],0.01)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=(), olremp=0.01))
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.5, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks_001_0 = HCTSAOperation(
         'EN_histen_raw_ks_001_0',
         "EN_DistributionEntropy(x,'ks',0.01,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.01, olremp=0))
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.01, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_histen_hist_10_0 = HCTSAOperation(
+        'EN_histen_hist_10_0',
+        "EN_DistributionEntropy(y,'hist',10,0)",
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0))
+
+    # outs: None
+    # tags: entropy,raw,spreaddep
+    EN_histen_raw_ks_02_0 = HCTSAOperation(
+        'EN_histen_raw_ks_02_0',
+        "EN_DistributionEntropy(x,'ks',0.2,0)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.2, olremp=0))
+
+    # outs: None
+    # tags: entropy,raw,spreaddep
+    EN_histen_raw_ks__02 = HCTSAOperation(
+        'EN_histen_raw_ks__02',
+        "EN_DistributionEntropy(x,'ks',[],0.2)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.2))
+
+    # outs: None
+    # tags: entropy
+    EN_histen_hist_50_0 = HCTSAOperation(
+        'EN_histen_hist_50_0',
+        "EN_DistributionEntropy(y,'hist',50,0)",
+        EN_DistributionEntropy(histOrKS='hist', numBins=50, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_histen_hist_10_03 = HCTSAOperation(
+        'EN_histen_hist_10_03',
+        "EN_DistributionEntropy(y,'hist',10,0.3)",
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.3))
+
+    # outs: None
+    # tags: entropy
+    EN_histen_ks__001 = HCTSAOperation(
+        'EN_histen_ks__001',
+        "EN_DistributionEntropy(y,'ks',[],0.01)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.01))
+
+    # outs: None
+    # tags: entropy
+    EN_histen_ks__002 = HCTSAOperation(
+        'EN_histen_ks__002',
+        "EN_DistributionEntropy(y,'ks',[],0.02)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.02))
+
+    # outs: None
+    # tags: entropy
+    EN_histen_ks__005 = HCTSAOperation(
+        'EN_histen_ks__005',
+        "EN_DistributionEntropy(y,'ks',[],0.05)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.05))
+
+    # outs: None
+    # tags: entropy,raw,spreaddep
+    EN_histen_raw_ks__005 = HCTSAOperation(
+        'EN_histen_raw_ks__005',
+        "EN_DistributionEntropy(x,'ks',[],0.05)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.05))
+
+    # outs: None
+    # tags: entropy,raw,spreaddep
+    EN_histen_raw_ks__002 = HCTSAOperation(
+        'EN_histen_raw_ks__002',
+        "EN_DistributionEntropy(x,'ks',[],0.02)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.02))
+
+    # outs: None
+    # tags: entropy,raw,spreaddep
+    EN_histen_raw_ks__001 = HCTSAOperation(
+        'EN_histen_raw_ks__001',
+        "EN_DistributionEntropy(x,'ks',[],0.01)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.01))
 
     # outs: None
     # tags: entropy,raw,spreaddep
     EN_histen_raw_ks_005_0 = HCTSAOperation(
         'EN_histen_raw_ks_005_0',
         "EN_DistributionEntropy(x,'ks',0.05,0)",
-        EN_DistributionEntropy(HistorKS='ks', nbins=0.05, olremp=0))
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.05, olremp=0))
 
     # outs: None
     # tags: MichaelSmall,entropy,mex,shannon
@@ -11430,33 +11318,89 @@ class HCTSAOperations(object):
         'EN_MS_shannon(y,3,1:10)',
         EN_MS_shannon(nbin=3, depth=MatlabSequence('1:10')))
 
-    # outs: None
+    # outs: normPermEn,permEn,permEnLE
     # tags: entropy
-    EN_PermEn_3 = HCTSAOperation(
-        'EN_PermEn_3',
-        'EN_PermEn(y,3)',
-        EN_PermEn(ordd=3))
+    EN_PermEn_3_ac = HCTSAOperation(
+        'EN_PermEn_3_ac',
+        "EN_PermEn(y,3,'ac')",
+        EN_PermEn(m=3, tau='ac'))
 
-    # outs: None
+    # outs: normPermEn,permEn,permEnLE
     # tags: entropy
-    EN_PermEn_5 = HCTSAOperation(
-        'EN_PermEn_5',
-        'EN_PermEn(y,5)',
-        EN_PermEn(ordd=5))
+    EN_PermEn_4_ac = HCTSAOperation(
+        'EN_PermEn_4_ac',
+        "EN_PermEn(y,4,'ac')",
+        EN_PermEn(m=4, tau='ac'))
 
-    # outs: None
+    # outs: normPermEn,permEn,permEnLE
     # tags: entropy
-    EN_PermEn_2 = HCTSAOperation(
-        'EN_PermEn_2',
-        'EN_PermEn(y,2)',
-        EN_PermEn(ordd=2))
+    EN_PermEn_4_2 = HCTSAOperation(
+        'EN_PermEn_4_2',
+        'EN_PermEn(y,4,2)',
+        EN_PermEn(m=4, tau=2))
 
-    # outs: None
+    # outs: normPermEn,permEn,permEnLE
     # tags: entropy
-    EN_PermEn_4 = HCTSAOperation(
-        'EN_PermEn_4',
-        'EN_PermEn(y,4)',
-        EN_PermEn(ordd=4))
+    EN_PermEn_4_1 = HCTSAOperation(
+        'EN_PermEn_4_1',
+        'EN_PermEn(y,4,1)',
+        EN_PermEn(m=4, tau=1))
+
+    # outs: normPermEn,permEn,permEnLE
+    # tags: entropy
+    EN_PermEn_2_1 = HCTSAOperation(
+        'EN_PermEn_2_1',
+        'EN_PermEn(y,2,1)',
+        EN_PermEn(m=2, tau=1))
+
+    # outs: normPermEn,permEn,permEnLE
+    # tags: entropy
+    EN_PermEn_2_2 = HCTSAOperation(
+        'EN_PermEn_2_2',
+        'EN_PermEn(y,2,2)',
+        EN_PermEn(m=2, tau=2))
+
+    # outs: normPermEn,permEn,permEnLE
+    # tags: entropy
+    EN_PermEn_3_1 = HCTSAOperation(
+        'EN_PermEn_3_1',
+        'EN_PermEn(y,3,1)',
+        EN_PermEn(m=3, tau=1))
+
+    # outs: normPermEn,permEn,permEnLE
+    # tags: entropy
+    EN_PermEn_3_2 = HCTSAOperation(
+        'EN_PermEn_3_2',
+        'EN_PermEn(y,3,2)',
+        EN_PermEn(m=3, tau=2))
+
+    # outs: normPermEn,permEn,permEnLE
+    # tags: entropy
+    EN_PermEn_5_2 = HCTSAOperation(
+        'EN_PermEn_5_2',
+        'EN_PermEn(y,5,2)',
+        EN_PermEn(m=5, tau=2))
+
+    # outs: normPermEn,permEn,permEnLE
+    # tags: entropy
+    EN_PermEn_5_1 = HCTSAOperation(
+        'EN_PermEn_5_1',
+        'EN_PermEn(y,5,1)',
+        EN_PermEn(m=5, tau=1))
+
+    # outs: normPermEn,permEn,permEnLE
+    # tags: entropy
+    EN_PermEn_2_ac = HCTSAOperation(
+        'EN_PermEn_2_ac',
+        "EN_PermEn(y,2,'ac')",
+        EN_PermEn(m=2, tau='ac'))
+
+    # outs: normPermEn,permEn,permEnLE
+    # tags: entropy
+    EN_PermEn_5_ac = HCTSAOperation(
+        'EN_PermEn_5_ac',
+        "EN_PermEn(y,5,'ac')",
+        EN_PermEn(m=5, tau='ac'))
 
     # outs: None
     # tags: entropy
@@ -11502,10 +11446,10 @@ class HCTSAOperations(object):
     # outs: xc1hp,xcn1diff,xcn1fexpa,xcn1fexpadjr2,xcn1fexpb
     # outs: xcn1fexpr2,xcn1fexprmse,xcn1hp
     # tags: entropy,lengthdep,slow
-    EN_Randomize_dyndist = HCTSAOperation(
-        'EN_Randomize_dyndist',
-        "EN_Randomize(y,'dyndist','default')",
-        EN_Randomize(randomizeHow='dyndist', randomSeed='default'))
+    EN_Randomize_permute = HCTSAOperation(
+        'EN_Randomize_permute',
+        "EN_Randomize(y,'permute','default')",
+        EN_Randomize(randomizeHow='permute', randomSeed='default'))
 
     # outs: ac1diff,ac1fexpa,ac1fexpadjr2,ac1fexpb,ac1fexpr2
     # outs: ac1fexprmse,ac1hp,ac2diff,ac2fexpa,ac2fexpadjr2
@@ -11523,10 +11467,10 @@ class HCTSAOperations(object):
     # outs: xc1hp,xcn1diff,xcn1fexpa,xcn1fexpadjr2,xcn1fexpb
     # outs: xcn1fexpr2,xcn1fexprmse,xcn1hp
     # tags: entropy,lengthdep,slow
-    EN_Randomize_permute = HCTSAOperation(
-        'EN_Randomize_permute',
-        "EN_Randomize(y,'permute','default')",
-        EN_Randomize(randomizeHow='permute', randomSeed='default'))
+    EN_Randomize_dyndist = HCTSAOperation(
+        'EN_Randomize_dyndist',
+        "EN_Randomize(y,'dyndist','default')",
+        EN_Randomize(randomizeHow='dyndist', randomSeed='default'))
 
     # outs: meanchp,meanchsampen,p1,p2,p3
     # outs: p4,sampen1,sampen2,sampen3,sampen4
@@ -11585,21 +11529,35 @@ class HCTSAOperations(object):
         EN_SampEn(M=4, r=0.15))
 
     # outs: None
-    # tags: entropy,shannonpdf
+    # tags: entropy
     EN_Shannonpdf = HCTSAOperation(
         'EN_Shannonpdf',
         'EN_Shannonpdf(y)',
         EN_Shannonpdf())
 
+    # outs: H,H_norm,maxRPD,meanNonZero,propNonZero
+    # tags: entropy
+    EN_rpde_3_ac = HCTSAOperation(
+        'EN_rpde_3_ac',
+        "EN_rpde(y,3,'ac')",
+        EN_rpde(m=3, tau='ac'))
+
+    # outs: H,H_norm,maxRPD,meanNonZero,propNonZero
+    # tags: entropy
+    EN_rpde_3_1 = HCTSAOperation(
+        'EN_rpde_3_1',
+        'EN_rpde(y,3,1)',
+        EN_rpde(m=3, tau=1))
+
     # outs: None
-    # tags: entropy,threshold
+    # tags: entropy
     EN_wentropy_threshent01 = HCTSAOperation(
         'EN_wentropy_threshent01',
         "EN_wentropy(y,'threshold',0.1)",
         EN_wentropy(whaten='threshold', p=0.1))
 
     # outs: None
-    # tags: entropy,threshold
+    # tags: entropy
     EN_wentropy_threshent05 = HCTSAOperation(
         'EN_wentropy_threshent05',
         "EN_wentropy(y,'threshold',0.5)",
@@ -11613,77 +11571,77 @@ class HCTSAOperations(object):
         EN_wentropy(whaten='shannon'))
 
     # outs: None
-    # tags: entropy,sure
+    # tags: entropy
     EN_wentropy_sureent15 = HCTSAOperation(
         'EN_wentropy_sureent15',
         "EN_wentropy(y,'sure',1.5)",
         EN_wentropy(whaten='sure', p=1.5))
 
     # outs: None
-    # tags: entropy,threshold
+    # tags: entropy
     EN_wentropy_threshent15 = HCTSAOperation(
         'EN_wentropy_threshent15',
         "EN_wentropy(y,'threshold',1.5)",
         EN_wentropy(whaten='threshold', p=1.5))
 
     # outs: None
-    # tags: entropy,logenergy
+    # tags: entropy
     EN_wentropy_logenent = HCTSAOperation(
         'EN_wentropy_logenent',
         "EN_wentropy(y,'logenergy')",
         EN_wentropy(whaten='logenergy'))
 
     # outs: None
-    # tags: entropy,threshold
+    # tags: entropy
     EN_wentropy_threshent02 = HCTSAOperation(
         'EN_wentropy_threshent02',
         "EN_wentropy(y,'threshold',0.2)",
         EN_wentropy(whaten='threshold', p=0.2))
 
     # outs: None
-    # tags: entropy,threshold
+    # tags: entropy
     EN_wentropy_threshent1 = HCTSAOperation(
         'EN_wentropy_threshent1',
         "EN_wentropy(y,'threshold',1)",
         EN_wentropy(whaten='threshold', p=1))
 
     # outs: None
-    # tags: entropy,threshold
+    # tags: entropy
     EN_wentropy_threshent2 = HCTSAOperation(
         'EN_wentropy_threshent2',
         "EN_wentropy(y,'threshold',2)",
         EN_wentropy(whaten='threshold', p=2))
 
     # outs: None
-    # tags: entropy,sure
+    # tags: entropy
     EN_wentropy_sureent2 = HCTSAOperation(
         'EN_wentropy_sureent2',
         "EN_wentropy(y,'sure',2)",
         EN_wentropy(whaten='sure', p=2))
 
     # outs: None
-    # tags: entropy,sure
+    # tags: entropy
     EN_wentropy_sureent1 = HCTSAOperation(
         'EN_wentropy_sureent1',
         "EN_wentropy(y,'sure',1)",
         EN_wentropy(whaten='sure', p=1))
 
     # outs: None
-    # tags: entropy,sure
+    # tags: entropy
     EN_wentropy_sureent05 = HCTSAOperation(
         'EN_wentropy_sureent05',
         "EN_wentropy(y,'sure',0.5)",
         EN_wentropy(whaten='sure', p=0.5))
 
     # outs: None
-    # tags: entropy,sure
+    # tags: entropy
     EN_wentropy_sureent01 = HCTSAOperation(
         'EN_wentropy_sureent01',
         "EN_wentropy(y,'sure',0.1)",
         EN_wentropy(whaten='sure', p=0.1))
 
     # outs: None
-    # tags: entropy,sure
+    # tags: entropy
     EN_wentropy_sureent02 = HCTSAOperation(
         'EN_wentropy_sureent02',
         "EN_wentropy(y,'sure',0.2)",
@@ -12117,6 +12075,15 @@ class HCTSAOperations(object):
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
     # tags: information,symbolic
+    FC_Surprise_dist_100_5_udq_500 = HCTSAOperation(
+        'FC_Surprise_dist_100_5_udq_500',
+        "FC_Surprise(y,'dist',100,5,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='dist', memory=100, numGroups=5, cgmeth='updown', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
     FC_Surprise_dist_100_5_q_500 = HCTSAOperation(
         'FC_Surprise_dist_100_5_q_500',
         "FC_Surprise(y,'dist',100,5,'quantile',500,'default')",
@@ -12162,15 +12129,6 @@ class HCTSAOperations(object):
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
     # tags: information,symbolic
-    FC_Surprise_dist_100_5_udq_500 = HCTSAOperation(
-        'FC_Surprise_dist_100_5_udq_500',
-        "FC_Surprise(y,'dist',100,5,'updown',500,'default')",
-    
-                       FC_Surprise(whatPrior='dist', memory=100, numGroups=5, cgmeth='updown', numIters=500, randomSeed='default'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,symbolic
     FC_Surprise_dist_5_tau_m2quad_500 = HCTSAOperation(
         'FC_Surprise_dist_5_tau_m2quad_500',
         "FC_Surprise(y,'dist',5,'tau','embed2quadrants',500,'default')",
@@ -12182,402 +12140,402 @@ class HCTSAOperations(object):
     HT_DistributionTest_chi2rayl50 = HCTSAOperation(
         'HT_DistributionTest_chi2rayl50',
         "HT_DistributionTest(x,'chi2gof','rayleigh',50)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='rayleigh', nbins=50))
+        HT_DistributionTest(theTest='chi2gof', theDistn='rayleigh', numBins=50))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,raw
     HT_DistributionTest_ks_beta = HCTSAOperation(
         'HT_DistributionTest_ks_beta',
         "HT_DistributionTest(x,'ks','beta')",
-        HT_DistributionTest(thetest='ks', thedistn='beta'))
+        HT_DistributionTest(theTest='ks', theDistn='beta'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2rayl100 = HCTSAOperation(
         'HT_DistributionTest_chi2rayl100',
         "HT_DistributionTest(x,'chi2gof','rayleigh',100)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='rayleigh', nbins=100))
+        HT_DistributionTest(theTest='chi2gof', theDistn='rayleigh', numBins=100))
 
     # outs: None
     # tags: distribution,hypothesistest,lillie,raw
     HT_DistributionTest_lillie_norm = HCTSAOperation(
         'HT_DistributionTest_lillie_norm',
         "HT_DistributionTest(x,'lillie','norm')",
-        HT_DistributionTest(thetest='lillie', thedistn='norm'))
+        HT_DistributionTest(theTest='lillie', theDistn='norm'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2logn5 = HCTSAOperation(
         'HT_DistributionTest_chi2logn5',
         "HT_DistributionTest(x,'chi2gof','logn',5)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='logn', nbins=5))
+        HT_DistributionTest(theTest='chi2gof', theDistn='logn', numBins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta25 = HCTSAOperation(
         'HT_DistributionTest_chi2beta25',
         "HT_DistributionTest(x,'chi2gof','beta',25)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='beta', nbins=25))
+        HT_DistributionTest(theTest='chi2gof', theDistn='beta', numBins=25))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2wbl100 = HCTSAOperation(
         'HT_DistributionTest_chi2wbl100',
         "HT_DistributionTest(x,'chi2gof','wbl',100)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='wbl', nbins=100))
+        HT_DistributionTest(theTest='chi2gof', theDistn='wbl', numBins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2rayl25 = HCTSAOperation(
         'HT_DistributionTest_chi2rayl25',
         "HT_DistributionTest(x,'chi2gof','rayleigh',25)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='rayleigh', nbins=25))
+        HT_DistributionTest(theTest='chi2gof', theDistn='rayleigh', numBins=25))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,locdep,raw
     HT_DistributionTest_ks_logn = HCTSAOperation(
         'HT_DistributionTest_ks_logn',
         "HT_DistributionTest(x,'ks','logn')",
-        HT_DistributionTest(thetest='ks', thedistn='logn'))
+        HT_DistributionTest(theTest='ks', theDistn='logn'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2exp10 = HCTSAOperation(
         'HT_DistributionTest_chi2exp10',
         "HT_DistributionTest(x,'chi2gof','exp',10)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='exp', nbins=10))
+        HT_DistributionTest(theTest='chi2gof', theDistn='exp', numBins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2uni100 = HCTSAOperation(
         'HT_DistributionTest_chi2uni100',
         "HT_DistributionTest(x,'chi2gof','uni',100)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='uni', nbins=100))
+        HT_DistributionTest(theTest='chi2gof', theDistn='uni', numBins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2wbl5 = HCTSAOperation(
         'HT_DistributionTest_chi2wbl5',
         "HT_DistributionTest(x,'chi2gof','wbl',5)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='wbl', nbins=5))
+        HT_DistributionTest(theTest='chi2gof', theDistn='wbl', numBins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2logn50 = HCTSAOperation(
         'HT_DistributionTest_chi2logn50',
         "HT_DistributionTest(x,'chi2gof','logn',50)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='logn', nbins=50))
+        HT_DistributionTest(theTest='chi2gof', theDistn='logn', numBins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta10 = HCTSAOperation(
         'HT_DistributionTest_chi2beta10',
         "HT_DistributionTest(x,'chi2gof','beta',10)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='beta', nbins=10))
+        HT_DistributionTest(theTest='chi2gof', theDistn='beta', numBins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2uni50 = HCTSAOperation(
         'HT_DistributionTest_chi2uni50',
         "HT_DistributionTest(x,'chi2gof','uni',50)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='uni', nbins=50))
+        HT_DistributionTest(theTest='chi2gof', theDistn='uni', numBins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2gam10 = HCTSAOperation(
         'HT_DistributionTest_chi2gam10',
         "HT_DistributionTest(x,'chi2gof','gamma',10)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='gamma', nbins=10))
+        HT_DistributionTest(theTest='chi2gof', theDistn='gamma', numBins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2ev50 = HCTSAOperation(
         'HT_DistributionTest_chi2ev50',
         "HT_DistributionTest(x,'chi2gof','ev',50)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='ev', nbins=50))
+        HT_DistributionTest(theTest='chi2gof', theDistn='ev', numBins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2wbl25 = HCTSAOperation(
         'HT_DistributionTest_chi2wbl25',
         "HT_DistributionTest(x,'chi2gof','wbl',25)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='wbl', nbins=25))
+        HT_DistributionTest(theTest='chi2gof', theDistn='wbl', numBins=25))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,raw
     HT_DistributionTest_ks_norm = HCTSAOperation(
         'HT_DistributionTest_ks_norm',
         "HT_DistributionTest(x,'ks','norm')",
-        HT_DistributionTest(thetest='ks', thedistn='norm'))
+        HT_DistributionTest(theTest='ks', theDistn='norm'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta5 = HCTSAOperation(
         'HT_DistributionTest_chi2beta5',
         "HT_DistributionTest(x,'chi2gof','beta',5)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='beta', nbins=5))
+        HT_DistributionTest(theTest='chi2gof', theDistn='beta', numBins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2logn100 = HCTSAOperation(
         'HT_DistributionTest_chi2logn100',
         "HT_DistributionTest(x,'chi2gof','logn',100)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='logn', nbins=100))
+        HT_DistributionTest(theTest='chi2gof', theDistn='logn', numBins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2uni10 = HCTSAOperation(
         'HT_DistributionTest_chi2uni10',
         "HT_DistributionTest(x,'chi2gof','uni',10)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='uni', nbins=10))
+        HT_DistributionTest(theTest='chi2gof', theDistn='uni', numBins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2gam25 = HCTSAOperation(
         'HT_DistributionTest_chi2gam25',
         "HT_DistributionTest(x,'chi2gof','gamma',25)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='gamma', nbins=25))
+        HT_DistributionTest(theTest='chi2gof', theDistn='gamma', numBins=25))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,raw
     HT_DistributionTest_ks_ev = HCTSAOperation(
         'HT_DistributionTest_ks_ev',
         "HT_DistributionTest(x,'ks','ev')",
-        HT_DistributionTest(thetest='ks', thedistn='ev'))
+        HT_DistributionTest(theTest='ks', theDistn='ev'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2ev5 = HCTSAOperation(
         'HT_DistributionTest_chi2ev5',
         "HT_DistributionTest(x,'chi2gof','ev',5)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='ev', nbins=5))
+        HT_DistributionTest(theTest='chi2gof', theDistn='ev', numBins=5))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,raw
     HT_DistributionTest_ks_uni = HCTSAOperation(
         'HT_DistributionTest_ks_uni',
         "HT_DistributionTest(x,'ks','uni')",
-        HT_DistributionTest(thetest='ks', thedistn='uni'))
+        HT_DistributionTest(theTest='ks', theDistn='uni'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2gam100 = HCTSAOperation(
         'HT_DistributionTest_chi2gam100',
         "HT_DistributionTest(x,'chi2gof','gamma',100)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='gamma', nbins=100))
+        HT_DistributionTest(theTest='chi2gof', theDistn='gamma', numBins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2norm50 = HCTSAOperation(
         'HT_DistributionTest_chi2norm50',
         "HT_DistributionTest(x,'chi2gof','norm',50)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='norm', nbins=50))
+        HT_DistributionTest(theTest='chi2gof', theDistn='norm', numBins=50))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,locdep,raw
     HT_DistributionTest_ks_wbl = HCTSAOperation(
         'HT_DistributionTest_ks_wbl',
         "HT_DistributionTest(x,'ks','wbl')",
-        HT_DistributionTest(thetest='ks', thedistn='wbl'))
+        HT_DistributionTest(theTest='ks', theDistn='wbl'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2uni25 = HCTSAOperation(
         'HT_DistributionTest_chi2uni25',
         "HT_DistributionTest(x,'chi2gof','uni',25)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='uni', nbins=25))
+        HT_DistributionTest(theTest='chi2gof', theDistn='uni', numBins=25))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2exp25 = HCTSAOperation(
         'HT_DistributionTest_chi2exp25',
         "HT_DistributionTest(x,'chi2gof','exp',25)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='exp', nbins=25))
+        HT_DistributionTest(theTest='chi2gof', theDistn='exp', numBins=25))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2rayl5 = HCTSAOperation(
         'HT_DistributionTest_chi2rayl5',
         "HT_DistributionTest(x,'chi2gof','rayleigh',5)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='rayleigh', nbins=5))
+        HT_DistributionTest(theTest='chi2gof', theDistn='rayleigh', numBins=5))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,locdep,raw
     HT_DistributionTest_ks_gam = HCTSAOperation(
         'HT_DistributionTest_ks_gam',
         "HT_DistributionTest(x,'ks','gamma')",
-        HT_DistributionTest(thetest='ks', thedistn='gamma'))
+        HT_DistributionTest(theTest='ks', theDistn='gamma'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2ev25 = HCTSAOperation(
         'HT_DistributionTest_chi2ev25',
         "HT_DistributionTest(x,'chi2gof','ev',25)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='ev', nbins=25))
+        HT_DistributionTest(theTest='chi2gof', theDistn='ev', numBins=25))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2wbl10 = HCTSAOperation(
         'HT_DistributionTest_chi2wbl10',
         "HT_DistributionTest(x,'chi2gof','wbl',10)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='wbl', nbins=10))
+        HT_DistributionTest(theTest='chi2gof', theDistn='wbl', numBins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2gam5 = HCTSAOperation(
         'HT_DistributionTest_chi2gam5',
         "HT_DistributionTest(x,'chi2gof','gamma',5)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='gamma', nbins=5))
+        HT_DistributionTest(theTest='chi2gof', theDistn='gamma', numBins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta50 = HCTSAOperation(
         'HT_DistributionTest_chi2beta50',
         "HT_DistributionTest(x,'chi2gof','beta',50)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='beta', nbins=50))
+        HT_DistributionTest(theTest='chi2gof', theDistn='beta', numBins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2rayl10 = HCTSAOperation(
         'HT_DistributionTest_chi2rayl10',
         "HT_DistributionTest(x,'chi2gof','rayleigh',10)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='rayleigh', nbins=10))
+        HT_DistributionTest(theTest='chi2gof', theDistn='rayleigh', numBins=10))
 
     # outs: None
     # tags: distribution,hypothesistest,lillie,raw
     HT_DistributionTest_lillie_ev = HCTSAOperation(
         'HT_DistributionTest_lillie_ev',
         "HT_DistributionTest(x,'lillie','ev')",
-        HT_DistributionTest(thetest='lillie', thedistn='ev'))
+        HT_DistributionTest(theTest='lillie', theDistn='ev'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2exp100 = HCTSAOperation(
         'HT_DistributionTest_chi2exp100',
         "HT_DistributionTest(x,'chi2gof','exp',100)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='exp', nbins=100))
+        HT_DistributionTest(theTest='chi2gof', theDistn='exp', numBins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2norm10 = HCTSAOperation(
         'HT_DistributionTest_chi2norm10',
         "HT_DistributionTest(x,'chi2gof','norm',10)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='norm', nbins=10))
+        HT_DistributionTest(theTest='chi2gof', theDistn='norm', numBins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2exp50 = HCTSAOperation(
         'HT_DistributionTest_chi2exp50',
         "HT_DistributionTest(x,'chi2gof','exp',50)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='exp', nbins=50))
+        HT_DistributionTest(theTest='chi2gof', theDistn='exp', numBins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2norm5 = HCTSAOperation(
         'HT_DistributionTest_chi2norm5',
         "HT_DistributionTest(x,'chi2gof','norm',5)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='norm', nbins=5))
+        HT_DistributionTest(theTest='chi2gof', theDistn='norm', numBins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2wbl50 = HCTSAOperation(
         'HT_DistributionTest_chi2wbl50',
         "HT_DistributionTest(x,'chi2gof','wbl',50)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='wbl', nbins=50))
+        HT_DistributionTest(theTest='chi2gof', theDistn='wbl', numBins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2logn25 = HCTSAOperation(
         'HT_DistributionTest_chi2logn25',
         "HT_DistributionTest(x,'chi2gof','logn',25)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='logn', nbins=25))
+        HT_DistributionTest(theTest='chi2gof', theDistn='logn', numBins=25))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2ev10 = HCTSAOperation(
         'HT_DistributionTest_chi2ev10',
         "HT_DistributionTest(x,'chi2gof','ev',10)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='ev', nbins=10))
+        HT_DistributionTest(theTest='chi2gof', theDistn='ev', numBins=10))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2gam50 = HCTSAOperation(
         'HT_DistributionTest_chi2gam50',
         "HT_DistributionTest(x,'chi2gof','gamma',50)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='gamma', nbins=50))
+        HT_DistributionTest(theTest='chi2gof', theDistn='gamma', numBins=50))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2exp5 = HCTSAOperation(
         'HT_DistributionTest_chi2exp5',
         "HT_DistributionTest(x,'chi2gof','exp',5)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='exp', nbins=5))
+        HT_DistributionTest(theTest='chi2gof', theDistn='exp', numBins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta100 = HCTSAOperation(
         'HT_DistributionTest_chi2beta100',
         "HT_DistributionTest(x,'chi2gof','beta',100)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='beta', nbins=100))
+        HT_DistributionTest(theTest='chi2gof', theDistn='beta', numBins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2norm25 = HCTSAOperation(
         'HT_DistributionTest_chi2norm25',
         "HT_DistributionTest(x,'chi2gof','norm',25)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='norm', nbins=25))
+        HT_DistributionTest(theTest='chi2gof', theDistn='norm', numBins=25))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,locdep,raw
     HT_DistributionTest_ks_rayl = HCTSAOperation(
         'HT_DistributionTest_ks_rayl',
         "HT_DistributionTest(x,'ks','rayleigh')",
-        HT_DistributionTest(thetest='ks', thedistn='rayleigh'))
+        HT_DistributionTest(theTest='ks', theDistn='rayleigh'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2ev100 = HCTSAOperation(
         'HT_DistributionTest_chi2ev100',
         "HT_DistributionTest(x,'chi2gof','ev',100)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='ev', nbins=100))
+        HT_DistributionTest(theTest='chi2gof', theDistn='ev', numBins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2uni5 = HCTSAOperation(
         'HT_DistributionTest_chi2uni5',
         "HT_DistributionTest(x,'chi2gof','uni',5)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='uni', nbins=5))
+        HT_DistributionTest(theTest='chi2gof', theDistn='uni', numBins=5))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2norm100 = HCTSAOperation(
         'HT_DistributionTest_chi2norm100',
         "HT_DistributionTest(x,'chi2gof','norm',100)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='norm', nbins=100))
+        HT_DistributionTest(theTest='chi2gof', theDistn='norm', numBins=100))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2logn10 = HCTSAOperation(
         'HT_DistributionTest_chi2logn10',
         "HT_DistributionTest(x,'chi2gof','logn',10)",
-        HT_DistributionTest(thetest='chi2gof', thedistn='logn', nbins=10))
+        HT_DistributionTest(theTest='chi2gof', theDistn='logn', numBins=10))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,locdep,raw
     HT_DistributionTest_ks_exp = HCTSAOperation(
         'HT_DistributionTest_ks_exp',
         "HT_DistributionTest(x,'ks','exp')",
-        HT_DistributionTest(thetest='ks', thedistn='exp'))
+        HT_DistributionTest(theTest='ks', theDistn='exp'))
 
     # outs: None
     # tags: distribution,hypothesistest,lillie,locdep,raw
     HT_DistributionTest_lillie_exp = HCTSAOperation(
         'HT_DistributionTest_lillie_exp',
         "HT_DistributionTest(x,'lillie','exp')",
-        HT_DistributionTest(thetest='lillie', thedistn='exp'))
+        HT_DistributionTest(theTest='lillie', theDistn='exp'))
 
     # outs: None
-    # tags: hypothesistest,randomness,raw,runstest
+    # tags: hypothesistest,randomness,raw
     HT_HypothesisTest_runstestraw = HCTSAOperation(
         'HT_HypothesisTest_runstestraw',
         "HT_HypothesisTest(x,'runstest')",
@@ -12591,42 +12549,42 @@ class HCTSAOperations(object):
         HT_HypothesisTest(theTest='signtest'))
 
     # outs: None
-    # tags: hypothesistest,ztest
+    # tags: hypothesistest
     HT_HypothesisTest_ztest = HCTSAOperation(
         'HT_HypothesisTest_ztest',
         "HT_HypothesisTest(y,'ztest')",
         HT_HypothesisTest(theTest='ztest'))
 
     # outs: None
-    # tags: hypothesistest,jbtest,raw
+    # tags: hypothesistest,raw
     HT_HypothesisTest_jbtest = HCTSAOperation(
         'HT_HypothesisTest_jbtest',
         "HT_HypothesisTest(x,'jbtest')",
         HT_HypothesisTest(theTest='jbtest'))
 
     # outs: None
-    # tags: hypothesistest,randomness,runstest
+    # tags: hypothesistest,randomness
     HT_HypothesisTest_runstest = HCTSAOperation(
         'HT_HypothesisTest_runstest',
         "HT_HypothesisTest(y,'runstest')",
         HT_HypothesisTest(theTest='runstest'))
 
     # outs: None
-    # tags: econometricstoolbox,hypothesistest,lbq,randomness
+    # tags: econometricstoolbox,hypothesistest,randomness
     HT_HypothesisTest_lbqtest = HCTSAOperation(
         'HT_HypothesisTest_lbqtest',
         "HT_HypothesisTest(y,'lbq')",
         HT_HypothesisTest(theTest='lbq'))
 
     # outs: None
-    # tags: hypothesistest,signrank
+    # tags: hypothesistest
     HT_HypothesisTest_signrank = HCTSAOperation(
         'HT_HypothesisTest_signrank',
         "HT_HypothesisTest(y,'signrank')",
         HT_HypothesisTest(theTest='signrank'))
 
     # outs: None
-    # tags: econometricstoolbox,hypothesistest,lbq,randomness,raw
+    # tags: econometricstoolbox,hypothesistest,randomness,raw
     HT_HypothesisTest_lbqtestraw = HCTSAOperation(
         'HT_HypothesisTest_lbqtestraw',
         "HT_HypothesisTest(x,'lbq')",
@@ -12647,20 +12605,16 @@ class HCTSAOperations(object):
 
     # outs: ami1,ami10,ami11,ami12,ami13
     # outs: ami14,ami15,ami16,ami17,ami18
-    # outs: ami19,ami2,ami20,ami21,ami22
-    # outs: ami23,ami24,ami25,ami26,ami27
-    # outs: ami28,ami29,ami3,ami30,ami31
-    # outs: ami32,ami33,ami34,ami35,ami36
-    # outs: ami37,ami38,ami39,ami4,ami40
+    # outs: ami19,ami2,ami20,ami3,ami4
     # outs: ami5,ami6,ami7,ami8,ami9
     # outs: amiac1,fmmi,mami,modeperiodmax,modeperiodmin
     # outs: pcrossmean,pcrossmedian,pcrossq10,pcrossq90,pextrema
     # outs: pmaxima,pminima,pmodeperiodmax,pmodeperiodmin,stdami
     # tags: AMI,correlation,information
-    IN_AutoMutualInfoStats_40_kraskov1 = HCTSAOperation(
-        'IN_AutoMutualInfoStats_40_kraskov1',
-        "IN_AutoMutualInfoStats(y,40,'kraskov1')",
-        IN_AutoMutualInfoStats(maxTau=40, estMethod='kraskov1'))
+    IN_AutoMutualInfoStats_diff_20_kraskov1_4 = HCTSAOperation(
+        'IN_AutoMutualInfoStats_diff_20_kraskov1_4',
+        "IN_AutoMutualInfoStats(diff(y),20,'kraskov1','4')",
+        IN_AutoMutualInfoStats(maxTau=20, estMethod='kraskov1', extraParam='4'))
 
     # outs: ami1,ami10,ami11,ami12,ami13
     # outs: ami14,ami15,ami16,ami17,ami18
@@ -12681,16 +12635,20 @@ class HCTSAOperations(object):
 
     # outs: ami1,ami10,ami11,ami12,ami13
     # outs: ami14,ami15,ami16,ami17,ami18
-    # outs: ami19,ami2,ami20,ami3,ami4
+    # outs: ami19,ami2,ami20,ami21,ami22
+    # outs: ami23,ami24,ami25,ami26,ami27
+    # outs: ami28,ami29,ami3,ami30,ami31
+    # outs: ami32,ami33,ami34,ami35,ami36
+    # outs: ami37,ami38,ami39,ami4,ami40
     # outs: ami5,ami6,ami7,ami8,ami9
     # outs: amiac1,fmmi,mami,modeperiodmax,modeperiodmin
     # outs: pcrossmean,pcrossmedian,pcrossq10,pcrossq90,pextrema
     # outs: pmaxima,pminima,pmodeperiodmax,pmodeperiodmin,stdami
     # tags: AMI,correlation,information
-    IN_AutoMutualInfoStats_diff_20_kraskov1 = HCTSAOperation(
-        'IN_AutoMutualInfoStats_diff_20_kraskov1',
-        "IN_AutoMutualInfoStats(diff(y),20,'kraskov1')",
-        IN_AutoMutualInfoStats(maxTau=20, estMethod='kraskov1'))
+    IN_AutoMutualInfoStats_40_kraskov1_4 = HCTSAOperation(
+        'IN_AutoMutualInfoStats_40_kraskov1_4',
+        "IN_AutoMutualInfoStats(y,40,'kraskov1','4')",
+        IN_AutoMutualInfoStats(maxTau=40, estMethod='kraskov1', extraParam='4'))
 
     # outs: SD1,SD2,hf,lf,lfhf
     # outs: pnn10,pnn20,pnn30,pnn40,pnn5
@@ -12811,7 +12769,7 @@ class HCTSAOperations(object):
 
     # outs: AC1,AC2,a2,a3,a4
     # outs: e,mu,rms,std
-    # tags: AR,fit,gof,model,var
+    # tags: ar,fit,gof,model
     MF_AR_arcov_3 = HCTSAOperation(
         'MF_AR_arcov_3',
         'MF_AR_arcov(y,3)',
@@ -12819,7 +12777,7 @@ class HCTSAOperations(object):
 
     # outs: AC1,AC2,a2,a3,e
     # outs: mu,rms,std
-    # tags: AR,fit,gof,model,var
+    # tags: ar,fit,gof,model
     MF_AR_arcov_2 = HCTSAOperation(
         'MF_AR_arcov_2',
         'MF_AR_arcov(y,2)',
@@ -12827,7 +12785,7 @@ class HCTSAOperations(object):
 
     # outs: AC1,AC2,a2,mu,rms
     # outs: std
-    # tags: AR,fit,gof,model
+    # tags: ar,fit,gof,model
     MF_AR_arcov_1 = HCTSAOperation(
         'MF_AR_arcov_1',
         'MF_AR_arcov(y,1)',
@@ -12836,7 +12794,7 @@ class HCTSAOperations(object):
     # outs: AC1,AC2,a2,a3,a4
     # outs: a5,a6,e,mu,rms
     # outs: std
-    # tags: AR,fit,gof,model,var
+    # tags: ar,fit,gof,model
     MF_AR_arcov_5 = HCTSAOperation(
         'MF_AR_arcov_5',
         'MF_AR_arcov(y,5)',
@@ -12844,7 +12802,7 @@ class HCTSAOperations(object):
 
     # outs: AC1,AC2,a2,a3,a4
     # outs: a5,e,mu,rms,std
-    # tags: AR,fit,gof,model,var
+    # tags: ar,fit,gof,model
     MF_AR_arcov_4 = HCTSAOperation(
         'MF_AR_arcov_4',
         'MF_AR_arcov(y,4)',
@@ -12858,7 +12816,7 @@ class HCTSAOperations(object):
     MF_CompareAR_1_10_05 = HCTSAOperation(
         'MF_CompareAR_1_10_05',
         'MF_CompareAR(y,1:10,0.5)',
-        MF_CompareAR(orders=MatlabSequence('1:10'), howtotest=0.5))
+        MF_CompareAR(orders=MatlabSequence('1:10'), testHow=0.5))
 
     # outs: aic_n,best_n,bestaic,bestmdl,firstonmin
     # outs: maxdiff,maxonmed,maxv,mdl_n,meandiff
@@ -12868,7 +12826,7 @@ class HCTSAOperations(object):
     MF_CompareAR_1_10_all = HCTSAOperation(
         'MF_CompareAR_1_10_all',
         "MF_CompareAR(y,1:10,'all')",
-        MF_CompareAR(orders=MatlabSequence('1:10'), howtotest='all'))
+        MF_CompareAR(orders=MatlabSequence('1:10'), testHow='all'))
 
     # outs: ac1s_iqr,ac1s_mean,ac1s_median,ac1s_std,mabserr_iqr
     # outs: mabserr_mean,mabserr_median,mabserr_std,meandiffs_iqr,meandiffs_mean
@@ -12952,20 +12910,20 @@ class HCTSAOperations(object):
     # outs: orders_std,sbcs_max,sbcs_mean,sbcs_min,sbcs_range
     # outs: sbcs_std
     # tags: ar,arfit,model,prediction,systemidentificationtoolbox
-    MF_FitSubsegments_arsbc_uniform_25_01 = HCTSAOperation(
-        'MF_FitSubsegments_arsbc_uniform_25_01',
-        "MF_FitSubsegments(y,'arsbc',[],'uniform',[25,0.1])",
-        MF_FitSubsegments(model='arsbc', order=(), subsetHow='uniform', samplep=(25.0, 0.10000000000000001)))
-
-    # outs: orders_max,orders_mean,orders_min,orders_mode,orders_range
-    # outs: orders_std,sbcs_max,sbcs_mean,sbcs_min,sbcs_range
-    # outs: sbcs_std
-    # tags: ar,arfit,model,prediction,systemidentificationtoolbox
     MF_FitSubsegments_arsbc_rand_25_01 = HCTSAOperation(
         'MF_FitSubsegments_arsbc_rand_25_01',
         "MF_FitSubsegments(y,'arsbc',[],'rand',[25,0.1],'default')",
         MF_FitSubsegments(model='arsbc', order=(), subsetHow='rand', samplep=(25.0, 0.10000000000000001),
                           randomSeed='default'))
+
+    # outs: orders_max,orders_mean,orders_min,orders_mode,orders_range
+    # outs: orders_std,sbcs_max,sbcs_mean,sbcs_min,sbcs_range
+    # outs: sbcs_std
+    # tags: ar,arfit,model,prediction,systemidentificationtoolbox
+    MF_FitSubsegments_arsbc_uniform_25_01 = HCTSAOperation(
+        'MF_FitSubsegments_arsbc_uniform_25_01',
+        "MF_FitSubsegments(y,'arsbc',[],'uniform',[25,0.1])",
+        MF_FitSubsegments(model='arsbc', order=(), subsetHow='uniform', samplep=(25.0, 0.10000000000000001)))
 
     # outs: fpe_max,fpe_mean,fpe_min,fpe_range,fpe_std
     # tags: model,prediction,statespace,systemidentificationtoolbox
@@ -12984,7 +12942,7 @@ class HCTSAOperations(object):
     MF_compare_GARCH_ar_1_3_1_3 = HCTSAOperation(
         'MF_compare_GARCH_ar_1_3_1_3',
         "MF_GARCHcompare(y,'ar',1:3,1:3)",
-        MF_GARCHcompare(preproc='ar', pr=MatlabSequence('1:3'), qr=MatlabSequence('1:3')))
+        MF_GARCHcompare(preProc='ar', pr=MatlabSequence('1:3'), qr=MatlabSequence('1:3')))
 
     # outs: ARCH_1,ARCHerr_1,GARCH_1,GARCHerr_1,LLF
     # outs: ac1_stde2,aic,bic,constant,constanterr
@@ -13126,7 +13084,7 @@ class HCTSAOperations(object):
     MF_StateSpaceCompOrder_8 = HCTSAOperation(
         'MF_StateSpaceCompOrder_8',
         'MF_StateSpaceCompOrder(y,8)',
-        MF_StateSpaceCompOrder(maxorder=8))
+        MF_StateSpaceCompOrder(maxOrder=8))
 
     # outs: A_1,A_2,A_3,A_4,A_5
     # outs: A_6,A_7,A_8,A_9,ac1
@@ -13325,181 +13283,142 @@ class HCTSAOperations(object):
     NL_BoxCorrDim_50_ac_5 = HCTSAOperation(
         'NL_BoxCorrDim_50_ac_5',
         "NL_BoxCorrDim(y,50,{'ac',5})",
-        NL_BoxCorrDim(nbins=50, embedparams=('ac', 5)))
+        NL_BoxCorrDim(numBins=50, embedParams=('ac', 5)))
 
-    # outs: caoo1_1,caoo1_10,caoo1_2,caoo1_3,caoo1_4
-    # outs: caoo1_5,caoo1_6,caoo1_7,caoo1_8,caoo1_9
-    # outs: caoo2_1,caoo2_10,caoo2_2,caoo2_3,caoo2_4
-    # outs: caoo2_5,caoo2_6,caoo2_7,caoo2_8,caoo2_9
-    # outs: fm005_1,fm005_2,fm01_1,fm01_2,fm02_1
-    # outs: fm02_2,fmm10_1,fmm10_2,fmm20_1,fmm20_2
-    # outs: fmm40_1,fmm40_2,fmmmax_1,fmmmax_2,fp05_1
-    # outs: fp05_2,fp08_1,fp08_2,fp09_1,fp09_2
-    # outs: max1,max2,median1,median2,min1
-    # outs: min2,std1,std2
-    # tags: cao,dimension,nonlinear,stochastic,tstool
-    NL_CaosMethod_10_mi_2_100 = HCTSAOperation(
-        'NL_CaosMethod_10_mi_2_100',
-        "NL_CaosMethod(y,10,'mi',2,100)",
-        NL_CaosMethod(maxdim=10, tau='mi', NNR=2, Nref=100))
-
-    # outs: caoo1_1,caoo1_10,caoo1_2,caoo1_3,caoo1_4
-    # outs: caoo1_5,caoo1_6,caoo1_7,caoo1_8,caoo1_9
-    # outs: caoo2_1,caoo2_10,caoo2_2,caoo2_3,caoo2_4
-    # outs: caoo2_5,caoo2_6,caoo2_7,caoo2_8,caoo2_9
-    # outs: fm005_1,fm005_2,fm01_1,fm01_2,fm02_1
-    # outs: fm02_2,fmm10_1,fmm10_2,fmm20_1,fmm20_2
-    # outs: fmm40_1,fmm40_2,fmmmax_1,fmmmax_2,fp05_1
-    # outs: fp05_2,fp08_1,fp08_2,fp09_1,fp09_2
-    # outs: max1,max2,median1,median2,min1
-    # outs: min2,std1,std2
-    # tags: cao,dimension,nonlinear,stochastic,tstool
-    NL_CaosMethod_10_mi_2_02 = HCTSAOperation(
-        'NL_CaosMethod_10_mi_2_02',
-        "NL_CaosMethod(y,10,'mi',2,0.2)",
-        NL_CaosMethod(maxdim=10, tau='mi', NNR=2, Nref=0.2))
-
-    # outs: caoo1_1,caoo1_10,caoo1_2,caoo1_3,caoo1_4
-    # outs: caoo1_5,caoo1_6,caoo1_7,caoo1_8,caoo1_9
-    # outs: caoo2_1,caoo2_10,caoo2_2,caoo2_3,caoo2_4
-    # outs: caoo2_5,caoo2_6,caoo2_7,caoo2_8,caoo2_9
-    # outs: fm005_1,fm005_2,fm01_1,fm01_2,fm02_1
-    # outs: fm02_2,fmm10_1,fmm10_2,fmm20_1,fmm20_2
-    # outs: fmm40_1,fmm40_2,fmmmax_1,fmmmax_2,fp05_1
-    # outs: fp05_2,fp08_1,fp08_2,fp09_1,fp09_2
-    # outs: max1,max2,median1,median2,min1
-    # outs: min2,std1,std2
-    # tags: cao,dimension,nonlinear,stochastic,tstool
-    NL_CaosMethod_10_mi_3_500 = HCTSAOperation(
-        'NL_CaosMethod_10_mi_3_500',
-        "NL_CaosMethod(y,10,'mi',3,500)",
-        NL_CaosMethod(maxdim=10, tau='mi', NNR=3, Nref=500))
+    # outs: dataSurrCorr,max,mean,meanDiff,meanDiffSurr
+    # outs: meanDiffTrendSurr,meanNormCDF,min,numZeroCrossings,rmsDiffSurr
+    # outs: stdDiff,trend,trendDataSurr,trendDiff,trendSurr
+    # tags: delayVectorVariance
+    NL_DVV_3_100_2_50_10_default = HCTSAOperation(
+        'NL_DVV_3_100_2_50_10_default',
+        "NL_DVV(y,3,100,2,50,10,'default')",
+        NL_DVV(m=3, numDVs=100, nd=2, Ntv=50, numSurr=10, randomSeed='default'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_7_diff = HCTSAOperation(
         'NL_MS_LZcomplexity_7_diff',
         "NL_MS_LZcomplexity(y,7,'diff')",
-        NL_MS_LZcomplexity(n=7, PreProc='diff'))
+        NL_MS_LZcomplexity(n=7, preProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_9 = HCTSAOperation(
         'NL_MS_LZcomplexity_9',
         'NL_MS_LZcomplexity(y,9,[])',
-        NL_MS_LZcomplexity(n=9, PreProc=()))
+        NL_MS_LZcomplexity(n=9, preProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_8 = HCTSAOperation(
         'NL_MS_LZcomplexity_8',
         'NL_MS_LZcomplexity(y,8,[])',
-        NL_MS_LZcomplexity(n=8, PreProc=()))
+        NL_MS_LZcomplexity(n=8, preProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_2 = HCTSAOperation(
         'NL_MS_LZcomplexity_2',
         'NL_MS_LZcomplexity(y,2,[])',
-        NL_MS_LZcomplexity(n=2, PreProc=()))
+        NL_MS_LZcomplexity(n=2, preProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_7 = HCTSAOperation(
         'NL_MS_LZcomplexity_7',
         'NL_MS_LZcomplexity(y,7,[])',
-        NL_MS_LZcomplexity(n=7, PreProc=()))
+        NL_MS_LZcomplexity(n=7, preProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_6 = HCTSAOperation(
         'NL_MS_LZcomplexity_6',
         'NL_MS_LZcomplexity(y,6,[])',
-        NL_MS_LZcomplexity(n=6, PreProc=()))
+        NL_MS_LZcomplexity(n=6, preProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_5 = HCTSAOperation(
         'NL_MS_LZcomplexity_5',
         'NL_MS_LZcomplexity(y,5,[])',
-        NL_MS_LZcomplexity(n=5, PreProc=()))
+        NL_MS_LZcomplexity(n=5, preProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_3 = HCTSAOperation(
         'NL_MS_LZcomplexity_3',
         'NL_MS_LZcomplexity(y,3,[])',
-        NL_MS_LZcomplexity(n=3, PreProc=()))
+        NL_MS_LZcomplexity(n=3, preProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_8_diff = HCTSAOperation(
         'NL_MS_LZcomplexity_8_diff',
         "NL_MS_LZcomplexity(y,8,'diff')",
-        NL_MS_LZcomplexity(n=8, PreProc='diff'))
+        NL_MS_LZcomplexity(n=8, preProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_10 = HCTSAOperation(
         'NL_MS_LZcomplexity_10',
         'NL_MS_LZcomplexity(y,10,[])',
-        NL_MS_LZcomplexity(n=10, PreProc=()))
+        NL_MS_LZcomplexity(n=10, preProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_10_diff = HCTSAOperation(
         'NL_MS_LZcomplexity_10_diff',
         "NL_MS_LZcomplexity(y,10,'diff')",
-        NL_MS_LZcomplexity(n=10, PreProc='diff'))
+        NL_MS_LZcomplexity(n=10, preProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_9_diff = HCTSAOperation(
         'NL_MS_LZcomplexity_9_diff',
         "NL_MS_LZcomplexity(y,9,'diff')",
-        NL_MS_LZcomplexity(n=9, PreProc='diff'))
+        NL_MS_LZcomplexity(n=9, preProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_4 = HCTSAOperation(
         'NL_MS_LZcomplexity_4',
         'NL_MS_LZcomplexity(y,4,[])',
-        NL_MS_LZcomplexity(n=4, PreProc=()))
+        NL_MS_LZcomplexity(n=4, preProc=()))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_3_diff = HCTSAOperation(
         'NL_MS_LZcomplexity_3_diff',
         "NL_MS_LZcomplexity(y,3,'diff')",
-        NL_MS_LZcomplexity(n=3, PreProc='diff'))
+        NL_MS_LZcomplexity(n=3, preProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_2_diff = HCTSAOperation(
         'NL_MS_LZcomplexity_2_diff',
         "NL_MS_LZcomplexity(y,2,'diff')",
-        NL_MS_LZcomplexity(n=2, PreProc='diff'))
+        NL_MS_LZcomplexity(n=2, preProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_4_diff = HCTSAOperation(
         'NL_MS_LZcomplexity_4_diff',
         "NL_MS_LZcomplexity(y,4,'diff')",
-        NL_MS_LZcomplexity(n=4, PreProc='diff'))
+        NL_MS_LZcomplexity(n=4, preProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_6_diff = HCTSAOperation(
         'NL_MS_LZcomplexity_6_diff',
         "NL_MS_LZcomplexity(y,6,'diff')",
-        NL_MS_LZcomplexity(n=6, PreProc='diff'))
+        NL_MS_LZcomplexity(n=6, preProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
     NL_MS_LZcomplexity_5_diff = HCTSAOperation(
         'NL_MS_LZcomplexity_5_diff',
         "NL_MS_LZcomplexity(y,5,'diff')",
-        NL_MS_LZcomplexity(n=5, PreProc='diff'))
+        NL_MS_LZcomplexity(n=5, preProc='diff'))
 
     # outs: firstunder001,firstunder002,firstunder005,firstunder01,firstunder02
     # outs: max1stepchange,meanpfnn,pfnn_1,pfnn_10,pfnn_2
@@ -13648,7 +13567,7 @@ class HCTSAOperations(object):
         'NL_TSTL_FractalDimensions_2_100_02_1_5_10_32_1_5',
         'NL_TSTL_FractalDimensions(y,2,100,0.2,1,5,10,32,{1,5})',
         NL_TSTL_FractalDimensions(kmin=2, kmax=100, Nref=0.2, gstart=1, gend=5, past=10, steps=32,
-                                  embedparams=(1, 5, '_celltrick_')))
+                                  embedParams=(1, 5, '_celltrick_')))
 
     # outs: expfit_a,expfit_adjr2,expfit_b,expfit_c,expfit_r2
     # outs: expfit_rmse,linfit_a,linfit_b,linfit_rmsqres,maxDq
@@ -13659,7 +13578,18 @@ class HCTSAOperations(object):
         'NL_TSTL_FractalDimensions_5_100_02_1_10_0_32_ac_3',
         "NL_TSTL_FractalDimensions(y,5,100,0.2,1,10,0,32,{'ac',3})",
         NL_TSTL_FractalDimensions(kmin=5, kmax=100, Nref=0.2, gstart=1, gend=10, past=0, steps=32,
-                                  embedparams=('ac', 3)))
+                                  embedParams=('ac', 3)))
+
+    # outs: expfit_a,expfit_adjr2,expfit_b,expfit_c,expfit_r2
+    # outs: expfit_rmse,linfit_a,linfit_b,linfit_rmsqres,maxDq
+    # outs: maxq,meanDq,meanq,minDq,minq
+    # outs: rangeDq,rangeq
+    # tags: correlation,dimension,nonlinear,stochastic,tstool
+    NL_TSTL_FractalDimensions_5_20_02_1_10_0_32_ac_fnnmar = HCTSAOperation(
+        'NL_TSTL_FractalDimensions_5_20_02_1_10_0_32_ac_fnnmar',
+        "NL_TSTL_FractalDimensions(y,5,20,0.2,1,10,0,32,{'ac','fnnmar'})",
+        NL_TSTL_FractalDimensions(kmin=5, kmax=20, Nref=0.2, gstart=1, gend=10, past=0, steps=32,
+                                  embedParams=('ac', 'fnnmar')))
 
     # outs: expfit_a,expfit_adjr2,expfit_b,expfit_c,expfit_r2
     # outs: expfit_rmse,linfit_a,linfit_b,linfit_rmsqres,maxDq
@@ -13670,7 +13600,7 @@ class HCTSAOperations(object):
         'NL_TSTL_FractalDimensions_2_10_n1_1_5_10_32_1_5',
         'NL_TSTL_FractalDimensions(y,2,10,-1,1,5,10,32,{1,5})',
         NL_TSTL_FractalDimensions(kmin=2, kmax=10, Nref=-1, gstart=1, gend=5, past=10, steps=32,
-                                  embedparams=(1, 5, '_celltrick_')))
+                                  embedParams=(1, 5, '_celltrick_')))
 
     # outs: expfit_a,expfit_adjr2,expfit_b,expfit_c,expfit_r2
     # outs: expfit_rmse,linfit_a,linfit_b,linfit_rmsqres,maxDq
@@ -13681,102 +13611,79 @@ class HCTSAOperations(object):
         'NL_TSTL_FractalDimensions_2_100_02_1_5_10_32_ac_5',
         "NL_TSTL_FractalDimensions(y,2,100,0.2,1,5,10,32,{'ac',5})",
         NL_TSTL_FractalDimensions(kmin=2, kmax=100, Nref=0.2, gstart=1, gend=5, past=10, steps=32,
-                                  embedparams=('ac', 5)))
-
-    # outs: expfit_a,expfit_adjr2,expfit_b,expfit_c,expfit_r2
-    # outs: expfit_rmse,linfit_a,linfit_b,linfit_rmsqres,maxDq
-    # outs: maxq,meanDq,meanq,minDq,minq
-    # outs: rangeDq,rangeq
-    # tags: correlation,dimension,nonlinear,stochastic,tstool
-    NL_TSTL_FractalDimensions_5_20_02_1_10_0_32_ac_cao = HCTSAOperation(
-        'NL_TSTL_FractalDimensions_5_20_02_1_10_0_32_ac_cao',
-        "NL_TSTL_FractalDimensions(y,5,20,0.2,1,10,0,32,{'ac','cao'})",
-        NL_TSTL_FractalDimensions(kmin=5, kmax=20, Nref=0.2, gstart=1, gend=10, past=0, steps=32,
-                                  embedparams=('ac', 'cao')))
-
-    # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
-    # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
-    # outs: robfit_sea2,robfit_sigrat,robfitresac1,robfitresmeanabs,robfitresmeansq
-    # tags: correlation,corrsum2,nonlinear,stochastic,tstool
-    NL_TSTL_GPCorrSum2_n1_01_40_20_ac_cao = HCTSAOperation(
-        'NL_TSTL_GPCorrSum2_n1_01_40_20_ac_cao',
-        "NL_TSTL_GPCorrSum(y,-1,0.1,40,20,{'ac','cao'},2)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedparams=('ac', 'cao'), doTwo=2))
+                                  embedParams=('ac', 5)))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
     # outs: robfit_sea2,robfit_sigrat,robfitresac1,robfitresmeanabs,robfitresmeansq
     # tags: correlation,corrsum,nonlinear,stochastic,tstool
-    NL_TSTL_GPCorrSum_n1_05_40_20_ac_cao = HCTSAOperation(
-        'NL_TSTL_GPCorrSum_n1_05_40_20_ac_cao',
-        "NL_TSTL_GPCorrSum(y,-1,0.5,40,20,{'ac','cao'})",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedparams=('ac', 'cao')))
+    NL_TSTL_GPCorrSum_n1_01_40_40_ac_fnnmar = HCTSAOperation(
+        'NL_TSTL_GPCorrSum_n1_01_40_40_ac_fnnmar',
+        "NL_TSTL_GPCorrSum(y,-1,0.1,40,40,{'ac','fnnmar'})",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedparams=('ac', 'fnnmar')))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
     # outs: robfit_sea2,robfit_sigrat,robfitresac1,robfitresmeanabs,robfitresmeansq
     # tags: correlation,corrsum,nonlinear,stochastic,tstool
-    NL_TSTL_GPCorrSum_n1_01_40_20_ac_cao = HCTSAOperation(
-        'NL_TSTL_GPCorrSum_n1_01_40_20_ac_cao',
-        "NL_TSTL_GPCorrSum(y,-1,0.1,40,20,{'ac','cao'})",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedparams=('ac', 'cao')))
+    NL_TSTL_GPCorrSum2_n1_05_40_20_ac_fnnmar = HCTSAOperation(
+        'NL_TSTL_GPCorrSum2_n1_05_40_20_ac_fnnmar',
+        "NL_TSTL_GPCorrSum(y,-1,0.5,40,20,{'ac','fnnmar'},2)",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedparams=('ac', 'fnnmar'), doTwo=2))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
     # outs: robfit_sea2,robfit_sigrat,robfitresac1,robfitresmeanabs,robfitresmeansq
     # tags: correlation,corrsum,nonlinear,stochastic,tstool
-    NL_TSTL_GPCorrSum_n1_01_40_40_ac_cao = HCTSAOperation(
-        'NL_TSTL_GPCorrSum_n1_01_40_40_ac_cao',
-        "NL_TSTL_GPCorrSum(y,-1,0.1,40,40,{'ac','cao'})",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedparams=('ac', 'cao')))
-
-    # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
-    # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
-    # outs: robfit_sea2,robfit_sigrat,robfitresac1,robfitresmeanabs,robfitresmeansq
-    # tags: correlation,corrsum2,nonlinear,stochastic,tstool
-    NL_TSTL_GPCorrSum2_n1_05_100_20_ac_cao = HCTSAOperation(
-        'NL_TSTL_GPCorrSum2_n1_05_100_20_ac_cao',
-        "NL_TSTL_GPCorrSum(y,-1,0.5,100,20,{'ac','cao'},2)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedparams=('ac', 'cao'), doTwo=2))
+    NL_TSTL_GPCorrSum_n1_05_40_20_ac_fnnmar = HCTSAOperation(
+        'NL_TSTL_GPCorrSum_n1_05_40_20_ac_fnnmar',
+        "NL_TSTL_GPCorrSum(y,-1,0.5,40,20,{'ac','fnnmar'})",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedparams=('ac', 'fnnmar')))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
     # outs: robfit_sea2,robfit_sigrat,robfitresac1,robfitresmeanabs,robfitresmeansq
     # tags: correlation,corrsum,nonlinear,stochastic,tstool
-    NL_TSTL_GPCorrSum_n1_05_100_20_ac_cao = HCTSAOperation(
-        'NL_TSTL_GPCorrSum_n1_05_100_20_ac_cao',
-        "NL_TSTL_GPCorrSum(y,-1,0.5,100,20,{'ac','cao'})",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedparams=('ac', 'cao')))
+    NL_TSTL_GPCorrSum_n1_05_100_20_ac_fnnmar = HCTSAOperation(
+        'NL_TSTL_GPCorrSum_n1_05_100_20_ac_fnnmar',
+        "NL_TSTL_GPCorrSum(y,-1,0.5,100,20,{'ac','fnnmar'})",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedparams=('ac', 'fnnmar')))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
     # outs: robfit_sea2,robfit_sigrat,robfitresac1,robfitresmeanabs,robfitresmeansq
-    # tags: correlation,corrsum2,nonlinear,stochastic,tstool
-    NL_TSTL_GPCorrSum2_n1_05_40_20_ac_cao = HCTSAOperation(
-        'NL_TSTL_GPCorrSum2_n1_05_40_20_ac_cao',
-        "NL_TSTL_GPCorrSum(y,-1,0.5,40,20,{'ac','cao'},2)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedparams=('ac', 'cao'), doTwo=2))
+    # tags: correlation,corrsum,nonlinear,stochastic,tstool
+    NL_TSTL_GPCorrSum2_n1_05_100_20_ac_fnnmar = HCTSAOperation(
+        'NL_TSTL_GPCorrSum2_n1_05_100_20_ac_fnnmar',
+        "NL_TSTL_GPCorrSum(y,-1,0.5,100,20,{'ac','fnnmar'},2)",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedparams=('ac', 'fnnmar'), doTwo=2))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
     # outs: robfit_sea2,robfit_sigrat,robfitresac1,robfitresmeanabs,robfitresmeansq
-    # tags: correlation,corrsum2,nonlinear,stochastic,tstool
-    NL_TSTL_GPCorrSum2_n1_01_40_40_ac_cao = HCTSAOperation(
-        'NL_TSTL_GPCorrSum2_n1_01_40_40_ac_cao',
-        "NL_TSTL_GPCorrSum(y,-1,0.1,40,40,{'ac','cao'},2)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedparams=('ac', 'cao'), doTwo=2))
+    # tags: correlation,corrsum,nonlinear,stochastic,tstool
+    NL_TSTL_GPCorrSum2_n1_01_40_40_ac_fnnmar = HCTSAOperation(
+        'NL_TSTL_GPCorrSum2_n1_01_40_40_ac_fnnmar',
+        "NL_TSTL_GPCorrSum(y,-1,0.1,40,40,{'ac','fnnmar'},2)",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedparams=('ac', 'fnnmar'), doTwo=2))
 
-    # outs: expfit_a,expfit_adjr2,expfit_b,expfit_r2,expfit_rmse
-    # outs: maxp,ncross08max,ncross09max,p2,p3
-    # outs: p4,p5,pcross08max,pcross09max,to05max
-    # outs: to07max,to08max,to095max,to09max,ve_gradient
-    # outs: ve_intercept,ve_meanabsres,ve_minbad,ve_rmsres,vse_gradient
-    # outs: vse_intercept,vse_meanabsres,vse_minbad,vse_rmsres
-    # tags: largelyap,nonlinear,stochastic,tstool
-    NL_TSTL_LargestLyap_05_01_001_3_mi_cao = HCTSAOperation(
-        'NL_TSTL_LargestLyap_05_01_001_3_mi_cao',
-        "NL_TSTL_LargestLyap(y,0.5,0.1,0.01,3,{'mi','cao'})",
-        NL_TSTL_LargestLyap(Nref=0.5, maxtstep=0.1, past=0.01, NNR=3, embedparams=('mi', 'cao')))
+    # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
+    # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
+    # outs: robfit_sea2,robfit_sigrat,robfitresac1,robfitresmeanabs,robfitresmeansq
+    # tags: correlation,corrsum,nonlinear,stochastic,tstool
+    NL_TSTL_GPCorrSum_n1_01_40_20_ac_fnnmar = HCTSAOperation(
+        'NL_TSTL_GPCorrSum_n1_01_40_20_ac_fnnmar',
+        "NL_TSTL_GPCorrSum(y,-1,0.1,40,20,{'ac','fnnmar'})",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedparams=('ac', 'fnnmar')))
+
+    # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
+    # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
+    # outs: robfit_sea2,robfit_sigrat,robfitresac1,robfitresmeanabs,robfitresmeansq
+    # tags: correlation,corrsum,nonlinear,stochastic,tstool
+    NL_TSTL_GPCorrSum2_n1_01_40_20_ac_fnnmar = HCTSAOperation(
+        'NL_TSTL_GPCorrSum2_n1_01_40_20_ac_fnnmar',
+        "NL_TSTL_GPCorrSum(y,-1,0.1,40,20,{'ac','fnnmar'},2)",
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedparams=('ac', 'fnnmar'), doTwo=2))
 
     # outs: expfit_a,expfit_adjr2,expfit_b,expfit_r2,expfit_rmse
     # outs: maxp,ncross08max,ncross09max,p2,p3
@@ -13788,23 +13695,19 @@ class HCTSAOperations(object):
     NL_TSTL_LargestLyap_n1_01_001_3_1_4 = HCTSAOperation(
         'NL_TSTL_LargestLyap_n1_01_001_3_1_4',
         'NL_TSTL_LargestLyap(y,-1,0.1,0.01,3,{1,4})',
-        NL_TSTL_LargestLyap(Nref=-1, maxtstep=0.1, past=0.01, NNR=3, embedparams=(1, 4, '_celltrick_')))
+        NL_TSTL_LargestLyap(Nref=-1, maxtstep=0.1, past=0.01, NNR=3, embedParams=(1, 4, '_celltrick_')))
 
-    # outs: ac1D,ac1x,ac1y,ac2D,ac2x
-    # outs: ac2y,boxarea,hboxcounts10,hboxcounts5,iqrD
-    # outs: iqrds,iqrx,iqry,maxD,maxds
-    # outs: maxpbox10,maxpbox5,maxx,maxy,meanD
-    # outs: meands,meanpbox10,meanpbox5,meanx,meany
-    # outs: minD,minds,minpbox10,minpbox5,minx
-    # outs: miny,pcross,pwithin02,pwithin03,pwithin05
-    # outs: pwithin1,pwithin2,pwithinr01,rangepbox10,rangepbox5
-    # outs: stdD,stdx,stdy,tauacD,tauacx
-    # outs: tauacy,tracepbox10,tracepbox5,zerospbox10,zerospbox5
-    # tags: nonlinear,poincare,tstool
-    NL_TSTL_PoincareSection_max_ac = HCTSAOperation(
-        'NL_TSTL_PoincareSection_max_ac',
-        "NL_TSTL_PoincareSection(y,'max',{'ac',3})",
-        NL_TSTL_PoincareSection(ref='max', embedparams=('ac', 3)))
+    # outs: expfit_a,expfit_adjr2,expfit_b,expfit_r2,expfit_rmse
+    # outs: maxp,ncross08max,ncross09max,p2,p3
+    # outs: p4,p5,pcross08max,pcross09max,to05max
+    # outs: to07max,to08max,to095max,to09max,ve_gradient
+    # outs: ve_intercept,ve_meanabsres,ve_minbad,ve_rmsres,vse_gradient
+    # outs: vse_intercept,vse_meanabsres,vse_minbad,vse_rmsres
+    # tags: largelyap,nonlinear,tstool
+    NL_TSTL_LargestLyap_n1_01_001_3_mi_fnnmar = HCTSAOperation(
+        'NL_TSTL_LargestLyap_n1_01_001_3_mi_fnnmar',
+        "NL_TSTL_LargestLyap(y,-1,0.1,0.01,3,{'mi','fnnmar'})",
+        NL_TSTL_LargestLyap(Nref=-1, maxtstep=0.1, past=0.01, NNR=3, embedParams=('mi', 'fnnmar')))
 
     # outs: ac1D,ac1x,ac1y,ac2D,ac2x
     # outs: ac2y,boxarea,hboxcounts10,hboxcounts5,iqrD
@@ -13838,6 +13741,22 @@ class HCTSAOperations(object):
         "NL_TSTL_PoincareSection(y,'max',{'mi',3})",
         NL_TSTL_PoincareSection(ref='max', embedparams=('mi', 3)))
 
+    # outs: ac1D,ac1x,ac1y,ac2D,ac2x
+    # outs: ac2y,boxarea,hboxcounts10,hboxcounts5,iqrD
+    # outs: iqrds,iqrx,iqry,maxD,maxds
+    # outs: maxpbox10,maxpbox5,maxx,maxy,meanD
+    # outs: meands,meanpbox10,meanpbox5,meanx,meany
+    # outs: minD,minds,minpbox10,minpbox5,minx
+    # outs: miny,pcross,pwithin02,pwithin03,pwithin05
+    # outs: pwithin1,pwithin2,pwithinr01,rangepbox10,rangepbox5
+    # outs: stdD,stdx,stdy,tauacD,tauacx
+    # outs: tauacy,tracepbox10,tracepbox5,zerospbox10,zerospbox5
+    # tags: nonlinear,poincare,tstool
+    NL_TSTL_PoincareSection_max_ac = HCTSAOperation(
+        'NL_TSTL_PoincareSection_max_ac',
+        "NL_TSTL_PoincareSection(y,'max',{'ac',3})",
+        NL_TSTL_PoincareSection(ref='max', embedparams=('ac', 3)))
+
     # outs: hcgdist,hhist,hhisthist,iqr,max
     # outs: maxhisthist,maxpeaksep,meanpeaksep,minpeaksep,pg05
     # outs: phisthistmin,pzeros,pzeroscgdist,rangecgdist,rangepeaksep
@@ -13846,7 +13765,7 @@ class HCTSAOperations(object):
     NL_TSTL_ReturnTime_005_1_005_n1_1_3 = HCTSAOperation(
         'NL_TSTL_ReturnTime_005_1_005_n1_1_3',
         'NL_TSTL_ReturnTime(y,0.05,1,0.05,-1,{1,3})',
-        NL_TSTL_ReturnTime(NNR=0.05, maxT=1, past=0.05, Nref=-1, embedparams=(1, 3, '_celltrick_')))
+        NL_TSTL_ReturnTime(NNR=0.05, maxT=1, past=0.05, Nref=-1, embedParams=(1, 3, '_celltrick_')))
 
     # outs: hcgdist,hhist,hhisthist,iqr,max
     # outs: maxhisthist,maxpeaksep,meanpeaksep,minpeaksep,pg05
@@ -13856,7 +13775,7 @@ class HCTSAOperations(object):
     NL_TSTL_ReturnTime_10_1_1_n1_ac_8 = HCTSAOperation(
         'NL_TSTL_ReturnTime_10_1_1_n1_ac_8',
         "NL_TSTL_ReturnTime(y,10,1,1,-1,{'ac',8})",
-        NL_TSTL_ReturnTime(NNR=10, maxT=1, past=1, Nref=-1, embedparams=('ac', 8)))
+        NL_TSTL_ReturnTime(NNR=10, maxT=1, past=1, Nref=-1, embedParams=('ac', 8)))
 
     # outs: hcgdist,hhist,hhisthist,iqr,max
     # outs: maxhisthist,maxpeaksep,meanpeaksep,minpeaksep,pg05
@@ -13866,7 +13785,7 @@ class HCTSAOperations(object):
     NL_TSTL_ReturnTime_5_1_40_n1_1_8 = HCTSAOperation(
         'NL_TSTL_ReturnTime_5_1_40_n1_1_8',
         'NL_TSTL_ReturnTime(y,5,1,40,-1,{1,8})',
-        NL_TSTL_ReturnTime(NNR=5, maxT=1, past=40, Nref=-1, embedparams=(1, 8, '_celltrick_')))
+        NL_TSTL_ReturnTime(NNR=5, maxT=1, past=40, Nref=-1, embedParams=(1, 8, '_celltrick_')))
 
     # outs: None
     # tags: dimension,nonlinear,scaling,takens,tstool
@@ -13895,13 +13814,6 @@ class HCTSAOperations(object):
         'NL_TSTL_TakensEstimator_n1_005_005_ac_8',
         "NL_TSTL_TakensEstimator(y,-1,0.05,0.05,{'ac',8})",
         NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedParams=('ac', 8)))
-
-    # outs: None
-    # tags: dimension,nonlinear,scaling,stochastic,takens,tstool
-    NL_TSTL_TakensEstimator_n1_005_005_mi_cao = HCTSAOperation(
-        'NL_TSTL_TakensEstimator_n1_005_005_mi_cao',
-        "NL_TSTL_TakensEstimator(y,-1,0.05,0.05,{'mi','cao'})",
-        NL_TSTL_TakensEstimator(Nref=-1, rad=0.05, past=0.05, embedParams=('mi', 'cao')))
 
     # outs: None
     # tags: dimension,nonlinear,scaling,takens,tstool
@@ -13960,7 +13872,7 @@ class HCTSAOperations(object):
     # outs: propdecmacpf,sacpf_1,sacpf_10,sacpf_2,sacpf_3
     # outs: sacpf_4,sacpf_5,sacpf_6,sacpf_7,sacpf_8
     # outs: sacpf_9,stdmacpfdiff
-    # tags: acp,correlation,nonlinear,slow
+    # tags: acp,correlation,nonlinear
     NL_TSTL_acp_1_001_025_10_05 = HCTSAOperation(
         'NL_TSTL_acp_1_001_025_10_05',
         'NL_TSTL_acp(y,1,0.01,0.25,10,0.5)',
@@ -14006,11 +13918,11 @@ class HCTSAOperations(object):
     # outs: scr_in_m3_minbad,scr_in_m3_pgone,scr_in_m3_scaling_exp,scr_in_m3_scaling_int,scr_in_mopt_logrmax
     # outs: scr_in_mopt_logrmin,scr_in_mopt_logrrange,scr_in_mopt_meanabsres,scr_in_mopt_meansqres,scr_in_mopt_minbad
     # outs: scr_in_mopt_pgone,scr_in_mopt_scaling_exp,scr_in_mopt_scaling_int
-    # tags: dimension,nonlinear,scaling,stochastic,tstool
-    NL_TSTL_dimensions_50_ac_cao = HCTSAOperation(
-        'NL_TSTL_dimensions_50_ac_cao',
-        "NL_TSTL_dimensions(y,50,{'ac','cao'})",
-        NL_TSTL_dimensions(nbins=50, embedParams=('ac', 'cao')))
+    # tags: dimension,nonlinear,scaling,tstool
+    NL_TSTL_dimensions_50_ac_fnnmar = HCTSAOperation(
+        'NL_TSTL_dimensions_50_ac_fnnmar',
+        "NL_TSTL_dimensions(y,50,{'ac','fnnmar'})",
+        NL_TSTL_dimensions(nbins=50, embedParams=('ac', 'fnnmar')))
 
     # outs: firstunder005,firstunder01,firstunder02,firstunder05,firstunder07
     # outs: firstunder08,fnn10,fnn2,fnn3,fnn4
@@ -14089,16 +14001,7 @@ class HCTSAOperations(object):
     PH_ForcePotential_dblwell_1_02_01 = HCTSAOperation(
         'PH_ForcePotential_dblwell_1_02_01',
         "PH_ForcePotential(y,'dblwell',[1,0.2,0.1])",
-        PH_ForcePotential(whatpot='dblwell', params=(1.0, 0.20000000000000001, 0.10000000000000001)))
-
-    # outs: ac1,ac10,ac50,finaldev,mean
-    # outs: median,pcross,pcrossdown,pcrossup,proppos
-    # outs: range,std,tau
-    # tags: dblwell,dynsys
-    PH_ForcePotential_dblwell_3_001_01 = HCTSAOperation(
-        'PH_ForcePotential_dblwell_3_001_01',
-        "PH_ForcePotential(y,'dblwell',[3,0.01,0.1])",
-        PH_ForcePotential(whatpot='dblwell', params=(3.0, 0.01, 0.10000000000000001)))
+        PH_ForcePotential(whatPotential='dblwell', params=(1.0, 0.20000000000000001, 0.10000000000000001)))
 
     # outs: ac1,ac10,ac50,finaldev,mean
     # outs: median,pcross,proppos,range,std
@@ -14107,7 +14010,7 @@ class HCTSAOperations(object):
     PH_ForcePotential_sine_3_05_1 = HCTSAOperation(
         'PH_ForcePotential_sine_3_05_1',
         "PH_ForcePotential(y,'sine',[3,0.5,1])",
-        PH_ForcePotential(whatpot='sine', params=(3.0, 0.5, 1.0)))
+        PH_ForcePotential(whatPotential='sine', params=(3.0, 0.5, 1.0)))
 
     # outs: ac1,ac10,ac50,finaldev,mean
     # outs: median,pcross,pcrossdown,pcrossup,proppos
@@ -14116,7 +14019,7 @@ class HCTSAOperations(object):
     PH_ForcePotential_dblwell_1_05_02 = HCTSAOperation(
         'PH_ForcePotential_dblwell_1_05_02',
         "PH_ForcePotential(y,'dblwell',[1,0.5,0.2])",
-        PH_ForcePotential(whatpot='dblwell', params=(1.0, 0.5, 0.20000000000000001)))
+        PH_ForcePotential(whatPotential='dblwell', params=(1.0, 0.5, 0.20000000000000001)))
 
     # outs: ac1,ac10,ac50,finaldev,mean
     # outs: median,pcross,proppos,range,std
@@ -14125,7 +14028,16 @@ class HCTSAOperations(object):
     PH_ForcePotential_sine_1_1_1 = HCTSAOperation(
         'PH_ForcePotential_sine_1_1_1',
         "PH_ForcePotential(y,'sine',[1,1,1])",
-        PH_ForcePotential(whatpot='sine', params=(1.0, 1.0, 1.0)))
+        PH_ForcePotential(whatPotential='sine', params=(1.0, 1.0, 1.0)))
+
+    # outs: ac1,ac10,ac50,finaldev,mean
+    # outs: median,pcross,pcrossdown,pcrossup,proppos
+    # outs: range,std,tau
+    # tags: dblwell,dynsys
+    PH_ForcePotential_dblwell_3_001_01 = HCTSAOperation(
+        'PH_ForcePotential_dblwell_3_001_01',
+        "PH_ForcePotential(y,'dblwell',[3,0.01,0.1])",
+        PH_ForcePotential(whatPotential='dblwell', params=(3.0, 0.01, 0.10000000000000001)))
 
     # outs: ac1,ac10,ac50,finaldev,mean
     # outs: median,pcross,pcrossdown,pcrossup,proppos
@@ -14134,7 +14046,7 @@ class HCTSAOperations(object):
     PH_ForcePotential_dblwell_2_005_02 = HCTSAOperation(
         'PH_ForcePotential_dblwell_2_005_02',
         "PH_ForcePotential(y,'dblwell',[2,0.05,0.2])",
-        PH_ForcePotential(whatpot='dblwell', params=(2.0, 0.050000000000000003, 0.20000000000000001)))
+        PH_ForcePotential(whatPotential='dblwell', params=(2.0, 0.050000000000000003, 0.20000000000000001)))
 
     # outs: ac1,ac10,ac50,finaldev,mean
     # outs: median,pcross,proppos,range,std
@@ -14143,18 +14055,7 @@ class HCTSAOperations(object):
     PH_ForcePotential_sine_10_004_10 = HCTSAOperation(
         'PH_ForcePotential_sine_10_004_10',
         "PH_ForcePotential(y,'sine',[10,0.04,10])",
-        PH_ForcePotential(whatpot='sine', params=(10.0, 0.040000000000000001, 10.0)))
-
-    # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
-    # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
-    # outs: sw_stdrat,sw_taudiff,w_ac1,w_ac2,w_max
-    # outs: w_mean,w_median,w_min,w_propzcross,w_std
-    # outs: w_tau
-    # tags: trend
-    PH_Walker_prop_09 = HCTSAOperation(
-        'PH_Walker_prop_09',
-        "PH_Walker(y,'prop',0.9)",
-        PH_Walker(walkerrule='prop', wparam=0.9))
+        PH_ForcePotential(whatPotential='sine', params=(10.0, 0.040000000000000001, 10.0)))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
     # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
@@ -14165,7 +14066,7 @@ class HCTSAOperations(object):
     PH_Walker_momentum_5 = HCTSAOperation(
         'PH_Walker_momentum_5',
         "PH_Walker(y,'momentum',5)",
-        PH_Walker(walkerrule='momentum', wparam=5))
+        PH_Walker(walkerRule='momentum', walkerParams=5))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
     # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
@@ -14176,7 +14077,7 @@ class HCTSAOperations(object):
     PH_Walker_biasprop_01_05 = HCTSAOperation(
         'PH_Walker_biasprop_01_05',
         "PH_Walker(y,'biasprop',[0.1,0.5])",
-        PH_Walker(walkerrule='biasprop', wparam=(0.10000000000000001, 0.5)))
+        PH_Walker(walkerRule='biasprop', walkerParams=(0.10000000000000001, 0.5)))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
     # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
@@ -14187,7 +14088,7 @@ class HCTSAOperations(object):
     PH_Walker_runningvar_15_50 = HCTSAOperation(
         'PH_Walker_runningvar_15_50',
         "PH_Walker(y,'runningvar',[1.5,50])",
-        PH_Walker(walkerrule='runningvar', wparam=(1.5, 50.0)))
+        PH_Walker(walkerRule='runningvar', walkerParams=(1.5, 50.0)))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
     # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
@@ -14198,7 +14099,7 @@ class HCTSAOperations(object):
     PH_Walker_prop_05 = HCTSAOperation(
         'PH_Walker_prop_05',
         "PH_Walker(y,'prop',0.5)",
-        PH_Walker(walkerrule='prop', wparam=0.5))
+        PH_Walker(walkerRule='prop', walkerParams=0.5))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
     # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
@@ -14209,7 +14110,7 @@ class HCTSAOperations(object):
     PH_Walker_biasprop_05_01 = HCTSAOperation(
         'PH_Walker_biasprop_05_01',
         "PH_Walker(y,'biasprop',[0.5,0.1])",
-        PH_Walker(walkerrule='biasprop', wparam=(0.5, 0.10000000000000001)))
+        PH_Walker(walkerRule='biasprop', walkerParams=(0.5, 0.10000000000000001)))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
     # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
@@ -14220,7 +14121,18 @@ class HCTSAOperations(object):
     PH_Walker_prop_11 = HCTSAOperation(
         'PH_Walker_prop_11',
         "PH_Walker(y,'prop',1.1)",
-        PH_Walker(walkerrule='prop', wparam=1.1))
+        PH_Walker(walkerRule='prop', walkerParams=1.1))
+
+    # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
+    # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
+    # outs: sw_stdrat,sw_taudiff,w_ac1,w_ac2,w_max
+    # outs: w_mean,w_median,w_min,w_propzcross,w_std
+    # outs: w_tau
+    # tags: trend
+    PH_Walker_prop_09 = HCTSAOperation(
+        'PH_Walker_prop_09',
+        "PH_Walker(y,'prop',0.9)",
+        PH_Walker(walkerRule='prop', walkerParams=0.9))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
     # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
@@ -14231,7 +14143,7 @@ class HCTSAOperations(object):
     PH_Walker_prop_01 = HCTSAOperation(
         'PH_Walker_prop_01',
         "PH_Walker(y,'prop',0.1)",
-        PH_Walker(walkerrule='prop', wparam=0.1))
+        PH_Walker(walkerRule='prop', walkerParams=0.1))
 
     # outs: res_ac1,res_runstest,res_swss5_1,sw_ac1rat,sw_ansarib_pval
     # outs: sw_distdiff,sw_maxrat,sw_meanabsdiff,sw_minrat,sw_propcross
@@ -14242,7 +14154,7 @@ class HCTSAOperations(object):
     PH_Walker_momentum_2 = HCTSAOperation(
         'PH_Walker_momentum_2',
         "PH_Walker(y,'momentum',2)",
-        PH_Walker(walkerrule='momentum', wparam=2))
+        PH_Walker(walkerRule='momentum', walkerParams=2))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -14322,11 +14234,11 @@ class HCTSAOperations(object):
     # outs: statav2,statav4,statav6,statav8,swms10_1
     # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
     # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
-    # tags: preprocessing,raw
-    PP_Compare_poly1 = HCTSAOperation(
-        'PP_Compare_poly1',
-        "PP_Compare(x,'poly1')",
-        PP_Compare(detrndmeth='poly1'))
+    # tags: preprocessing,raw,spline
+    PP_Compare_spline24 = HCTSAOperation(
+        'PP_Compare_spline24',
+        "PP_Compare(x,'spline24')",
+        PP_Compare(detrndmeth='spline24'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -14336,11 +14248,11 @@ class HCTSAOperations(object):
     # outs: statav2,statav4,statav6,statav8,swms10_1
     # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
     # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
-    # tags: preprocessing,raw,spline
-    PP_Compare_spline24 = HCTSAOperation(
-        'PP_Compare_spline24',
-        "PP_Compare(x,'spline24')",
-        PP_Compare(detrndmeth='spline24'))
+    # tags: preprocessing,raw
+    PP_Compare_poly1 = HCTSAOperation(
+        'PP_Compare_poly1',
+        "PP_Compare(x,'poly1')",
+        PP_Compare(detrndmeth='poly1'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -14383,20 +14295,6 @@ class HCTSAOperations(object):
         'PP_Compare_medianf10',
         "PP_Compare(x,'medianf10')",
         PP_Compare(detrndmeth='medianf10'))
-
-    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
-    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
-    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
-    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
-    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
-    # outs: statav2,statav4,statav6,statav8,swms10_1
-    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
-    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
-    # tags: preprocessing,raw,spline
-    PP_Compare_spline44 = HCTSAOperation(
-        'PP_Compare_spline44',
-        "PP_Compare(x,'spline44')",
-        PP_Compare(detrndmeth='spline44'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -14477,10 +14375,10 @@ class HCTSAOperations(object):
     # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
     # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
     # tags: preprocessing,raw
-    PP_Compare_diff2 = HCTSAOperation(
-        'PP_Compare_diff2',
-        "PP_Compare(x,'diff2')",
-        PP_Compare(detrndmeth='diff2'))
+    PP_Compare_poly2 = HCTSAOperation(
+        'PP_Compare_poly2',
+        "PP_Compare(x,'poly2')",
+        PP_Compare(detrndmeth='poly2'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -14490,11 +14388,11 @@ class HCTSAOperations(object):
     # outs: statav2,statav4,statav6,statav8,swms10_1
     # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
     # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
-    # tags: preprocessing,raw
-    PP_Compare_poly2 = HCTSAOperation(
-        'PP_Compare_poly2',
-        "PP_Compare(x,'poly2')",
-        PP_Compare(detrndmeth='poly2'))
+    # tags: preprocessing,raw,spline
+    PP_Compare_spline44 = HCTSAOperation(
+        'PP_Compare_spline44',
+        "PP_Compare(x,'spline44')",
+        PP_Compare(detrndmeth='spline44'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -14510,14 +14408,25 @@ class HCTSAOperations(object):
         "PP_Compare(x,'diff1')",
         PP_Compare(detrndmeth='diff1'))
 
-    # outs: gauss1_h10_exp,gauss1_h10_jump,gauss1_h10_lin,gauss1_h10_trend,gauss1_kd_exp
-    # outs: gauss1_kd_jump,gauss1_kd_lin,gauss1_kd_trend,norm_kscomp_exp,norm_kscomp_jump
-    # outs: norm_kscomp_lin,norm_kscomp_trend,normdiff_exp,normdiff_jump,normdiff_lin
-    # outs: normdiff_trend,ol_exp,ol_jump,ol_lin,ol_trend
-    # outs: statav5_exp,statav5_jump,statav5_lin,statav5_trend,swms5_2_exp
-    # outs: swms5_2_jump,swms5_2_lin,swms5_2_trend,swss5_2_exp,swss5_2_jump
-    # outs: swss5_2_lin,swss5_2_trend,xc1_exp,xc1_jump,xc1_lin
-    # outs: xc1_trend,xcn1_exp,xcn1_jump,xcn1_lin,xcn1_trend
+    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
+    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
+    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
+    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
+    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
+    # outs: statav2,statav4,statav6,statav8,swms10_1
+    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
+    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
+    # tags: preprocessing,raw
+    PP_Compare_diff2 = HCTSAOperation(
+        'PP_Compare_diff2',
+        "PP_Compare(x,'diff2')",
+        PP_Compare(detrndmeth='diff2'))
+
+    # outs: gauss1_h10_jump,gauss1_h10_lin,gauss1_h10_trend,gauss1_kd_jump,gauss1_kd_lin
+    # outs: gauss1_kd_trend,norm_kscomp_jump,norm_kscomp_lin,norm_kscomp_trend,ol_jump
+    # outs: ol_lin,ol_trend,statav5_jump,statav5_lin,statav5_trend
+    # outs: swms5_2_jump,swms5_2_lin,swms5_2_trend,swss5_2_jump,swss5_2_lin
+    # outs: swss5_2_trend
     # tags: preprocessing,raw
     PP_Iterate_diff = HCTSAOperation(
         'PP_Iterate_diff',
@@ -14542,7 +14451,7 @@ class HCTSAOperations(object):
     SB_BinaryStats_diff = HCTSAOperation(
         'SB_BinaryStats_diff',
         "SB_BinaryStats(y,'diff')",
-        SB_BinaryStats(binarymeth='diff'))
+        SB_BinaryStats(binaryMethod='diff'))
 
     # outs: h,longstretch0,longstretch1,meanstretch0,meanstretch1
     # outs: meanstretchrat,pstretch0,pstretch1,pstretches,pup
@@ -14552,7 +14461,7 @@ class HCTSAOperations(object):
     SB_BinaryStats_mean = HCTSAOperation(
         'SB_BinaryStats_mean',
         "SB_BinaryStats(y,'mean')",
-        SB_BinaryStats(binarymeth='mean'))
+        SB_BinaryStats(binaryMethod='mean'))
 
     # outs: h,longstretch0,longstretch1,meanstretch0,meanstretch1
     # outs: meanstretchrat,pstretch0,pstretch1,pstretches,pup
@@ -14562,21 +14471,21 @@ class HCTSAOperations(object):
     SB_BinaryStats_iqr = HCTSAOperation(
         'SB_BinaryStats_iqr',
         "SB_BinaryStats(y,'iqr')",
-        SB_BinaryStats(binarymeth='iqr'))
+        SB_BinaryStats(binaryMethod='iqr'))
 
     # outs: None
     # tags: binary
     SB_BinaryStretch_lseq0 = HCTSAOperation(
         'SB_BinaryStretch_lseq0',
         "SB_BinaryStretch(y,'lseq0')",
-        SB_BinaryStretch(stretchwhat='lseq0'))
+        SB_BinaryStretch(stretchWhat='lseq0'))
 
     # outs: None
     # tags: binary
     SB_BinaryStretch_lseq1 = HCTSAOperation(
         'SB_BinaryStretch_lseq1',
         "SB_BinaryStretch(y,'lseq1')",
-        SB_BinaryStretch(stretchwhat='lseq1'))
+        SB_BinaryStretch(stretchWhat='lseq1'))
 
     # outs: aa,aaa,aaaa,aaab,aaac
     # outs: aab,aaba,aabb,aabc,aac
@@ -14606,7 +14515,7 @@ class HCTSAOperations(object):
     SB_MotifThree_quantile = HCTSAOperation(
         'SB_MotifThree_quantile',
         "SB_MotifThree(y,'quantile')",
-        SB_MotifThree(trit='quantile'))
+        SB_MotifThree(cgHow='quantile'))
 
     # outs: aa,aaa,aaaa,aaab,aaac
     # outs: aab,aaba,aabb,aabc,aac
@@ -14636,7 +14545,7 @@ class HCTSAOperations(object):
     SB_MotifThree_diffquant = HCTSAOperation(
         'SB_MotifThree_diffquant',
         "SB_MotifThree(y,'diffquant')",
-        SB_MotifThree(trit='diffquant'))
+        SB_MotifThree(cgHow='diffquant'))
 
     # outs: d,dd,ddd,dddd,dddu
     # outs: ddu,ddud,dduu,du,dud
@@ -14676,17 +14585,6 @@ class HCTSAOperations(object):
         'SB_MotifTwo_diff',
         "SB_MotifTwo(y,'diff')",
         SB_MotifTwo(bint='diff'))
-
-    # outs: T1,T2,T3,T4,T5
-    # outs: T6,T7,T8,T9,maxeig
-    # outs: maxeigcov,maximeig,meaneig,meaneigcov,mineig
-    # outs: mineigcov,ondiag,stddiag,stdeig,stdeigcov
-    # outs: sumdiagcov,symdiff,symsumdiff
-    # tags: transitionmat
-    SB_TransitionMatrix_3ac = HCTSAOperation(
-        'SB_TransitionMatrix_3ac',
-        "SB_TransitionMatrix(y,'quantile',3,'ac')",
-        SB_TransitionMatrix(howtocg='quantile', numGroups=3, tau='ac'))
 
     # outs: TD1,TD2,TD3,TD4,maxeig
     # outs: maxeigcov,maximeig,meaneig,meaneigcov,mineig
@@ -14739,6 +14637,17 @@ class HCTSAOperations(object):
         "SB_TransitionMatrix(y,'quantile',2,'ac')",
         SB_TransitionMatrix(howtocg='quantile', numGroups=2, tau='ac'))
 
+    # outs: T1,T2,T3,T4,T5
+    # outs: T6,T7,T8,T9,maxeig
+    # outs: maxeigcov,maximeig,meaneig,meaneigcov,mineig
+    # outs: mineigcov,ondiag,stddiag,stdeig,stdeigcov
+    # outs: sumdiagcov,symdiff,symsumdiff
+    # tags: transitionmat
+    SB_TransitionMatrix_3ac = HCTSAOperation(
+        'SB_TransitionMatrix_3ac',
+        "SB_TransitionMatrix(y,'quantile',3,'ac')",
+        SB_TransitionMatrix(howtocg='quantile', numGroups=3, tau='ac'))
+
     # outs: TD1,TD2,TD3,TD4,TD5
     # outs: maxeig,maxeigcov,maximeig,meaneig,meaneigcov
     # outs: mineig,mineigcov,ondiag,stddiag,stdeig
@@ -14772,7 +14681,7 @@ class HCTSAOperations(object):
     SB_TransitionpAlphabet_40_1 = HCTSAOperation(
         'SB_TransitionpAlphabet_40_1',
         'SB_TransitionpAlphabet(y,2:40,1)',
-        SB_TransitionpAlphabet(ng=MatlabSequence('2:40'), tau=1))
+        SB_TransitionpAlphabet(numGroups=MatlabSequence('2:40'), tau=1))
 
     # outs: maxdiagfexp_a,maxdiagfexp_adjr2,maxdiagfexp_b,maxdiagfexp_r2,maxdiagfexp_rmse
     # outs: maxeig_fexpa,maxeig_fexpadjr2,maxeig_fexpb,maxeig_fexpr2,maxeig_fexprmse
@@ -14787,7 +14696,7 @@ class HCTSAOperations(object):
     SB_TransitionpAlphabet_20_ac = HCTSAOperation(
         'SB_TransitionpAlphabet_20_ac',
         "SB_TransitionpAlphabet(y,2:20,'ac')",
-        SB_TransitionpAlphabet(ng=MatlabSequence('2:20'), tau='ac'))
+        SB_TransitionpAlphabet(numGroups=MatlabSequence('2:20'), tau='ac'))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14798,7 +14707,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_sign_2_dfa_2_2 = HCTSAOperation(
         'SC_FluctAnal_sign_2_dfa_2_2',
         "SC_FluctAnal(zscore(sign(y)),2,'dfa',2,2,[],0)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=2, lag=(), loginc=0))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=2, lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14809,7 +14718,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_endptdiff_1 = HCTSAOperation(
         'SC_FluctAnal_2_endptdiff_1',
         "SC_FluctAnal(y,2,'endptdiff',1,[],[],0)",
-        SC_FluctAnal(q=2, wtf='endptdiff', taustep=1, k=(), lag=(), loginc=0))
+        SC_FluctAnal(q=2, wtf='endptdiff', tauStep=1, k=(), lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14820,7 +14729,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_std_1 = HCTSAOperation(
         'SC_FluctAnal_2_std_1',
         "SC_FluctAnal(y,2,'std',1,[],[],0)",
-        SC_FluctAnal(q=2, wtf='std', taustep=1, k=(), lag=(), loginc=0))
+        SC_FluctAnal(q=2, wtf='std', tauStep=1, k=(), lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14831,7 +14740,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_25_2_logi = HCTSAOperation(
         'SC_FluctAnal_2_dfa_25_2_logi',
         "SC_FluctAnal(y,2,'dfa',25,2,[],1)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=2, lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=25, k=2, lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14842,7 +14751,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_25_1_2_logi = HCTSAOperation(
         'SC_FluctAnal_2_dfa_25_1_2_logi',
         "SC_FluctAnal(y,2,'dfa',25,1,2,1)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=1, lag=2, loginc=1))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=25, k=1, lag=2, logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14853,7 +14762,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_2_3 = HCTSAOperation(
         'SC_FluctAnal_2_dfa_2_3',
         "SC_FluctAnal(y,2,'dfa',2,3,[],0)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=3, lag=(), loginc=0))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=3, lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14864,7 +14773,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_2_1_2 = HCTSAOperation(
         'SC_FluctAnal_2_dfa_2_1_2',
         "SC_FluctAnal(y,2,'dfa',2,1,2,0)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=1, lag=2, loginc=0))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=1, lag=2, logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14875,7 +14784,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_2_1_3 = HCTSAOperation(
         'SC_FluctAnal_2_dfa_2_1_3',
         "SC_FluctAnal(y,2,'dfa',2,1,3,0)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=1, lag=3, loginc=0))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=1, lag=3, logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14886,7 +14795,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_range_25_logi = HCTSAOperation(
         'SC_FluctAnal_2_range_25_logi',
         "SC_FluctAnal(y,2,'range',25,[],[],1)",
-        SC_FluctAnal(q=2, wtf='range', taustep=25, k=(), lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='range', tauStep=25, k=(), lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14897,7 +14806,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_rsrange_1 = HCTSAOperation(
         'SC_FluctAnal_2_rsrange_1',
         "SC_FluctAnal(y,2,'rsrange',1,[],[],0)",
-        SC_FluctAnal(q=2, wtf='rsrange', taustep=1, k=(), lag=(), loginc=0))
+        SC_FluctAnal(q=2, wtf='rsrange', tauStep=1, k=(), lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14908,7 +14817,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_endptdiff_25_logi = HCTSAOperation(
         'SC_FluctAnal_2_endptdiff_25_logi',
         "SC_FluctAnal(y,2,'endptdiff',25,[],[],1)",
-        SC_FluctAnal(q=2, wtf='endptdiff', taustep=25, k=(), lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='endptdiff', tauStep=25, k=(), lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14919,7 +14828,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_iqr_25_logi = HCTSAOperation(
         'SC_FluctAnal_2_iqr_25_logi',
         "SC_FluctAnal(y,2,'iqr',25,[],[],1)",
-        SC_FluctAnal(q=2, wtf='iqr', taustep=25, k=(), lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='iqr', tauStep=25, k=(), lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14930,7 +14839,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_rsrangefit_2_1 = HCTSAOperation(
         'SC_FluctAnal_2_rsrangefit_2_1',
         "SC_FluctAnal(y,2,'rsrangefit',2,1,[],0)",
-        SC_FluctAnal(q=2, wtf='rsrangefit', taustep=2, k=1, lag=(), loginc=0))
+        SC_FluctAnal(q=2, wtf='rsrangefit', tauStep=2, k=1, lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14941,7 +14850,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_25_1_logi = HCTSAOperation(
         'SC_FluctAnal_2_dfa_25_1_logi',
         "SC_FluctAnal(y,2,'dfa',25,1,[],1)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=1, lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=25, k=1, lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14952,7 +14861,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_iqr_1 = HCTSAOperation(
         'SC_FluctAnal_2_iqr_1',
         "SC_FluctAnal(y,2,'iqr',1,[],[],0)",
-        SC_FluctAnal(q=2, wtf='iqr', taustep=1, k=(), lag=(), loginc=0))
+        SC_FluctAnal(q=2, wtf='iqr', tauStep=1, k=(), lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14963,18 +14872,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_nothing_1 = HCTSAOperation(
         'SC_FluctAnal_2_nothing_1',
         "SC_FluctAnal(y,2,'nothing',1,[],[],0)",
-        SC_FluctAnal(q=2, wtf='nothing', taustep=1, k=(), lag=(), loginc=0))
-
-    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
-    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
-    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
-    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
-    # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: dfa,lengthdep,scaling
-    SC_FluctAnal_2_dfa_25_3_logi = HCTSAOperation(
-        'SC_FluctAnal_2_dfa_25_3_logi',
-        "SC_FluctAnal(y,2,'dfa',25,3,[],1)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=3, lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='nothing', tauStep=1, k=(), lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14985,7 +14883,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_rsrangefit_25_1_logi = HCTSAOperation(
         'SC_FluctAnal_2_rsrangefit_25_1_logi',
         "SC_FluctAnal(y,2,'rsrangefit',25,1,[],1)",
-        SC_FluctAnal(q=2, wtf='rsrangefit', taustep=25, k=1, lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='rsrangefit', tauStep=25, k=1, lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14996,18 +14894,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_2_0 = HCTSAOperation(
         'SC_FluctAnal_2_dfa_2_0',
         "SC_FluctAnal(y,2,'dfa',2,0,[],0)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=0, lag=(), loginc=0))
-
-    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
-    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
-    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
-    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
-    # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: dfa,lengthdep,scaling
-    SC_FluctAnal_mag_2_dfa_25_2_logi = HCTSAOperation(
-        'SC_FluctAnal_mag_2_dfa_25_2_logi',
-        "SC_FluctAnal(zscore(abs(y)),2,'dfa',25,2,[],1)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=2, lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=0, lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -15018,7 +14905,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_2_2 = HCTSAOperation(
         'SC_FluctAnal_2_dfa_2_2',
         "SC_FluctAnal(y,2,'dfa',2,2,[],0)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=2, lag=(), loginc=0))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=2, lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -15029,7 +14916,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_2_1 = HCTSAOperation(
         'SC_FluctAnal_2_dfa_2_1',
         "SC_FluctAnal(y,2,'dfa',2,1,[],0)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=1, lag=(), loginc=0))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=1, lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -15040,7 +14927,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_25_0_logi = HCTSAOperation(
         'SC_FluctAnal_2_dfa_25_0_logi',
         "SC_FluctAnal(y,2,'dfa',25,0,[],1)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=0, lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=25, k=0, lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -15051,7 +14938,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_mag_2_dfa_2_2 = HCTSAOperation(
         'SC_FluctAnal_mag_2_dfa_2_2',
         "SC_FluctAnal(zscore(abs(y)),2,'dfa',2,2,[],0)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=2, k=2, lag=(), loginc=0))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=2, lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -15062,7 +14949,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_dfa_25_1_3_logi = HCTSAOperation(
         'SC_FluctAnal_2_dfa_25_1_3_logi',
         "SC_FluctAnal(y,2,'dfa',25,1,3,1)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=1, lag=3, loginc=1))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=25, k=1, lag=3, logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -15073,7 +14960,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_rsrange_25_logi = HCTSAOperation(
         'SC_FluctAnal_2_rsrange_25_logi',
         "SC_FluctAnal(y,2,'rsrange',25,[],[],1)",
-        SC_FluctAnal(q=2, wtf='rsrange', taustep=25, k=(), lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='rsrange', tauStep=25, k=(), lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -15084,7 +14971,29 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_nothing_25_logi = HCTSAOperation(
         'SC_FluctAnal_2_nothing_25_logi',
         "SC_FluctAnal(y,2,'nothing',25,[],[],1)",
-        SC_FluctAnal(q=2, wtf='nothing', taustep=25, k=(), lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='nothing', tauStep=25, k=(), lag=(), logInc=1))
+
+    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
+    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
+    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
+    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
+    # outs: se1,se2,ssr,stats_coeffcorr
+    # tags: dfa,lengthdep,scaling
+    SC_FluctAnal_mag_2_dfa_25_2_logi = HCTSAOperation(
+        'SC_FluctAnal_mag_2_dfa_25_2_logi',
+        "SC_FluctAnal(zscore(abs(y)),2,'dfa',25,2,[],1)",
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=25, k=2, lag=(), logInc=1))
+
+    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
+    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
+    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
+    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
+    # outs: se1,se2,ssr,stats_coeffcorr
+    # tags: dfa,lengthdep,scaling
+    SC_FluctAnal_2_dfa_25_3_logi = HCTSAOperation(
+        'SC_FluctAnal_2_dfa_25_3_logi',
+        "SC_FluctAnal(y,2,'dfa',25,3,[],1)",
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=25, k=3, lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -15095,7 +15004,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_sign_2_dfa_25_2_logi = HCTSAOperation(
         'SC_FluctAnal_sign_2_dfa_25_2_logi',
         "SC_FluctAnal(zscore(sign(y)),2,'dfa',25,2,[],1)",
-        SC_FluctAnal(q=2, wtf='dfa', taustep=25, k=2, lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=25, k=2, lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -15106,7 +15015,7 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_std_25_logi = HCTSAOperation(
         'SC_FluctAnal_2_std_25_logi',
         "SC_FluctAnal(y,2,'std',25,[],[],1)",
-        SC_FluctAnal(q=2, wtf='std', taustep=25, k=(), lag=(), loginc=1))
+        SC_FluctAnal(q=2, wtf='std', tauStep=25, k=(), lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -15117,7 +15026,16 @@ class HCTSAOperations(object):
     SC_FluctAnal_2_range_1 = HCTSAOperation(
         'SC_FluctAnal_2_range_1',
         "SC_FluctAnal(y,2,'range',1,[],[],0)",
-        SC_FluctAnal(q=2, wtf='range', taustep=1, k=(), lag=(), loginc=0))
+        SC_FluctAnal(q=2, wtf='range', tauStep=1, k=(), lag=(), logInc=0))
+
+    # outs: maxHurstExponent,maxHurstQ,maxHurstScale,meanHurstExponent,minHurstExponent
+    # outs: minHurstQ,minHurstScale,qHurstStd,qHurstTrend,scaleHurstStd
+    # outs: scaleHurstTrend,stdHurstExponent,stdStdHurstQ,stdStdHurstScale
+    # tags: fractal,scaling
+    SC_MMA_0__n5_5 = HCTSAOperation(
+        'SC_MMA_0__n5_5',
+        'SC_MMA(y,0,[],[-5,5])',
+        SC_MMA(doOverlap=0, scaleRange=(), qRange=(-5.0, 5.0)))
 
     # outs: None
     # tags: dfa,mex,scaling
@@ -15343,27 +15261,6 @@ class HCTSAOperations(object):
 
     # outs: None
     # tags: raw,spreaddep,trend
-    ST_FitPolynomial_10 = HCTSAOperation(
-        'ST_FitPolynomial_10',
-        'ST_FitPolynomial(x,10)',
-        ST_FitPolynomial(k=10))
-
-    # outs: None
-    # tags: raw,spreaddep,trend
-    ST_FitPolynomial_8 = HCTSAOperation(
-        'ST_FitPolynomial_8',
-        'ST_FitPolynomial(x,8)',
-        ST_FitPolynomial(k=8))
-
-    # outs: None
-    # tags: raw,spreaddep,trend
-    ST_FitPolynomial_9 = HCTSAOperation(
-        'ST_FitPolynomial_9',
-        'ST_FitPolynomial(x,9)',
-        ST_FitPolynomial(k=9))
-
-    # outs: None
-    # tags: raw,spreaddep,trend
     ST_FitPolynomial_1 = HCTSAOperation(
         'ST_FitPolynomial_1',
         'ST_FitPolynomial(x,1)',
@@ -15389,27 +15286,6 @@ class HCTSAOperations(object):
         'ST_FitPolynomial_4',
         'ST_FitPolynomial(x,4)',
         ST_FitPolynomial(k=4))
-
-    # outs: None
-    # tags: raw,spreaddep,trend
-    ST_FitPolynomial_5 = HCTSAOperation(
-        'ST_FitPolynomial_5',
-        'ST_FitPolynomial(x,5)',
-        ST_FitPolynomial(k=5))
-
-    # outs: None
-    # tags: raw,spreaddep,trend
-    ST_FitPolynomial_6 = HCTSAOperation(
-        'ST_FitPolynomial_6',
-        'ST_FitPolynomial(x,6)',
-        ST_FitPolynomial(k=6))
-
-    # outs: None
-    # tags: raw,spreaddep,trend
-    ST_FitPolynomial_7 = HCTSAOperation(
-        'ST_FitPolynomial_7',
-        'ST_FitPolynomial(x,7)',
-        ST_FitPolynomial(k=7))
 
     # outs: None
     # tags: lengthdep,misc,raw
@@ -15616,13 +15492,6 @@ class HCTSAOperations(object):
         'SY_KPSStest(y,2)',
         SY_KPSStest(lags=2))
 
-    # outs: None
-    # tags: raw,stationarity
-    SY_LinearTrend = HCTSAOperation(
-        'SY_LinearTrend',
-        'SY_LinearTrend(x)',
-        SY_LinearTrend())
-
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_4_each = HCTSAOperation(
@@ -15644,6 +15513,13 @@ class HCTSAOperations(object):
         "SY_LocalDistributions(y,2,'par')",
         SY_LocalDistributions(nseg=2, eachorpar='par'))
 
+    # outs: meandiv,mediandiv,mindiv,stddiv
+    # tags: stationarity
+    SY_LocalDistributions_3_each = HCTSAOperation(
+        'SY_LocalDistributions_3_each',
+        "SY_LocalDistributions(y,3,'each')",
+        SY_LocalDistributions(nseg=3, eachorpar='each'))
+
     # outs: None
     # tags: stationarity
     SY_LocalDistributions_2_each = HCTSAOperation(
@@ -15657,13 +15533,6 @@ class HCTSAOperations(object):
         'SY_LocalDistributions_3_par',
         "SY_LocalDistributions(y,3,'par')",
         SY_LocalDistributions(nseg=3, eachorpar='par'))
-
-    # outs: meandiv,mediandiv,mindiv,stddiv
-    # tags: stationarity
-    SY_LocalDistributions_3_each = HCTSAOperation(
-        'SY_LocalDistributions_3_each',
-        "SY_LocalDistributions(y,3,'each')",
-        SY_LocalDistributions(nseg=3, eachorpar='each'))
 
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
@@ -15685,7 +15554,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_l50 = HCTSAOperation(
         'SY_LocalGlobal_l50',
         "SY_LocalGlobal(y,'l',50)",
-        SY_LocalGlobal(lorp='l', n=50))
+        SY_LocalGlobal(subsetHow='l', n=50))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15693,7 +15562,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_l10 = HCTSAOperation(
         'SY_LocalGlobal_l10',
         "SY_LocalGlobal(y,'l',10)",
-        SY_LocalGlobal(lorp='l', n=10))
+        SY_LocalGlobal(subsetHow='l', n=10))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15701,7 +15570,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_p05 = HCTSAOperation(
         'SY_LocalGlobal_p05',
         "SY_LocalGlobal(y,'p',0.05)",
-        SY_LocalGlobal(lorp='p', n=0.05))
+        SY_LocalGlobal(subsetHow='p', n=0.05))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15709,7 +15578,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_p1 = HCTSAOperation(
         'SY_LocalGlobal_p1',
         "SY_LocalGlobal(y,'p',0.1)",
-        SY_LocalGlobal(lorp='p', n=0.1))
+        SY_LocalGlobal(subsetHow='p', n=0.1))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15717,7 +15586,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_p5 = HCTSAOperation(
         'SY_LocalGlobal_p5',
         "SY_LocalGlobal(y,'p',0.5)",
-        SY_LocalGlobal(lorp='p', n=0.5))
+        SY_LocalGlobal(subsetHow='p', n=0.5))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15725,7 +15594,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_unicg500 = HCTSAOperation(
         'SY_LocalGlobal_unicg500',
         "SY_LocalGlobal(y,'unicg',500)",
-        SY_LocalGlobal(lorp='unicg', n=500))
+        SY_LocalGlobal(subsetHow='unicg', n=500))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15733,7 +15602,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_l100 = HCTSAOperation(
         'SY_LocalGlobal_l100',
         "SY_LocalGlobal(y,'l',100)",
-        SY_LocalGlobal(lorp='l', n=100))
+        SY_LocalGlobal(subsetHow='l', n=100))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15741,7 +15610,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_unicg20 = HCTSAOperation(
         'SY_LocalGlobal_unicg20',
         "SY_LocalGlobal(y,'unicg',20)",
-        SY_LocalGlobal(lorp='unicg', n=20))
+        SY_LocalGlobal(subsetHow='unicg', n=20))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15749,7 +15618,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_p01 = HCTSAOperation(
         'SY_LocalGlobal_p01',
         "SY_LocalGlobal(y,'p',0.01)",
-        SY_LocalGlobal(lorp='p', n=0.01))
+        SY_LocalGlobal(subsetHow='p', n=0.01))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15757,7 +15626,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_l500 = HCTSAOperation(
         'SY_LocalGlobal_l500',
         "SY_LocalGlobal(y,'l',500)",
-        SY_LocalGlobal(lorp='l', n=500))
+        SY_LocalGlobal(subsetHow='l', n=500))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15765,7 +15634,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_l20 = HCTSAOperation(
         'SY_LocalGlobal_l20',
         "SY_LocalGlobal(y,'l',20)",
-        SY_LocalGlobal(lorp='l', n=20))
+        SY_LocalGlobal(subsetHow='l', n=20))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15773,7 +15642,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_unicg10 = HCTSAOperation(
         'SY_LocalGlobal_unicg10',
         "SY_LocalGlobal(y,'unicg',10)",
-        SY_LocalGlobal(lorp='unicg', n=10))
+        SY_LocalGlobal(subsetHow='unicg', n=10))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15781,7 +15650,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_unicg100 = HCTSAOperation(
         'SY_LocalGlobal_unicg100',
         "SY_LocalGlobal(y,'unicg',100)",
-        SY_LocalGlobal(lorp='unicg', n=100))
+        SY_LocalGlobal(subsetHow='unicg', n=100))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15789,7 +15658,7 @@ class HCTSAOperations(object):
     SY_LocalGlobal_unicg50 = HCTSAOperation(
         'SY_LocalGlobal_unicg50',
         "SY_LocalGlobal(y,'unicg',50)",
-        SY_LocalGlobal(lorp='unicg', n=50))
+        SY_LocalGlobal(subsetHow='unicg', n=50))
 
     # outs: lagmaxp,lagminp,maxpValue,maxrmse,maxstat
     # outs: meanloglikelihood,meanpValue,meanstat,minAIC,minBIC
@@ -15798,7 +15667,7 @@ class HCTSAOperations(object):
     SY_PPtest_0_5_ts_t1 = HCTSAOperation(
         'SY_PPtest_0_5_ts_t1',
         "SY_PPtest(y,0:5,'ts','t1')",
-        SY_PPtest(lags=MatlabSequence('0:5'), model='ts', teststat='t1'))
+        SY_PPtest(lags=MatlabSequence('0:5'), model='ts', testStatistic='t1'))
 
     # outs: lagmaxp,lagminp,maxpValue,maxrmse,maxstat
     # outs: meanloglikelihood,meanpValue,meanstat,minAIC,minBIC
@@ -15807,7 +15676,7 @@ class HCTSAOperations(object):
     SY_PPtest_0_5_ard_t1 = HCTSAOperation(
         'SY_PPtest_0_5_ard_t1',
         "SY_PPtest(y,0:5,'ard','t1')",
-        SY_PPtest(lags=MatlabSequence('0:5'), model='ard', teststat='t1'))
+        SY_PPtest(lags=MatlabSequence('0:5'), model='ard', testStatistic='t1'))
 
     # outs: lagmaxp,lagminp,maxpValue,maxrmse,maxstat
     # outs: meanloglikelihood,meanpValue,meanstat,minAIC,minBIC
@@ -15816,7 +15685,7 @@ class HCTSAOperations(object):
     SY_PPtest_0_5_ar_t1 = HCTSAOperation(
         'SY_PPtest_0_5_ar_t1',
         "SY_PPtest(y,0:5,'ar','t1')",
-        SY_PPtest(lags=MatlabSequence('0:5'), model='ar', teststat='t1'))
+        SY_PPtest(lags=MatlabSequence('0:5'), model='ar', testStatistic='t1'))
 
     # outs: l10,l100,l1000,l50,nuql10
     # outs: nuql100,nuql1000,nuql50,nuqp1,nuqp10
@@ -15833,1512 +15702,1512 @@ class HCTSAOperations(object):
     SY_SlidingWindow_ent_ent5_2 = HCTSAOperation(
         'SY_SlidingWindow_ent_ent5_2',
         "SY_SlidingWindow(y,'ent','ent',5,2)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='ent', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent5_1 = HCTSAOperation(
         'SY_SlidingWindow_ent_ent5_1',
         "SY_SlidingWindow(y,'ent','ent',5,1)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='ent', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent10_2 = HCTSAOperation(
         'SY_SlidingWindow_m_ent10_2',
         "SY_SlidingWindow(y,'mean','ent',10,2)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=10, nmov=2))
-
-    # outs: None
-    # tags: slidingwin,stationarity
-    SY_SlidingWindow_ac1_apen5_1 = HCTSAOperation(
-        'SY_SlidingWindow_ac1_apen5_1',
-        "SY_SlidingWindow(y,'AC1','apen',5,1)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='ent', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s10_1 = HCTSAOperation(
         'SY_SlidingWindow_s_s10_1',
         "SY_SlidingWindow(y,'std','std',10,1)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='std', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen2_10 = HCTSAOperation(
         'SY_SlidingWindow_ac1_apen2_10',
         "SY_SlidingWindow(y,'AC1','apen',2,10)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='apen', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen10_2 = HCTSAOperation(
         'SY_SlidingWindow_apen_apen10_2',
         "SY_SlidingWindow(y,'apen','apen',10,2)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='apen', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s10_1 = HCTSAOperation(
         'SY_SlidingWindow_lil_s10_1',
         "SY_SlidingWindow(y,'lillie','std',10,1)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='std', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent10_10 = HCTSAOperation(
         'SY_SlidingWindow_ac1_ent10_10',
         "SY_SlidingWindow(y,'AC1','ent',10,10)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='ent', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s2_1 = HCTSAOperation(
         'SY_SlidingWindow_s_s2_1',
         "SY_SlidingWindow(y,'std','std',2,1)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='std', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s10_10 = HCTSAOperation(
         'SY_SlidingWindow_s_s10_10',
         "SY_SlidingWindow(y,'std','std',10,10)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='std', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen2_10 = HCTSAOperation(
         'SY_SlidingWindow_s_apen2_10',
         "SY_SlidingWindow(y,'std','apen',2,10)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='apen', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s2_2 = HCTSAOperation(
         'SY_SlidingWindow_s_s2_2',
         "SY_SlidingWindow(y,'std','std',2,2)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='std', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s5_1 = HCTSAOperation(
         'SY_SlidingWindow_m_s5_1',
         "SY_SlidingWindow(y,'mean','std',5,1)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='std', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s5_2 = HCTSAOperation(
         'SY_SlidingWindow_m_s5_2',
         "SY_SlidingWindow(y,'mean','std',5,2)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='std', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s5_10 = HCTSAOperation(
         'SY_SlidingWindow_ent_s5_10',
         "SY_SlidingWindow(y,'ent','std',5,10)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='std', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent5_10 = HCTSAOperation(
         'SY_SlidingWindow_apen_ent5_10',
         "SY_SlidingWindow(y,'apen','ent',5,10)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='ent', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen2_1 = HCTSAOperation(
         'SY_SlidingWindow_apen_apen2_1',
         "SY_SlidingWindow(y,'apen','apen',2,1)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='apen', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen5_2 = HCTSAOperation(
         'SY_SlidingWindow_ac1_apen5_2',
         "SY_SlidingWindow(y,'AC1','apen',5,2)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='apen', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen5_2 = HCTSAOperation(
         'SY_SlidingWindow_m_apen5_2',
         "SY_SlidingWindow(y,'mean','apen',5,2)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='apen', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen5_1 = HCTSAOperation(
         'SY_SlidingWindow_m_apen5_1',
         "SY_SlidingWindow(y,'mean','apen',5,1)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='apen', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen2_10 = HCTSAOperation(
         'SY_SlidingWindow_lil_apen2_10',
         "SY_SlidingWindow(y,'lillie','apen',2,10)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='apen', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen10_2 = HCTSAOperation(
         'SY_SlidingWindow_mom3_apen10_2',
         "SY_SlidingWindow(y,'mom3','apen',10,2)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='apen', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen10_1 = HCTSAOperation(
         'SY_SlidingWindow_mom3_apen10_1',
         "SY_SlidingWindow(y,'mom3','apen',10,1)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='apen', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s10_10 = HCTSAOperation(
         'SY_SlidingWindow_mom4_s10_10',
         "SY_SlidingWindow(y,'mom4','std',10,10)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='std', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen5_10 = HCTSAOperation(
         'SY_SlidingWindow_s_apen5_10',
         "SY_SlidingWindow(y,'std','apen',5,10)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='apen', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen2_10 = HCTSAOperation(
         'SY_SlidingWindow_m_apen2_10',
         "SY_SlidingWindow(y,'mean','apen',2,10)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='apen', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen2_1 = HCTSAOperation(
         'SY_SlidingWindow_mom4_apen2_1',
         "SY_SlidingWindow(y,'mom4','apen',2,1)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='apen', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen2_2 = HCTSAOperation(
         'SY_SlidingWindow_mom4_apen2_2',
         "SY_SlidingWindow(y,'mom4','apen',2,2)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='apen', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent2_10 = HCTSAOperation(
         'SY_SlidingWindow_m_ent2_10',
         "SY_SlidingWindow(y,'mean','ent',2,10)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='ent', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen5_10 = HCTSAOperation(
         'SY_SlidingWindow_apen_apen5_10',
         "SY_SlidingWindow(y,'apen','apen',5,10)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='apen', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent2_1 = HCTSAOperation(
         'SY_SlidingWindow_mom3_ent2_1',
         "SY_SlidingWindow(y,'mom3','ent',2,1)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='ent', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s10_2 = HCTSAOperation(
         'SY_SlidingWindow_mom4_s10_2',
         "SY_SlidingWindow(y,'mom4','std',10,2)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='std', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s2_2 = HCTSAOperation(
         'SY_SlidingWindow_lil_s2_2',
         "SY_SlidingWindow(y,'lillie','std',2,2)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='std', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent5_10 = HCTSAOperation(
         'SY_SlidingWindow_mom3_ent5_10',
         "SY_SlidingWindow(y,'mom3','ent',5,10)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='ent', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s5_10 = HCTSAOperation(
         'SY_SlidingWindow_mom3_s5_10',
         "SY_SlidingWindow(y,'mom3','std',5,10)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='std', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent2_1 = HCTSAOperation(
         'SY_SlidingWindow_apen_ent2_1',
         "SY_SlidingWindow(y,'apen','ent',2,1)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='ent', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent2_2 = HCTSAOperation(
         'SY_SlidingWindow_apen_ent2_2',
         "SY_SlidingWindow(y,'apen','ent',2,2)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='ent', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent10_10 = HCTSAOperation(
         'SY_SlidingWindow_m_ent10_10',
         "SY_SlidingWindow(y,'mean','ent',10,10)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='ent', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent2_10 = HCTSAOperation(
         'SY_SlidingWindow_s_ent2_10',
         "SY_SlidingWindow(y,'std','ent',2,10)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='ent', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen2_2 = HCTSAOperation(
         'SY_SlidingWindow_ac1_apen2_2',
         "SY_SlidingWindow(y,'AC1','apen',2,2)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='apen', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen2_1 = HCTSAOperation(
         'SY_SlidingWindow_ac1_apen2_1',
         "SY_SlidingWindow(y,'AC1','apen',2,1)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='apen', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s10_10 = HCTSAOperation(
         'SY_SlidingWindow_lil_s10_10',
         "SY_SlidingWindow(y,'lillie','std',10,10)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='std', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent5_10 = HCTSAOperation(
         'SY_SlidingWindow_mom4_ent5_10',
         "SY_SlidingWindow(y,'mom4','ent',5,10)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='ent', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen2_1 = HCTSAOperation(
         'SY_SlidingWindow_ent_apen2_1',
         "SY_SlidingWindow(y,'ent','apen',2,1)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='apen', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen2_2 = HCTSAOperation(
         'SY_SlidingWindow_ent_apen2_2',
         "SY_SlidingWindow(y,'ent','apen',2,2)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='apen', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent10_1 = HCTSAOperation(
         'SY_SlidingWindow_ent_ent10_1',
         "SY_SlidingWindow(y,'ent','ent',10,1)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='ent', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen2_10 = HCTSAOperation(
         'SY_SlidingWindow_ent_apen2_10',
         "SY_SlidingWindow(y,'ent','apen',2,10)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='apen', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent10_2 = HCTSAOperation(
         'SY_SlidingWindow_ent_ent10_2',
         "SY_SlidingWindow(y,'ent','ent',10,2)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='ent', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen2_1 = HCTSAOperation(
         'SY_SlidingWindow_m_apen2_1',
         "SY_SlidingWindow(y,'mean','apen',2,1)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='apen', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen2_2 = HCTSAOperation(
         'SY_SlidingWindow_m_apen2_2',
         "SY_SlidingWindow(y,'mean','apen',2,2)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='apen', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s10_2 = HCTSAOperation(
         'SY_SlidingWindow_lil_s10_2',
         "SY_SlidingWindow(y,'lillie','std',10,2)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='std', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s10_1 = HCTSAOperation(
         'SY_SlidingWindow_mom3_s10_1',
         "SY_SlidingWindow(y,'mom3','std',10,1)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='std', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s10_2 = HCTSAOperation(
         'SY_SlidingWindow_mom3_s10_2',
         "SY_SlidingWindow(y,'mom3','std',10,2)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='std', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent5_1 = HCTSAOperation(
         'SY_SlidingWindow_m_ent5_1',
         "SY_SlidingWindow(y,'mean','ent',5,1)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='ent', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen5_10 = HCTSAOperation(
         'SY_SlidingWindow_ac1_apen5_10',
         "SY_SlidingWindow(y,'AC1','apen',5,10)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='apen', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s10_10 = HCTSAOperation(
         'SY_SlidingWindow_m_s10_10',
         "SY_SlidingWindow(y,'mean','std',10,10)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='std', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s5_1 = HCTSAOperation(
         'SY_SlidingWindow_apen_s5_1',
         "SY_SlidingWindow(y,'apen','std',5,1)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='std', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen2_10 = HCTSAOperation(
         'SY_SlidingWindow_mom4_apen2_10',
         "SY_SlidingWindow(y,'mom4','apen',2,10)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='apen', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen5_1 = HCTSAOperation(
         'SY_SlidingWindow_apen_apen5_1',
         "SY_SlidingWindow(y,'apen','apen',5,1)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='apen', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen10_1 = HCTSAOperation(
         'SY_SlidingWindow_lil_apen10_1',
         "SY_SlidingWindow(y,'lillie','apen',10,1)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='apen', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen5_2 = HCTSAOperation(
         'SY_SlidingWindow_lil_apen5_2',
         "SY_SlidingWindow(y,'lillie','apen',5,2)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='apen', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen10_10 = HCTSAOperation(
         'SY_SlidingWindow_ent_apen10_10',
         "SY_SlidingWindow(y,'ent','apen',10,10)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='apen', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent10_1 = HCTSAOperation(
         'SY_SlidingWindow_mom3_ent10_1',
         "SY_SlidingWindow(y,'mom3','ent',10,1)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='ent', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen5_1 = HCTSAOperation(
         'SY_SlidingWindow_lil_apen5_1',
         "SY_SlidingWindow(y,'lillie','apen',5,1)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='apen', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen10_2 = HCTSAOperation(
         'SY_SlidingWindow_lil_apen10_2',
         "SY_SlidingWindow(y,'lillie','apen',10,2)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='apen', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent10_1 = HCTSAOperation(
         'SY_SlidingWindow_m_ent10_1',
         "SY_SlidingWindow(y,'mean','ent',10,1)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='ent', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent5_2 = HCTSAOperation(
         'SY_SlidingWindow_s_ent5_2',
         "SY_SlidingWindow(y,'std','ent',5,2)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='ent', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s5_10 = HCTSAOperation(
         'SY_SlidingWindow_m_s5_10',
         "SY_SlidingWindow(y,'mean','std',5,10)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='std', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent10_10 = HCTSAOperation(
         'SY_SlidingWindow_s_ent10_10',
         "SY_SlidingWindow(y,'std','ent',10,10)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='ent', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent2_2 = HCTSAOperation(
         'SY_SlidingWindow_mom3_ent2_2',
         "SY_SlidingWindow(y,'mom3','ent',2,2)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='ent', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen10_10 = HCTSAOperation(
         'SY_SlidingWindow_m_apen10_10',
         "SY_SlidingWindow(y,'mean','apen',10,10)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='apen', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent10_10 = HCTSAOperation(
         'SY_SlidingWindow_apen_ent10_10',
         "SY_SlidingWindow(y,'apen','ent',10,10)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='ent', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s5_10 = HCTSAOperation(
         'SY_SlidingWindow_ac1_s5_10',
         "SY_SlidingWindow(y,'AC1','std',5,10)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='std', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen2_2 = HCTSAOperation(
         'SY_SlidingWindow_s_apen2_2',
         "SY_SlidingWindow(y,'std','apen',2,2)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='apen', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen2_1 = HCTSAOperation(
         'SY_SlidingWindow_s_apen2_1',
         "SY_SlidingWindow(y,'std','apen',2,1)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='apen', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent2_2 = HCTSAOperation(
         'SY_SlidingWindow_mom4_ent2_2',
         "SY_SlidingWindow(y,'mom4','ent',2,2)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='ent', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent2_10 = HCTSAOperation(
         'SY_SlidingWindow_ent_ent2_10',
         "SY_SlidingWindow(y,'ent','ent',2,10)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='ent', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent2_1 = HCTSAOperation(
         'SY_SlidingWindow_mom4_ent2_1',
         "SY_SlidingWindow(y,'mom4','ent',2,1)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='ent', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent2_1 = HCTSAOperation(
         'SY_SlidingWindow_m_ent2_1',
         "SY_SlidingWindow(y,'mean','ent',2,1)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='ent', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent2_2 = HCTSAOperation(
         'SY_SlidingWindow_m_ent2_2',
         "SY_SlidingWindow(y,'mean','ent',2,2)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='ent', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen5_2 = HCTSAOperation(
         'SY_SlidingWindow_ent_apen5_2',
         "SY_SlidingWindow(y,'ent','apen',5,2)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='apen', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen10_2 = HCTSAOperation(
         'SY_SlidingWindow_s_apen10_2',
         "SY_SlidingWindow(y,'std','apen',10,2)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='apen', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen10_1 = HCTSAOperation(
         'SY_SlidingWindow_s_apen10_1',
         "SY_SlidingWindow(y,'std','apen',10,1)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='apen', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s5_2 = HCTSAOperation(
         'SY_SlidingWindow_ac1_s5_2',
         "SY_SlidingWindow(y,'AC1','std',5,2)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='std', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s5_1 = HCTSAOperation(
         'SY_SlidingWindow_ac1_s5_1',
         "SY_SlidingWindow(y,'AC1','std',5,1)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='std', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent2_1 = HCTSAOperation(
         'SY_SlidingWindow_s_ent2_1',
         "SY_SlidingWindow(y,'std','ent',2,1)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='ent', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s10_1 = HCTSAOperation(
         'SY_SlidingWindow_ent_s10_1',
         "SY_SlidingWindow(y,'ent','std',10,1)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='std', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen5_1 = HCTSAOperation(
         'SY_SlidingWindow_s_apen5_1',
         "SY_SlidingWindow(y,'std','apen',5,1)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='apen', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen5_2 = HCTSAOperation(
         'SY_SlidingWindow_s_apen5_2',
         "SY_SlidingWindow(y,'std','apen',5,2)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='apen', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s10_10 = HCTSAOperation(
         'SY_SlidingWindow_ent_s10_10',
         "SY_SlidingWindow(y,'ent','std',10,10)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='std', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent2_2 = HCTSAOperation(
         'SY_SlidingWindow_lil_ent2_2',
         "SY_SlidingWindow(y,'lillie','ent',2,2)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='ent', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent10_1 = HCTSAOperation(
         'SY_SlidingWindow_mom4_ent10_1',
         "SY_SlidingWindow(y,'mom4','ent',10,1)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='ent', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent10_2 = HCTSAOperation(
         'SY_SlidingWindow_mom4_ent10_2',
         "SY_SlidingWindow(y,'mom4','ent',10,2)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='ent', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s5_2 = HCTSAOperation(
         'SY_SlidingWindow_apen_s5_2',
         "SY_SlidingWindow(y,'apen','std',5,2)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='std', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s5_2 = HCTSAOperation(
         'SY_SlidingWindow_mom4_s5_2',
         "SY_SlidingWindow(y,'mom4','std',5,2)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='std', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s5_1 = HCTSAOperation(
         'SY_SlidingWindow_mom4_s5_1',
         "SY_SlidingWindow(y,'mom4','std',5,1)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='std', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s2_10 = HCTSAOperation(
         'SY_SlidingWindow_s_s2_10',
         "SY_SlidingWindow(y,'std','std',2,10)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='std', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent2_10 = HCTSAOperation(
         'SY_SlidingWindow_lil_ent2_10',
         "SY_SlidingWindow(y,'lillie','ent',2,10)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='ent', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent2_1 = HCTSAOperation(
         'SY_SlidingWindow_lil_ent2_1',
         "SY_SlidingWindow(y,'lillie','ent',2,1)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='ent', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s10_10 = HCTSAOperation(
         'SY_SlidingWindow_mom3_s10_10',
         "SY_SlidingWindow(y,'mom3','std',10,10)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='std', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen5_10 = HCTSAOperation(
         'SY_SlidingWindow_m_apen5_10',
         "SY_SlidingWindow(y,'mean','apen',5,10)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='apen', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s2_2 = HCTSAOperation(
         'SY_SlidingWindow_apen_s2_2',
         "SY_SlidingWindow(y,'apen','std',2,2)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='std', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s2_1 = HCTSAOperation(
         'SY_SlidingWindow_apen_s2_1',
         "SY_SlidingWindow(y,'apen','std',2,1)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='std', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s10_2 = HCTSAOperation(
         'SY_SlidingWindow_s_s10_2',
         "SY_SlidingWindow(y,'std','std',10,2)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='std', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent2_10 = HCTSAOperation(
         'SY_SlidingWindow_apen_ent2_10',
         "SY_SlidingWindow(y,'apen','ent',2,10)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='ent', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s2_2 = HCTSAOperation(
         'SY_SlidingWindow_ent_s2_2',
         "SY_SlidingWindow(y,'ent','std',2,2)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='std', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s2_1 = HCTSAOperation(
         'SY_SlidingWindow_ent_s2_1',
         "SY_SlidingWindow(y,'ent','std',2,1)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='std', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen10_1 = HCTSAOperation(
         'SY_SlidingWindow_m_apen10_1',
         "SY_SlidingWindow(y,'mean','apen',10,1)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='apen', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_apen10_2 = HCTSAOperation(
         'SY_SlidingWindow_m_apen10_2',
         "SY_SlidingWindow(y,'mean','apen',10,2)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='apen', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='apen', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen2_1 = HCTSAOperation(
         'SY_SlidingWindow_lil_apen2_1',
         "SY_SlidingWindow(y,'lillie','apen',2,1)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='apen', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen2_2 = HCTSAOperation(
         'SY_SlidingWindow_lil_apen2_2',
         "SY_SlidingWindow(y,'lillie','apen',2,2)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='apen', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen2_2 = HCTSAOperation(
         'SY_SlidingWindow_apen_apen2_2',
         "SY_SlidingWindow(y,'apen','apen',2,2)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='apen', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent2_10 = HCTSAOperation(
         'SY_SlidingWindow_mom4_ent2_10',
         "SY_SlidingWindow(y,'mom4','ent',2,10)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='ent', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s2_10 = HCTSAOperation(
         'SY_SlidingWindow_mom3_s2_10',
         "SY_SlidingWindow(y,'mom3','std',2,10)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='std', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent5_10 = HCTSAOperation(
         'SY_SlidingWindow_ac1_ent5_10',
         "SY_SlidingWindow(y,'AC1','ent',5,10)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='ent', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s2_1 = HCTSAOperation(
         'SY_SlidingWindow_ac1_s2_1',
         "SY_SlidingWindow(y,'AC1','std',2,1)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='std', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s2_2 = HCTSAOperation(
         'SY_SlidingWindow_ac1_s2_2',
         "SY_SlidingWindow(y,'AC1','std',2,2)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='std', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen5_1 = HCTSAOperation(
         'SY_SlidingWindow_ent_apen5_1',
         "SY_SlidingWindow(y,'ent','apen',5,1)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='apen', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent5_1 = HCTSAOperation(
         'SY_SlidingWindow_mom3_ent5_1',
         "SY_SlidingWindow(y,'mom3','ent',5,1)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='ent', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent5_2 = HCTSAOperation(
         'SY_SlidingWindow_mom3_ent5_2',
         "SY_SlidingWindow(y,'mom3','ent',5,2)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='ent', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent5_10 = HCTSAOperation(
         'SY_SlidingWindow_m_ent5_10',
         "SY_SlidingWindow(y,'mean','ent',5,10)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='ent', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent10_2 = HCTSAOperation(
         'SY_SlidingWindow_lil_ent10_2',
         "SY_SlidingWindow(y,'lillie','ent',10,2)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='ent', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen2_10 = HCTSAOperation(
         'SY_SlidingWindow_mom3_apen2_10',
         "SY_SlidingWindow(y,'mom3','apen',2,10)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='apen', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s2_10 = HCTSAOperation(
         'SY_SlidingWindow_lil_s2_10',
         "SY_SlidingWindow(y,'lillie','std',2,10)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='std', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen5_2 = HCTSAOperation(
         'SY_SlidingWindow_apen_apen5_2',
         "SY_SlidingWindow(y,'apen','apen',5,2)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='apen', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s10_2 = HCTSAOperation(
         'SY_SlidingWindow_apen_s10_2',
         "SY_SlidingWindow(y,'apen','std',10,2)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='std', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s10_1 = HCTSAOperation(
         'SY_SlidingWindow_apen_s10_1',
         "SY_SlidingWindow(y,'apen','std',10,1)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='std', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s5_10 = HCTSAOperation(
         'SY_SlidingWindow_apen_s5_10',
         "SY_SlidingWindow(y,'apen','std',5,10)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='std', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent10_1 = HCTSAOperation(
         'SY_SlidingWindow_lil_ent10_1',
         "SY_SlidingWindow(y,'lillie','ent',10,1)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='ent', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen5_2 = HCTSAOperation(
         'SY_SlidingWindow_mom4_apen5_2',
         "SY_SlidingWindow(y,'mom4','apen',5,2)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='apen', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s2_10 = HCTSAOperation(
         'SY_SlidingWindow_ent_s2_10',
         "SY_SlidingWindow(y,'ent','std',2,10)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='std', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen5_10 = HCTSAOperation(
         'SY_SlidingWindow_lil_apen5_10',
         "SY_SlidingWindow(y,'lillie','apen',5,10)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='apen', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent10_10 = HCTSAOperation(
         'SY_SlidingWindow_mom3_ent10_10',
         "SY_SlidingWindow(y,'mom3','ent',10,10)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='ent', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent2_10 = HCTSAOperation(
         'SY_SlidingWindow_mom3_ent2_10',
         "SY_SlidingWindow(y,'mom3','ent',2,10)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='ent', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent5_1 = HCTSAOperation(
         'SY_SlidingWindow_mom4_ent5_1',
         "SY_SlidingWindow(y,'mom4','ent',5,1)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='ent', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent5_2 = HCTSAOperation(
         'SY_SlidingWindow_mom4_ent5_2',
         "SY_SlidingWindow(y,'mom4','ent',5,2)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='ent', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s2_10 = HCTSAOperation(
         'SY_SlidingWindow_mom4_s2_10',
         "SY_SlidingWindow(y,'mom4','std',2,10)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='std', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s2_1 = HCTSAOperation(
         'SY_SlidingWindow_mom4_s2_1',
         "SY_SlidingWindow(y,'mom4','std',2,1)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='std', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s2_2 = HCTSAOperation(
         'SY_SlidingWindow_mom4_s2_2',
         "SY_SlidingWindow(y,'mom4','std',2,2)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='std', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent5_2 = HCTSAOperation(
         'SY_SlidingWindow_lil_ent5_2',
         "SY_SlidingWindow(y,'lillie','ent',5,2)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='ent', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent5_10 = HCTSAOperation(
         'SY_SlidingWindow_s_ent5_10',
         "SY_SlidingWindow(y,'std','ent',5,10)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='ent', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen10_1 = HCTSAOperation(
         'SY_SlidingWindow_apen_apen10_1',
         "SY_SlidingWindow(y,'apen','apen',10,1)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='apen', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen10_2 = HCTSAOperation(
         'SY_SlidingWindow_ac1_apen10_2',
         "SY_SlidingWindow(y,'AC1','apen',10,2)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='apen', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen10_1 = HCTSAOperation(
         'SY_SlidingWindow_ac1_apen10_1',
         "SY_SlidingWindow(y,'AC1','apen',10,1)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='apen', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s2_10 = HCTSAOperation(
         'SY_SlidingWindow_ac1_s2_10',
         "SY_SlidingWindow(y,'AC1','std',2,10)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='std', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent10_10 = HCTSAOperation(
         'SY_SlidingWindow_ent_ent10_10',
         "SY_SlidingWindow(y,'ent','ent',10,10)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='ent', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s5_1 = HCTSAOperation(
         'SY_SlidingWindow_ent_s5_1',
         "SY_SlidingWindow(y,'ent','std',5,1)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='std', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s5_2 = HCTSAOperation(
         'SY_SlidingWindow_ent_s5_2',
         "SY_SlidingWindow(y,'ent','std',5,2)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='std', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_apen10_10 = HCTSAOperation(
         'SY_SlidingWindow_s_apen10_10',
         "SY_SlidingWindow(y,'std','apen',10,10)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='apen', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='apen', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_s10_2 = HCTSAOperation(
         'SY_SlidingWindow_ent_s10_2',
         "SY_SlidingWindow(y,'ent','std',10,2)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='std', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='std', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent2_10 = HCTSAOperation(
         'SY_SlidingWindow_ac1_ent2_10',
         "SY_SlidingWindow(y,'AC1','ent',2,10)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='ent', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen5_10 = HCTSAOperation(
         'SY_SlidingWindow_ent_apen5_10',
         "SY_SlidingWindow(y,'ent','apen',5,10)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='apen', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent5_1 = HCTSAOperation(
         'SY_SlidingWindow_s_ent5_1',
         "SY_SlidingWindow(y,'std','ent',5,1)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='ent', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent10_10 = HCTSAOperation(
         'SY_SlidingWindow_lil_ent10_10',
         "SY_SlidingWindow(y,'lillie','ent',10,10)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='ent', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen5_1 = HCTSAOperation(
         'SY_SlidingWindow_mom3_apen5_1',
         "SY_SlidingWindow(y,'mom3','apen',5,1)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='apen', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_apen10_10 = HCTSAOperation(
         'SY_SlidingWindow_lil_apen10_10',
         "SY_SlidingWindow(y,'lillie','apen',10,10)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='apen', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='apen', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s2_1 = HCTSAOperation(
         'SY_SlidingWindow_mom3_s2_1',
         "SY_SlidingWindow(y,'mom3','std',2,1)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='std', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s2_2 = HCTSAOperation(
         'SY_SlidingWindow_mom3_s2_2',
         "SY_SlidingWindow(y,'mom3','std',2,2)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='std', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen10_1 = HCTSAOperation(
         'SY_SlidingWindow_ent_apen10_1',
         "SY_SlidingWindow(y,'ent','apen',10,1)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='apen', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_apen10_2 = HCTSAOperation(
         'SY_SlidingWindow_ent_apen10_2',
         "SY_SlidingWindow(y,'ent','apen',10,2)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='apen', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='apen', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen10_2 = HCTSAOperation(
         'SY_SlidingWindow_mom4_apen10_2',
         "SY_SlidingWindow(y,'mom4','apen',10,2)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='apen', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen10_1 = HCTSAOperation(
         'SY_SlidingWindow_mom4_apen10_1',
         "SY_SlidingWindow(y,'mom4','apen',10,1)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='apen', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_ent5_2 = HCTSAOperation(
         'SY_SlidingWindow_m_ent5_2',
         "SY_SlidingWindow(y,'mean','ent',5,2)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='ent', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='ent', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s10_10 = HCTSAOperation(
         'SY_SlidingWindow_apen_s10_10',
         "SY_SlidingWindow(y,'apen','std',10,10)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='std', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen5_2 = HCTSAOperation(
         'SY_SlidingWindow_mom3_apen5_2',
         "SY_SlidingWindow(y,'mom3','apen',5,2)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='apen', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen10_10 = HCTSAOperation(
         'SY_SlidingWindow_mom4_apen10_10',
         "SY_SlidingWindow(y,'mom4','apen',10,10)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='apen', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_apen10_10 = HCTSAOperation(
         'SY_SlidingWindow_ac1_apen10_10',
         "SY_SlidingWindow(y,'AC1','apen',10,10)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='apen', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='apen', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s5_2 = HCTSAOperation(
         'SY_SlidingWindow_s_s5_2',
         "SY_SlidingWindow(y,'std','std',5,2)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='std', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s5_1 = HCTSAOperation(
         'SY_SlidingWindow_s_s5_1',
         "SY_SlidingWindow(y,'std','std',5,1)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='std', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen5_10 = HCTSAOperation(
         'SY_SlidingWindow_mom3_apen5_10',
         "SY_SlidingWindow(y,'mom3','apen',5,10)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='apen', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen10_10 = HCTSAOperation(
         'SY_SlidingWindow_apen_apen10_10',
         "SY_SlidingWindow(y,'apen','apen',10,10)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='apen', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent2_1 = HCTSAOperation(
         'SY_SlidingWindow_ent_ent2_1',
         "SY_SlidingWindow(y,'ent','ent',2,1)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='ent', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent2_2 = HCTSAOperation(
         'SY_SlidingWindow_ent_ent2_2',
         "SY_SlidingWindow(y,'ent','ent',2,2)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='ent', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s5_2 = HCTSAOperation(
         'SY_SlidingWindow_mom3_s5_2',
         "SY_SlidingWindow(y,'mom3','std',5,2)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='std', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_s5_1 = HCTSAOperation(
         'SY_SlidingWindow_mom3_s5_1',
         "SY_SlidingWindow(y,'mom3','std',5,1)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='std', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='std', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s2_10 = HCTSAOperation(
         'SY_SlidingWindow_m_s2_10',
         "SY_SlidingWindow(y,'mean','std',2,10)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='std', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent2_2 = HCTSAOperation(
         'SY_SlidingWindow_ac1_ent2_2',
         "SY_SlidingWindow(y,'AC1','ent',2,2)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='ent', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent2_1 = HCTSAOperation(
         'SY_SlidingWindow_ac1_ent2_1',
         "SY_SlidingWindow(y,'AC1','ent',2,1)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='ent', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen5_10 = HCTSAOperation(
         'SY_SlidingWindow_mom4_apen5_10',
         "SY_SlidingWindow(y,'mom4','apen',5,10)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='apen', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent5_10 = HCTSAOperation(
         'SY_SlidingWindow_lil_ent5_10',
         "SY_SlidingWindow(y,'lillie','ent',5,10)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='ent', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_ent10_10 = HCTSAOperation(
         'SY_SlidingWindow_mom4_ent10_10',
         "SY_SlidingWindow(y,'mom4','ent',10,10)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='ent', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='ent', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent2_2 = HCTSAOperation(
         'SY_SlidingWindow_s_ent2_2',
         "SY_SlidingWindow(y,'std','ent',2,2)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='ent', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_s5_10 = HCTSAOperation(
         'SY_SlidingWindow_s_s5_10',
         "SY_SlidingWindow(y,'std','std',5,10)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='std', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='std', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent10_2 = HCTSAOperation(
         'SY_SlidingWindow_s_ent10_2',
         "SY_SlidingWindow(y,'std','ent',10,2)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='ent', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_s_ent10_1 = HCTSAOperation(
         'SY_SlidingWindow_s_ent10_1',
         "SY_SlidingWindow(y,'std','ent',10,1)",
-        SY_SlidingWindow(windowstat='std', acrosswindowstat='ent', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='std', acrossWinStat='ent', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s10_1 = HCTSAOperation(
         'SY_SlidingWindow_ac1_s10_1',
         "SY_SlidingWindow(y,'AC1','std',10,1)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='std', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen10_10 = HCTSAOperation(
         'SY_SlidingWindow_mom3_apen10_10',
         "SY_SlidingWindow(y,'mom3','apen',10,10)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='apen', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s10_2 = HCTSAOperation(
         'SY_SlidingWindow_m_s10_2',
         "SY_SlidingWindow(y,'mean','std',10,2)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='std', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s10_1 = HCTSAOperation(
         'SY_SlidingWindow_m_s10_1',
         "SY_SlidingWindow(y,'mean','std',10,1)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='std', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s5_10 = HCTSAOperation(
         'SY_SlidingWindow_mom4_s5_10',
         "SY_SlidingWindow(y,'mom4','std',5,10)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='std', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s10_2 = HCTSAOperation(
         'SY_SlidingWindow_ac1_s10_2',
         "SY_SlidingWindow(y,'AC1','std',10,2)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='std', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_apen2_10 = HCTSAOperation(
         'SY_SlidingWindow_apen_apen2_10',
         "SY_SlidingWindow(y,'apen','apen',2,10)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='apen', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='apen', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s5_10 = HCTSAOperation(
         'SY_SlidingWindow_lil_s5_10',
         "SY_SlidingWindow(y,'lillie','std',5,10)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='std', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_apen5_1 = HCTSAOperation(
         'SY_SlidingWindow_mom4_apen5_1',
         "SY_SlidingWindow(y,'mom4','apen',5,1)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='apen', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='apen', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ent_ent5_10 = HCTSAOperation(
         'SY_SlidingWindow_ent_ent5_10',
         "SY_SlidingWindow(y,'ent','ent',5,10)",
-        SY_SlidingWindow(windowstat='ent', acrosswindowstat='ent', nseg=5, nmov=10))
+        SY_SlidingWindow(windowStat='ent', acrossWinStat='ent', numSeg=5, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent10_2 = HCTSAOperation(
         'SY_SlidingWindow_ac1_ent10_2',
         "SY_SlidingWindow(y,'AC1','ent',10,2)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='ent', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent10_1 = HCTSAOperation(
         'SY_SlidingWindow_ac1_ent10_1',
         "SY_SlidingWindow(y,'AC1','ent',10,1)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='ent', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s2_2 = HCTSAOperation(
         'SY_SlidingWindow_m_s2_2',
         "SY_SlidingWindow(y,'mean','std',2,2)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='std', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_m_s2_1 = HCTSAOperation(
         'SY_SlidingWindow_m_s2_1',
         "SY_SlidingWindow(y,'mean','std',2,1)",
-        SY_SlidingWindow(windowstat='mean', acrosswindowstat='std', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='mean', acrossWinStat='std', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent10_1 = HCTSAOperation(
         'SY_SlidingWindow_apen_ent10_1',
         "SY_SlidingWindow(y,'apen','ent',10,1)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='ent', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent10_2 = HCTSAOperation(
         'SY_SlidingWindow_apen_ent10_2',
         "SY_SlidingWindow(y,'apen','ent',10,2)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='ent', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_ent5_1 = HCTSAOperation(
         'SY_SlidingWindow_lil_ent5_1',
         "SY_SlidingWindow(y,'lillie','ent',5,1)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='ent', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='ent', numSeg=5, incMove=1))
+
+    # outs: None
+    # tags: slidingwin,stationarity
+    SY_SlidingWindow_ac1_apen5_1 = HCTSAOperation(
+        'SY_SlidingWindow_ac1_apen5_1',
+        "SY_SlidingWindow(y,'AC1','apen',5,1)",
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='apen', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent5_1 = HCTSAOperation(
         'SY_SlidingWindow_ac1_ent5_1',
         "SY_SlidingWindow(y,'AC1','ent',5,1)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='ent', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_ent5_2 = HCTSAOperation(
         'SY_SlidingWindow_ac1_ent5_2',
         "SY_SlidingWindow(y,'AC1','ent',5,2)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='ent', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='ent', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen2_2 = HCTSAOperation(
         'SY_SlidingWindow_mom3_apen2_2',
         "SY_SlidingWindow(y,'mom3','apen',2,2)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=2, nmov=2))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='apen', numSeg=2, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_apen2_1 = HCTSAOperation(
         'SY_SlidingWindow_mom3_apen2_1',
         "SY_SlidingWindow(y,'mom3','apen',2,1)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='apen', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='apen', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_ac1_s10_10 = HCTSAOperation(
         'SY_SlidingWindow_ac1_s10_10',
         "SY_SlidingWindow(y,'AC1','std',10,10)",
-        SY_SlidingWindow(windowstat='AC1', acrosswindowstat='std', nseg=10, nmov=10))
+        SY_SlidingWindow(windowStat='AC1', acrossWinStat='std', numSeg=10, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s5_1 = HCTSAOperation(
         'SY_SlidingWindow_lil_s5_1',
         "SY_SlidingWindow(y,'lillie','std',5,1)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='std', numSeg=5, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s5_2 = HCTSAOperation(
         'SY_SlidingWindow_lil_s5_2',
         "SY_SlidingWindow(y,'lillie','std',5,2)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='std', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom4_s10_1 = HCTSAOperation(
         'SY_SlidingWindow_mom4_s10_1',
         "SY_SlidingWindow(y,'mom4','std',10,1)",
-        SY_SlidingWindow(windowstat='mom4', acrosswindowstat='std', nseg=10, nmov=1))
+        SY_SlidingWindow(windowStat='mom4', acrossWinStat='std', numSeg=10, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_mom3_ent10_2 = HCTSAOperation(
         'SY_SlidingWindow_mom3_ent10_2',
         "SY_SlidingWindow(y,'mom3','ent',10,2)",
-        SY_SlidingWindow(windowstat='mom3', acrosswindowstat='ent', nseg=10, nmov=2))
+        SY_SlidingWindow(windowStat='mom3', acrossWinStat='ent', numSeg=10, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_lil_s2_1 = HCTSAOperation(
         'SY_SlidingWindow_lil_s2_1',
         "SY_SlidingWindow(y,'lillie','std',2,1)",
-        SY_SlidingWindow(windowstat='lillie', acrosswindowstat='std', nseg=2, nmov=1))
+        SY_SlidingWindow(windowStat='lillie', acrossWinStat='std', numSeg=2, incMove=1))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_s2_10 = HCTSAOperation(
         'SY_SlidingWindow_apen_s2_10',
         "SY_SlidingWindow(y,'apen','std',2,10)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='std', nseg=2, nmov=10))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='std', numSeg=2, incMove=10))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent5_2 = HCTSAOperation(
         'SY_SlidingWindow_apen_ent5_2',
         "SY_SlidingWindow(y,'apen','ent',5,2)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=5, nmov=2))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='ent', numSeg=5, incMove=2))
 
     # outs: None
     # tags: slidingwin,stationarity
     SY_SlidingWindow_apen_ent5_1 = HCTSAOperation(
         'SY_SlidingWindow_apen_ent5_1',
         "SY_SlidingWindow(y,'apen','ent',5,1)",
-        SY_SlidingWindow(windowstat='apen', acrosswindowstat='ent', nseg=5, nmov=1))
+        SY_SlidingWindow(windowStat='apen', acrossWinStat='ent', numSeg=5, incMove=1))
 
     # outs: meanac1,meanac2,meanapen1_02,meankurt,meanmean
     # outs: meansampen1_02,meanskew,meanstd,meantaul,stdac1
@@ -17395,126 +17264,126 @@ class HCTSAOperations(object):
     StatAvl100 = HCTSAOperation(
         'StatAvl100',
         "SY_StatAv(y,'len',100)",
-        SY_StatAv(WhatType='len', n=100))
+        SY_StatAv(whatType='len', n=100))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl2000 = HCTSAOperation(
         'StatAvl2000',
         "SY_StatAv(y,'len',2000)",
-        SY_StatAv(WhatType='len', n=2000))
+        SY_StatAv(whatType='len', n=2000))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl25 = HCTSAOperation(
         'StatAvl25',
         "SY_StatAv(y,'len',25)",
-        SY_StatAv(WhatType='len', n=25))
+        SY_StatAv(whatType='len', n=25))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl250 = HCTSAOperation(
         'StatAvl250',
         "SY_StatAv(y,'len',250)",
-        SY_StatAv(WhatType='len', n=250))
+        SY_StatAv(whatType='len', n=250))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl150 = HCTSAOperation(
         'StatAvl150',
         "SY_StatAv(y,'len',150)",
-        SY_StatAv(WhatType='len', n=150))
+        SY_StatAv(whatType='len', n=150))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl200 = HCTSAOperation(
         'StatAvl200',
         "SY_StatAv(y,'len',200)",
-        SY_StatAv(WhatType='len', n=200))
+        SY_StatAv(whatType='len', n=200))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl1000 = HCTSAOperation(
         'StatAvl1000',
         "SY_StatAv(y,'len',1000)",
-        SY_StatAv(WhatType='len', n=1000))
+        SY_StatAv(whatType='len', n=1000))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl50 = HCTSAOperation(
         'StatAvl50',
         "SY_StatAv(y,'len',50)",
-        SY_StatAv(WhatType='len', n=50))
+        SY_StatAv(whatType='len', n=50))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv10 = HCTSAOperation(
         'StatAv10',
         "SY_StatAv(y,'seg',10)",
-        SY_StatAv(WhatType='seg', n=10))
+        SY_StatAv(whatType='seg', n=10))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAvl500 = HCTSAOperation(
         'StatAvl500',
         "SY_StatAv(y,'len',500)",
-        SY_StatAv(WhatType='len', n=500))
+        SY_StatAv(whatType='len', n=500))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv8 = HCTSAOperation(
         'StatAv8',
         "SY_StatAv(y,'seg',8)",
-        SY_StatAv(WhatType='seg', n=8))
+        SY_StatAv(whatType='seg', n=8))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv9 = HCTSAOperation(
         'StatAv9',
         "SY_StatAv(y,'seg',9)",
-        SY_StatAv(WhatType='seg', n=9))
+        SY_StatAv(whatType='seg', n=9))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv2 = HCTSAOperation(
         'StatAv2',
         "SY_StatAv(y,'seg',2)",
-        SY_StatAv(WhatType='seg', n=2))
+        SY_StatAv(whatType='seg', n=2))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv3 = HCTSAOperation(
         'StatAv3',
         "SY_StatAv(y,'seg',3)",
-        SY_StatAv(WhatType='seg', n=3))
+        SY_StatAv(whatType='seg', n=3))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv6 = HCTSAOperation(
         'StatAv6',
         "SY_StatAv(y,'seg',6)",
-        SY_StatAv(WhatType='seg', n=6))
+        SY_StatAv(whatType='seg', n=6))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv7 = HCTSAOperation(
         'StatAv7',
         "SY_StatAv(y,'seg',7)",
-        SY_StatAv(WhatType='seg', n=7))
+        SY_StatAv(whatType='seg', n=7))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv4 = HCTSAOperation(
         'StatAv4',
         "SY_StatAv(y,'seg',4)",
-        SY_StatAv(WhatType='seg', n=4))
+        SY_StatAv(whatType='seg', n=4))
 
     # outs: None
     # tags: StatAv,stationarity
     StatAv5 = HCTSAOperation(
         'StatAv5',
         "SY_StatAv(y,'seg',5)",
-        SY_StatAv(WhatType='seg', n=5))
+        SY_StatAv(whatType='seg', n=5))
 
     # outs: None
     # tags: entropy
@@ -17603,7 +17472,7 @@ class HCTSAOperations(object):
     SY_TISEAN_nstat_z_5_1_3 = HCTSAOperation(
         'SY_TISEAN_nstat_z_5_1_3',
         'SY_TISEAN_nstat_z(y,5,{1,3})',
-        SY_TISEAN_nstat_z(nseg=5, embedparams=(1, 3, '_celltrick_')))
+        SY_TISEAN_nstat_z(numSeg=5, embedParams=(1, 3, '_celltrick_')))
 
     # outs: iqr,iqroffdiag,max,maxeig,maximageig
     # outs: mean,median,min,mineig,minimageig
@@ -17615,7 +17484,7 @@ class HCTSAOperations(object):
     SY_TISEAN_nstat_z_4_1_3 = HCTSAOperation(
         'SY_TISEAN_nstat_z_4_1_3',
         'SY_TISEAN_nstat_z(y,4,{1,3})',
-        SY_TISEAN_nstat_z(nseg=4, embedparams=(1, 3, '_celltrick_')))
+        SY_TISEAN_nstat_z(numSeg=4, embedParams=(1, 3, '_celltrick_')))
 
     # outs: iqr,iqroffdiag,max,maxeig,maximageig
     # outs: mean,median,min,mineig,minimageig
@@ -17627,7 +17496,15 @@ class HCTSAOperations(object):
     SY_TISEAN_nstat_z_4_ac_3 = HCTSAOperation(
         'SY_TISEAN_nstat_z_4_ac_3',
         "SY_TISEAN_nstat_z(y,4,{'ac',3})",
-        SY_TISEAN_nstat_z(nseg=4, embedparams=('ac', 3)))
+        SY_TISEAN_nstat_z(numSeg=4, embedParams=('ac', 3)))
+
+    # outs: gradient,gradientYC,intercept,interceptYC,meanYC
+    # outs: meanYC12,meanYC22,stdRatio,stdYC
+    # tags: stationarity
+    SY_Trend = HCTSAOperation(
+        'SY_Trend',
+        'SY_Trend(y)',
+        SY_Trend())
 
     # outs: pValue,ratio,stat
     # tags: econometricstoolbox,pvalue,vratiotest
@@ -17677,11 +17554,11 @@ class HCTSAOperations(object):
     # outs: ac1den,ac2den,ac3den,ac4den,ac5den
     # outs: iqrden,maxden,meanden,medianden,minden
     # outs: rangeden,stdden,tauacden,taumiden
-    # tags: localdensity,nonlinear,stochastic,tstool
-    TSTL_localdensity_5_40_ac_cao = HCTSAOperation(
-        'TSTL_localdensity_5_40_ac_cao',
-        "TSTL_localdensity(y,5,40,{'ac','cao'})",
-        TSTL_localdensity(NNR=5, past=40, embedParams=('ac', 'cao')))
+    # tags: localdensity,nonlinear,tstool
+    TSTL_localdensity_5_40_ac_fnnmar = HCTSAOperation(
+        'TSTL_localdensity_5_40_ac_fnnmar',
+        "TSTL_localdensity(y,5,40,{'ac','fnnmar'})",
+        TSTL_localdensity(NNR=5, past=40, embedParams=('ac', 'fnnmar')))
 
     # outs: ac1den,ac2den,ac3den,ac4den,ac5den
     # outs: iqrden,maxden,meanden,medianden,minden
@@ -17769,7 +17646,7 @@ class HCTSAOperations(object):
     WL_cwt_sym2_32 = HCTSAOperation(
         'WL_cwt_sym2_32',
         "WL_cwt(y,'sym2',32)",
-        WL_cwt(wname='sym2', maxscale=32))
+        WL_cwt(wname='sym2', maxScale=32))
 
     # outs: SC_h,dd_SC_h,exp_muhat,gam1,gam2
     # outs: maxSC,max_ssc,maxabsC,maxonmedC,maxonmedSC
@@ -17781,7 +17658,7 @@ class HCTSAOperations(object):
     WL_cwt_db3_32 = HCTSAOperation(
         'WL_cwt_db3_32',
         "WL_cwt(y,'db3',32)",
-        WL_cwt(wname='db3', maxscale=32))
+        WL_cwt(wname='db3', maxScale=32))
 
     # outs: maxd_l1,maxd_l2,maxd_l3,maxd_l4,maxd_l5
     # outs: mind_l1,mind_l2,mind_l3,mind_l4,mind_l5
