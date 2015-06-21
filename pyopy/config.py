@@ -10,5 +10,5 @@ PYOPY_INTERNAL_TOOLBOXES_DIR = op.abspath(op.join(PYOPY_DIR, 'externals', 'toolb
 PYOPY_USER_DIR = op.join(home, '.pyopy')
 PYOPY_EXTERNAL_TOOLBOXES_DIR = os.getenv('PYOPY_TOOLBOXES')
 if PYOPY_EXTERNAL_TOOLBOXES_DIR is None:
-    PYOPY_EXTERNAL_TOOLBOXES_DIR = op.join(PYOPY_USER_DIR, '.pyopy', 'toolboxes')
+    PYOPY_EXTERNAL_TOOLBOXES_DIR = op.join(PYOPY_USER_DIR, 'toolboxes')
 ensure_dir(PYOPY_EXTERNAL_TOOLBOXES_DIR)
