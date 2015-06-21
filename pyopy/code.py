@@ -36,7 +36,7 @@ def parse_matlab_funcdef(mfile,
     """
     expected_func_name = op.splitext(op.basename(mfile))[0]
     with open(mfile) as reader:
-        text = reader.read()
+        text = reader.read()  # .replace('\r\n', '\n')
         doc, out, funcname, parameters, code = funcdef_pattern.split(text, maxsplit=1)
         if not funcname == expected_func_name:
             raise Exception('Problem parsing %s.\n'
