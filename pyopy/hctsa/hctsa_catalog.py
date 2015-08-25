@@ -340,7 +340,6 @@ class HCTSACatalog(object):
 
         self.functions_dict = {}
         for mfile in sorted(glob(op.join(self.mfiles_dir, '*.m'))):
-            print(mfile)
             doc, outstring, funcname, parameters, code = parse_matlab_funcdef(mfile)
             if '% -------------' not in doc:
                 # New HCTSA doc style after the function definition, as we talked with Ben
