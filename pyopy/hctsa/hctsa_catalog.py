@@ -340,9 +340,16 @@ class HCTSACatalog(object):
 
         self.functions_dict = {}
         for mfile in sorted(glob(op.join(self.mfiles_dir, '*.m'))):
+            print(mfile)
             doc, outstring, funcname, parameters, code = parse_matlab_funcdef(mfile)
+            if '% -------------' not in doc:
+                # New HCTSA doc style after the function definition, as we talked with Ben
+                doc, _, code = code.partition('% -------------')
+                code = code.partition('% -----------------------------------'
+                                      '-------------------------------------------')[2].partition
+            else:
+                doc = doc.split('% -------------------------------------')[2]  # Remove header and license
             parameters = parameters[1:]  # The first parameter is always the time series
-            doc = doc.split('% -------------------------------------')[2]  # Remove header and license
             operations = [operation for operation in self.operations_dict.values() if operation.funcname == funcname]
             self.functions_dict[funcname] = HCTSAFunction(mfile, outstring, parameters, doc, code, operations)
 
