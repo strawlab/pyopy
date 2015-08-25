@@ -1,3 +1,6 @@
 *.py[c|o|d]
 .cache
 .coverage
+parser.out
+parsetab.py
+*.egg-info
