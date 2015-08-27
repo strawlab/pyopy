@@ -7,43 +7,41 @@ class CO_AddNoise(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Analyzes changes in the automutual information function with the addition of
-    % noise to the input time series.
+    %
     % Adds Gaussian-distributed noise to the time series with increasing standard
     % deviation, eta, across the range eta = 0, 0.1, ..., 2, and measures the
     % mutual information at each point
     % Can be measured using histograms with extraParam bins (implemented using
     % CO_HistogramAMI), or using the Information Dynamics Toolkit.
-    % 
+    %
     % The output is a set of statistics on the resulting set of automutual
     % information estimates, including a fit to an exponential decay, since the
     % automutual information decreases with the added white noise.
-    % 
+    %
     % Can calculate these statistics for time delays 'tau', and for a number 'extraParam'
     % bins.
-    % 
+    %
     % This algorithm is quite different, but was based on the idea of 'noise
     % titration' presented in: "Titration of chaos with added noise", Chi-Sang Poon
     % and Mauricio Barahona P. Natl. Acad. Sci. USA, 98(13) 7107 (2001)
-    % 
+    %
     %---INPUTS:
     %
     % y, the input time series
-    % 
+    %
     % tau, the time delay for computing AMI (using CO_HistogramAMI)
-    % 
+    %
     % amiMethod, the method for computing AMI (using CO_HistogramAMI)
-    % 
+    %
     % extraParam, e.g., the number of bins input to CO_HistogramAMI
-    % 
+    %
     % randomSeed: settings for resetting the random seed for reproducible results
     %               (using BF_ResetSeed)
-    % 
+    
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (22,)
+    KNOWN_OUTPUTS_SIZES = (20,)
 
     TAGS = ('AMI', 'correlation', 'entropy')
 
@@ -70,9 +68,7 @@ class CO_AutoCorr(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Computes the autocorrelation of an input time series, y, at a time-lag, tau
-    % 
+    %
     %---INPUTS:
     % y, a scalar time series column vector.
     % tau, the time-delay. If tau is a scalar, returns autocorrelation for y at that
@@ -80,19 +76,19 @@ class CO_AutoCorr(HCTSASuper):
     %       lags.
     % whatMethod, the method of computing the autocorrelation: 'Fourier',
     %             'TimeDomainStat', or 'TimeDomain'.
-    %       
+    %
     %---OUTPUT: the autocorrelation at the given time-lag.
     %
     %---NOTES:
     % Specifying whatMethod = 'TimeDomain' can tolerate NaN values in the time
     % series.
-    % 
+    %
     % Computing mean/std across the full time series makes a significant difference
     % for short time series, but can produce values outside [-1,+1]. The
     % filtering-based method used by Matlab's autocorr, is probably the best for
     % short time series, and is implemented here by specifying: whatMethod =
     % 'Fourier'.
-    %
+    
     ----------------------------------------
     """
 
@@ -117,16 +113,13 @@ class CO_AutoCorrShape(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Outputs a set of statistics summarizing how the autocorrelation function
-    % changes with the time lag, tau.
-    % 
+    %
     % Outputs include the number of peaks, and autocorrelation in the
     % autocorrelation function itself.
-    % 
+    %
     %---INPUTS:
     % y, the input time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -145,65 +138,65 @@ class CO_CompareMinAMI(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Finds the first minimum of the automutual information by various different
     % estimation methods, and sees how this varies over different coarse-grainings
     % of the time series.
-    % 
+    %
     % The function returns a set of statistics on the set of first minimums of the
     % automutual information function obtained over a range of the number of bins
     % used in the histogram estimation, when specifying 'numBins' as a vector
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
-    % meth, the method for estimating mutual information (input to CO_HistogramAMI)
-    % 
+    %
+    % binMethod, the method for estimating mutual information (input to CO_HistogramAMI)
+    %
     % numBins, the number of bins for the AMI estimation to compare over (can be a
     %           scalar or vector)
-    % 
+    %
     % Outputs include the minimum, maximum, range, number of unique values, and the
     % position and periodicity of peaks in the set of automutual information
     % minimums.
-    % 
+    
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (13,)
+    KNOWN_OUTPUTS_SIZES = (11,)
 
     TAGS = ('AMI', 'correlation')
 
-    def __init__(self, meth='std2', numBins=(MatlabSequence('2:80'))):
+    def __init__(self, binMethod='std2', numBins=(MatlabSequence('2:80'))):
         super(CO_CompareMinAMI, self).__init__()
-        self.meth = meth
+        self.binMethod = binMethod
         self.numBins = numBins
 
     def _eval_hook(self, eng, x):
-        if self.meth is None:
+        if self.binMethod is None:
             return eng.run_function(1, 'CO_CompareMinAMI', x, )
         elif self.numBins is None:
-            return eng.run_function(1, 'CO_CompareMinAMI', x, self.meth)
-        return eng.run_function(1, 'CO_CompareMinAMI', x, self.meth, self.numBins)
+            return eng.run_function(1, 'CO_CompareMinAMI', x, self.binMethod)
+        return eng.run_function(1, 'CO_CompareMinAMI', x, self.binMethod, self.numBins)
 
 
 class CO_Embed2(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Embeds the z-scored time series in a two-dimensional time-delay
     % embedding space with a given time-delay, tau, and outputs a set of
-    % statistics about the structure in this space, including angular 
+    % statistics about the structure in this space, including angular
     % distribution, etc.
-    % 
+    %
     %---INPUTS:
     % y, the column-vector time series
     % tau, the time-delay (can be 'tau' for first zero-crossing of ACF)
-    % 
+    %
     %---OUTPUTS: include the distribution of angles between successive points in the
     % space, stationarity of this angular distribution, euclidean distances from the
     % origin, and statistics on outliers.
-    % 
+    
     ----------------------------------------
     """
 
@@ -225,15 +218,15 @@ class CO_Embed2_AngleTau(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Investigates how the autocorrelation of angles between successive points in
     % the two-dimensional time-series embedding change as tau varies from
     % tau = 1, 2, ..., maxTau.
-    % 
+    %
     %---INPUTS:
     % y, a column vector time series
     % maxTau, the maximum time lag to consider
-    %
+    
     ----------------------------------------
     """
 
@@ -255,19 +248,19 @@ class CO_Embed2_Basic(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Obtains a set of measures of point density in a plot of y_i against y_{i-tau}.
+    %
+    % Computes a set of point density measures in a plot of y_i against y_{i-tau}.
     %
     % INPUTS:
     % y, the input time series
-    % 
+    %
     % tau, the time lag (can be set to 'tau' to set the time lag the first zero
     %                       crossing of the autocorrelation function)
-    % 
+    %
     % Outputs include the number of points near the diagonal, and similarly, the
-    % number of points that are close to certain geometric shapes in the y_{i-tau}, 
+    % number of points that are close to certain geometric shapes in the y_{i-tau},
     % y_{tau} plot, including parabolas, rings, and circles.
-    % 
+    
     ----------------------------------------
     """
 
@@ -289,19 +282,19 @@ class CO_Embed2_Dist(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Returns statistics on the sequence of successive Euclidean distances between
     % points in a two-dimensional time-delay embedding space with a given
     % time-delay, tau.
-    % 
+    %
     % Outputs include the autocorrelation of distances, the mean distance, the
     % spread of distances, and statistics from an exponential fit to the
     % distribution of distances.
-    % 
+    %
     %---INPUTS:
     % y, a z-scored column vector representing the input time series.
     % tau, the time delay.
-    % 
+    
     ----------------------------------------
     """
 
@@ -323,27 +316,27 @@ class CO_Embed2_Shapes(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Takes a shape and places it on each point in the two-dimensional time-delay
     % embedding space sequentially. This function counts the points inside this shape
     % as a function of time, and returns statistics on this extracted time series.
-    % 
+    %
     %---INPUTS:
     % y, the input time-series as a (z-scored) column vector
     % tau, the time-delay
     % shape, has to be 'circle' for now...
     % r, the radius of the circle
-    % 
+    %
     %---OUTPUTS:
     % The constructed time series of the number of nearby points, and
     % include the autocorrelation, maximum, median, mode, a Poisson fit to the
     % distribution, histogram entropy, and stationarity over fifths of the time
     % series.
-    % 
+    
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (16,)
+    KNOWN_OUTPUTS_SIZES = (14,)
 
     TAGS = ('correlation', 'embedding')
 
@@ -367,10 +360,9 @@ class CO_FirstMin(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Returns the time at which the first minimum in a given correlation function
-    % occurs.
-    % 
+    %
+    % The time at which the first minimum in a given correlation function occurs.
+    %
     %---INPUTS:
     % y, the input time series
     % minWhat, the type of correlation to minimize: either 'ac' for autocorrelation,
@@ -379,11 +371,11 @@ class CO_FirstMin(HCTSASuper):
     %           options can also be implemented as 'mi-kernel', 'mi-kraskov1',
     %           'mi-kraskov2' (all from Information Dynamics Toolkit implementations),
     %           or 'mi-hist' (histogram-based method).
-    % 
+    %
     % Note that selecting 'ac' is unusual operation: standard operations are the
     % first zero-crossing of the autocorrelation (as in CO_FirstZero), or the first
     % minimum of the mutual information function ('mi').
-    % 
+    
     ----------------------------------------
     """
 
@@ -408,9 +400,7 @@ class CO_FirstZero(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Returns the first zero-crossing of a given autocorrelation function.
-    % 
+    %
     %---INPUTS:
     %
     % y, the input time series
@@ -418,11 +408,11 @@ class CO_FirstZero(HCTSASuper):
     %         (i) 'ac': normal linear autocorrelation function. Uses CO_AutoCorr to
     %                   calculate autocorrelations.
     % maxTau, a maximum time-delay to search up to.
-    % 
+    %
     % In future, could add an option to return the point at which the function
     % crosses the axis, rather than the first integer lag at which it has already
     % crossed (what is currently implemented).
-    % 
+    
     ----------------------------------------
     """
 
@@ -447,32 +437,31 @@ class CO_HistogramAMI(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Calculates the automutual information using histograms, using a given approach
-    % to binning the data.
-    % 
-    % Uses hist2.m function (renamed NK_hist2.m here) by Nedialko Krouchev, obtained
-    % from Matlab Central,
-    % http://www.mathworks.com/matlabcentral/fileexchange/12346-hist2-for-the-people
-    % [[hist2 for the people by Nedialko Krouchev, 20 Sep 2006 (Updated 21 Sep 2006)]]
-    % 
+    %
+    % The approach used to bin the data is provided.
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % tau, the time-lag (1 by default)
-    % 
+    %
     % meth, the method of computing automutual information:
     %           (i) 'even': evenly-spaced bins through the range of the time series,
     %           (ii) 'std1', 'std2': bins that extend only up to a multiple of the
     %                                standard deviation from the mean of the time
     %                                series to exclude outliers,
     %           (iii) 'quantiles': equiprobable bins chosen using quantiles.
-    % 
+    %
     % numBins, the number of bins, required by some methods, meth (see above)
-    % 
+    %
     %---OUTPUT: the automutual information calculated in this way.
-    % 
+    
+    % Uses the hist2 function (renamed NK_hist2.m here) by Nedialko Krouchev, obtained
+    % from Matlab Central,
+    % http://www.mathworks.com/matlabcentral/fileexchange/12346-hist2-for-the-people
+    % [[hist2 for the people by Nedialko Krouchev, 20 Sep 2006 (Updated 21 Sep 2006)]]
+    
     ----------------------------------------
     """
 
@@ -500,17 +489,17 @@ class CO_NonlinearAutocorr(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Computes autocorrelations of the input time series of the form
+    %
+    % Nonlinear autocorrelations are of the form:
     % <x_i x_{i-\tau_1} x{i-\tau_2}...>
     % The usual two-point autocorrelations are
     % <x_i.x_{i-\tau}>
-    % 
+    %
     % Assumes that all the taus are much less than the length of the time
     % series, N, so that the means can be approximated as the sample means and the
     % standard deviations approximated as the sample standard deviations and so
     % the z-scored time series can simply be used straight-up.
-    % 
+    %
     %---INPUTS:
     % y  -- should be the z-scored time series (Nx1 vector)
     % taus -- should be a vector of the time delays as above (mx1 vector)
@@ -526,12 +515,12 @@ class CO_NonlinearAutocorr(HCTSASuper):
     % (*) For odd numbers of regressions (i.e., even number length
     %         taus vectors) the result will be near zero due to fluctuations
     %         below the mean; even for highly-correlated signals. (doAbs)
-    %         
+    %
     % (*) doAbs = 1 is really a different operation that can't be compared with
     %         the values obtained from taking doAbs = 0 (i.e., for odd lengths
     %         of taus)
     % (*) It can be helpful to look at nlac at each iteration.
-    % 
+    
     ----------------------------------------
     """
 
@@ -563,7 +552,7 @@ class CO_RM_AMInformation(HCTSASuper):
     % INPUTS:
     % y, the input time series
     % tau, the time lag at which to calculate the automutual information
-    %
+    
     ----------------------------------------
     """
 
@@ -585,23 +574,23 @@ class CO_StickAngles(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Analyzes line-of-sight angles between time-series points where each
-    % time-series value is treated as a stick protruding from an opaque baseline
-    % level. Statistics are returned on the raw time series, where sticks protrude
+    %
+    % Line-of-sight angles between time-series points treat each % time-series value
+    % as a stick protruding from an opaque baseline level.
+    % Statistics are returned on the raw time series, where sticks protrude
     % from the zero-level, and the z-scored time series, where sticks
     % protrude from the mean level of the time series.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     %---OUTPUTS: are returned on the obtained sequence of angles, theta, reflecting the
     % maximum deviation a stick can rotate before hitting a stick representing
     % another time point. Statistics include the mean and spread of theta,
     % the different between positive and negative angles, measures of symmetry of
     % the angles, stationarity, autocorrelation, and measures of the distribution of
     % these stick angles.
-    % 
+    
     ----------------------------------------
     """
 
@@ -616,70 +605,32 @@ class CO_StickAngles(HCTSASuper):
         return eng.run_function(1, 'CO_StickAngles', x, )
 
 
-class CO_TSTL_AutoCorrMethod(HCTSASuper):
-    """
-    Matlab doc:
-    ----------------------------------------
-    % 
-    % Estimates the autocorrelation function using a fast Fourier Transform method
-    % implemented in TSTOOL and returns the mean square discrepancy between the
-    % autocorrelation coefficients obtained in this way from those obtained in the
-    % time domain using CO_AutoCorr.
-    % 
-    % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
-    % No real rationale behind this, other than the difference in autocorrelations
-    % computed by the two methods may somehow be informative of something about the
-    % time series...
-    % 
-    %---INPUTS:
-    % y, the input time series
-    % maxlag, the maximum time lag to compute up to -- will compare autocorrelations
-    %         up to this value
-    % 
-    ----------------------------------------
-    """
-
-    KNOWN_OUTPUTS_SIZES = (1,)
-
-    TAGS = ('correlation',)
-
-    def __init__(self, maxlag=None):
-        super(CO_TSTL_AutoCorrMethod, self).__init__()
-        self.maxlag = maxlag
-
-    def _eval_hook(self, eng, x):
-        if self.maxlag is None:
-            return eng.run_function(1, 'CO_TSTL_AutoCorrMethod', x, )
-        return eng.run_function(1, 'CO_TSTL_AutoCorrMethod', x, self.maxlag)
-
-
 class CO_TSTL_amutual(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Uses amutual code from TSTOOL, which uses a
-    % histogram method with n bins to estimate the mutual information of a
-    % time series across a range of time-delays, tau.
-    % 
+    %
+    % Uses amutual code from TSTOOL, which uses a histogram method with n bins to
+    % estimate the mutual information of a time series across a range of
+    % time-delays, tau.
+    %
     % TSTOOL: http://www.physik3.gwdg.de/tstool/
     %
     %---INPUTS:
-    % 
+    %
     % y, the time series
-    % 
+    %
     % maxTau, the maximum lag for which to calculate the auto mutual information
-    % 
+    %
     % numBins, the number of bins for histogram calculation
-    % 
+    %
     % versionTwo, uses amutual2 instead of amutual (from the TSTOOL package)
-    % 
+    %
     %---OUTPUTS:
     % A number of statistics of the function over the range of tau, including the
     % mean mutual information, its standard deviation, first minimum, proportion of
     % extrema, and measures of periodicity in the positions of local maxima.
-    % 
+    
     ----------------------------------------
     """
 
@@ -707,28 +658,28 @@ class CO_TranslateShape(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Returns statistics on the number of data points that reside inside a given
-    % geometric shape that is moved around the time series. Inputs specify a shape
-    % and its size, and a method for moving this shape through the time domain.
-    % 
+    % geometric shapes moved across the time series.
+    %
+    % Inputs specify a shape and its size, and a method for moving this shape
+    % through the time domain.
+    %
     % This is usually more informative in an embedding space (CO_Embed2_...), but
     % here we do it just in the temporal domain (_t_).
-    % 
+    %
     % In the future, could perform a similar analysis with a soft boundary, some
     % decaying force function V(r), or perhaps truncated...?
     %
     % INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % shape, the shape to move about the time-domain ('circle')
-    % 
+    %
     % d, a parameter specifying the size of the shape (e.g., d = 2)
-    % 
+    %
     % howToMove, a method specifying how to move the shape about, e.g., 'pts'
     %               places the shape on each point in the time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -736,7 +687,7 @@ class CO_TranslateShape(HCTSASuper):
 
     TAGS = ('correlation',)
 
-    def __init__(self, shape='circle', d=2.5, howToMove='pts'):
+    def __init__(self, shape='circle', d=5.5, howToMove='pts'):
         super(CO_TranslateShape, self).__init__()
         self.shape = shape
         self.d = d
@@ -757,12 +708,11 @@ class CO_f1ecac(HCTSASuper):
     Matlab doc:
     ----------------------------------------
     % 
-    % Finds where autocorrelation function first crosses 1/e, the 1/e correlation
-    % length.
-    % 
+    % Finds where autocorrelation function first crosses 1/e
+    %
     %---INPUTS:
     % y, the input time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -781,21 +731,21 @@ class CO_fzcglscf(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Returns the first zero-crossing of the generalized self-correlation function
     % introduced in Duarte Queiros and Moyano in Physica A, Vol. 383, pp. 10--15
     % (2007) in the paper "Yet on statistical properties of traded volume:
     % Correlation and mutual information at different value magnitudes"
     % Uses CO_glscf to calculate the generalized self-correlations.
     % Keeps calculating until the function finds a minimum, and returns this lag.
-    % 
+    %
     %---INPUTS:
     % y, the input time series.
     % alpha, the parameter alpha.
     % beta, the parameter beta.
     % maxtau [opt], a maximum time delay to search up to (default is the time-series
     %                length).
-    % 
+    
     ----------------------------------------
     """
 
@@ -823,24 +773,23 @@ class CO_glscf(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Calculates the generalized linear self-correlation function of a time series.
+    %
     % This function was introduced in Queiros and Moyano in Physica A, Vol. 383, pp.
-    % 10--15 (2007) in the paper "Yet on statistical properties of traded volume: 
+    % 10--15 (2007) in the paper "Yet on statistical properties of traded volume:
     % Correlation and mutual information at different value magnitudes"
-    % 
+    %
     % The function considers magnitude correlations.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % alpha and beta are real and nonzero parameters
     % tau is the time-delay (can also be 'tau' to set to first zero-crossing of the ACF)
-    % 
+    %
     % When alpha = beta estimates how values of the same order of magnitude are
     % related in time
     % When alpha ~= beta, estimates correlations between different magnitudes of the
     % time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -871,16 +820,18 @@ class CO_tc3(HCTSASuper):
     %
     % Computes the tc3 function, a normalized nonlinear autocorrelation, at a
     % given time-delay, tau.
-    % Outputs are the raw tc3 expression, its magnitude, the numerator and its magnitude, and
-    % the denominator.
-    % 
+    %
     %---INPUTS:
     % y, input time series
     % tau, time lag
-    % 
+    %
+    %---OUTPUTS:
+    % The raw tc3 expression, its magnitude, the numerator and its magnitude, and
+    % the denominator.
+    %
     % See documentation of the TSTOOL package (http://www.physik3.gwdg.de/tstool/)
     % for further details about this function.
-    % 
+    
     ----------------------------------------
     """
 
@@ -902,26 +853,27 @@ class CO_trev(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Calculates the trev function, a normalized nonlinear autocorrelation,
     % mentioned in the documentation of the TSTOOL nonlinear time-series analysis
     % package (available here: http://www.physik3.gwdg.de/tstool/).
-    % 
+    %
     % The quantity is often used as a nonlinearity statistic in surrogate data
     % analysis, cf. "Surrogate time series", T. Schreiber and A. Schmitz, Physica D,
     % 142(3-4) 346 (2000).
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, time series
-    % 
+    %
     % tau, time lag (can be 'ac' or 'mi' to set as the first zero-crossing of the
     %       autocorrelation function, or the first minimum of the automutual
     %       information function, respectively)
-    % 
-    %---OUTPUTS: the raw trev expression, its magnitude, the numerator and its
-    % magnitude, and the denominator.
-    % 
+    %
+    %---OUTPUTS:
+    % the raw trev expression, its magnitude, the numerator and its magnitude, and
+    % the denominator.
+    
     ----------------------------------------
     """
 
@@ -943,45 +895,45 @@ class CP_ML_StepDetect(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Gives information about discrete steps in the signal, using the function
     % l1pwc from Max A. Little's step detection toolkit.
-    % 
+    %
     % cf.,
     % "Sparse Bayesian Step-Filtering for High-Throughput Analysis of Molecular
     % Machine Dynamics", Max A. Little, and Nick S. Jones, Proc. ICASSP (2010)
-    % 
+    %
     % "Steps and bumps: precision extraction of discrete states of molecular machines"
     % M. A. Little, B. C. Steel, F. Bai, Y. Sowa, T. Bilyard, D. M. Mueller,
     % R. M. Berry, N. S. Jones. Biophysical Journal, 101(2):477-485 (2011)
-    % 
+    %
     % Software available at: http://www.maxlittle.net/software/index.php
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % method, the step-detection method:
     %           (i) 'kv': Kalafut-Visscher
     %                 cf. The algorithm described in:
     %                 Kalafut, Visscher, "An objective, model-independent method for
     %                 detection of non-uniform steps in noisy signals", Comp. Phys.
     %                 Comm., 179(2008), 716-723.
-    %                 
+    %
     %           (ii) 'l1pwc': L1 method
     %                 This code is based on code originally written by Kim et al.:
     %                 "l_1 Trend Filtering", S.-J. Kim et al., SIAM Review 51, 339
     %                 (2009).
-    % 
+    %
     % params, the parameters for the given method used:
     %           (i) 'kv': (no parameters required)
     %           (ii) 'l1pwc': params = lambda
-    % 
+    %
     %---OUTPUTS:
     % Statistics on the output of the step-detection method, including the intervals
     % between change points, the proportion of constant segments, the reduction in
     % variance from removing the piece-wise constants, and stationarity in the
     % occurrence of change points.
-    % 
+    
     ----------------------------------------
     """
 
@@ -1006,26 +958,26 @@ class CP_l1pwc_sweep_lambda(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Gives information about discrete steps in the signal across a range of
     % regularization parameters lambda, using the function l1pwc from Max Little's
     % step detection toolkit.
-    % 
+    %
     % cf.,
     % "Sparse Bayesian Step-Filtering for High-Throughput Analysis of Molecular
     % Machine Dynamics", Max A. Little, and Nick S. Jones, Proc. ICASSP (2010)
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % lambdar, a vector specifying the lambda parameters to use
-    % 
+    %
     %---OUTPUTS:
     % At each iteration, the CP_ML_StepDetect code was run with a given
     % lambda, and the number of segments, and reduction in root mean square error
     % from removing the piecewise constants was recorded. Outputs summarize how the
     % these quantities vary with lambda.
-    % 
+    
     ----------------------------------------
     """
 
@@ -1047,31 +999,31 @@ class CP_wavelet_varchg(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Finds variance change points using functions from Matlab's Wavelet Toolbox,
     % including the primary function wvarchg, which estimates the change points in
     % the time series.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % wname, the name of the mother wavelet to analyze the data with: e.g., 'db3',
     %           'sym2', cf. Wavelet Toolbox Documentation for details
-    % 
+    %
     % level, the level of wavelet decomposition
-    % 
+    %
     % maxnchpts, the maximum number of change points
-    % 
+    %
     % minDelay, the minimum delay between consecutive change points (can be
     %           specified as a proportion of the time-series length, e.g., 0.02
     %           ensures that change points are separated by at least 2% of the
     %           time-series length)
-    % 
-    % 
-    %---OUTPUT: 
-    % The optimal number of change points.
     %
+    %
+    %---OUTPUT:
+    % The optimal number of change points.
+    
     ----------------------------------------
     """
 
@@ -1079,7 +1031,7 @@ class CP_wavelet_varchg(HCTSASuper):
 
     TAGS = ('varchg', 'wavelet', 'waveletTB')
 
-    def __init__(self, wname='db3', level=3.0, maxnchpts=10.0, minDelay=0.01):
+    def __init__(self, wname='sym2', level=3.0, maxnchpts=10.0, minDelay=0.01):
         super(CP_wavelet_varchg, self).__init__()
         self.wname = wname
         self.level = level
@@ -1102,18 +1054,18 @@ class DN_Burstiness(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Returns the 'burstiness' statistic from:
-    % 
+    %
     % Goh and Barabasi, 'Burstiness and memory in complex systems' Europhys. Lett.
     % 81, 48002 (2008)
-    % 
+    %
     %---INPUT:
     % y, the input time series
-    % 
+    %
     %---OUTPUT:
     % The burstiness statistic, B.
-    %
+    
     ----------------------------------------
     """
 
@@ -1132,24 +1084,24 @@ class DN_CompareKSFit(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Returns simple statistics on the discrepancy between the
     % kernel-smoothed distribution of the time-series values, and the distribution
     % fitted to it by some model: Gaussian (using normfifit from Matlab's
     % Statistics Toolbox), Extreme Value (evfifit), Uniform (unififit), Beta
     % (betafifit), Rayleigh (raylfifit), Exponential (expfifit), Gamma (gamfit),
     % LogNormal (lognfifit), and Weibull (wblfifit).
-    % 
+    %
     %---INPUTS:
-    % x, the input time series
+    % x, the input data vector
     % whatDistn, the type of distribution to fit to the data:
     %           'norm' (normal), 'ev' (extreme value), 'uni' (uniform),
     %           'beta' (Beta), 'rayleigh' (Rayleigh), 'exp' (exponential),
     %           'gamma' (Gamma), 'logn' (Log-Normal), 'wbl' (Weibull).
-    % 
+    %
     %---OUTPUTS: include the absolute area between the two distributions, the peak
     % separation, overlap integral, and relative entropy.
-    % 
+    
     ----------------------------------------
     """
 
@@ -1168,52 +1120,25 @@ class DN_CompareKSFit(HCTSASuper):
         return eng.run_function(1, 'DN_CompareKSFit', x, self.whatDistn)
 
 
-class DN_Compare_zscore(HCTSASuper):
-    """
-    Matlab doc:
-    ----------------------------------------
-    % 
-    % Compares the distribution of a time series to a z-scored version of it
-    % 
-    %---INPUT:
-    % x, a (not z-scored) time series
-    % 
-    %---OUTPUTS: ratios of features between the original and z-scored time series,
-    % including the number of peaks, the maximum, and the distributional entropy.
-    % 
-    ----------------------------------------
-    """
-
-    KNOWN_OUTPUTS_SIZES = (3,)
-
-    TAGS = ('compare', 'distribution', 'entropy', 'ksdensity', 'raw', 'spreaddep')
-
-    def __init__(self):
-        super(DN_Compare_zscore, self).__init__()
-
-    def _eval_hook(self, eng, x):
-        return eng.run_function(1, 'DN_Compare_zscore', x, )
-
-
 class DN_Cumulants(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Very simple function that uses the skewness and kurtosis functions in 
+    %
+    % Very simple function that uses the skewness and kurtosis functions in
     % Matlab's Statistics Toolbox to calculate these higher order moments of input
     % time series, y
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % cumWhatMay, the type of higher order moment:
     %           (i) 'skew1', skewness
     %           (ii) 'skew2', skewness correcting for bias
     %           (iii) 'kurt1', kurtosis
     %           (iv) 'kurt2', kurtosis correcting for bias
-    % 
+    
     ----------------------------------------
     """
 
@@ -1235,17 +1160,14 @@ class DN_CustomSkewness(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Estimates custom skewness measures, the Pearson and Bowley skewnesses.
-    % 
+    %
+    % Compute the Pearson or Bowley skewness
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % whatSkew, the skewness measure to calculate, either 'pearson' or 'bowley'
-    % 
-    % The Bowley skewness uses the quantile function from Matlab's Statistics
-    % Toolbox.
-    % 
+    
     ----------------------------------------
     """
 
@@ -1267,12 +1189,9 @@ class DN_FitKernelSmooth(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Fits a kernel-smoothed distribution to the data using the ksdensity function
-    % from Matlab's Statistics Toolbox and returns a set of simple statistics.
-    % 
+    %
     %---INPUTS:
-    % x, the input time series
+    % x, the input data vector
     % <can also produce additional outputs with the following optional settings>
     % [opt] 'numcross': number of times the distribution crosses the given threshold
     %           e.g., usage: DN_FitKernelSmooth(x,'numcross',[0.5,0.7]) for
@@ -1281,18 +1200,18 @@ class DN_FitKernelSmooth(HCTSASuper):
     %               Usage as for 'numcross' above
     % [opt] 'arclength': arclength between where the distribution passes given
     %       thresholds. Usage as above.
-    % 
-    %---EXAMPLE USAGE:                  
+    %
+    %---EXAMPLE USAGE:
     % DN_FitKernelSmooth(x,'numcross',[0.05,0.1],'area',[0.1,0.2,0.4],'arclength',[0.5,1,2])
     % returns all the basic outputs, plus those for numcross, area, and arclength
     % for the thresholds given
-    % 
+    %
     %---OUTPUTS: a set of statistics summarizing the obtained distribution, including
     % the number of peaks, the distributional entropy, the number of times the curve
     % crosses fifixed probability thresholds, the area under the curve for fifixed
     % probability thresholds, the arc length, and the symmetry of probability
     % density above and below the mean.
-    % 
+    
     ----------------------------------------
     """
 
@@ -1316,17 +1235,17 @@ class DN_Fit_mle(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Fits either a Gaussian, Uniform, or Geometric distribution to the data using
     % maximum likelihood estimation via the Matlab function mle
     % from the Statistics Toolbox.
-    % 
+    %
     %---INPUTS:
-    % y, the time series
+    % y, the input data vector.
     % fitWhat, the type of fit to do: 'gaussian', 'uniform', or 'geometric'.
-    % 
+    %
     %---OUTPUTS: parameters from the fit.
-    % 
+    
     ----------------------------------------
     """
 
@@ -1348,14 +1267,13 @@ class DN_HighLowMu(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Calculates a statistic related to the mean of the time series data that
-    % is above the (global) time-series mean compared to the mean of the data that
-    % is below the global time-series mean.
-    % 
+    %
+    % Calculates a statistic related to the mean of the data that is above the
+    % (global) mean compared to the mean of the data that is below the global mean.
+    %
     %---INPUTS:
-    % y, the input time series
-    % 
+    % y, the input data vector
+    
     ----------------------------------------
     """
 
@@ -1374,16 +1292,16 @@ class DN_HistogramMode(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Measures the mode of the time series using histograms a given numbers
+    %
+    % Measures the mode of the data vector using histograms with a given number
     % of bins.
-    % 
+    %
     %---INPUTS:
-    % 
-    % y, the input time series.
-    % 
+    %
+    % y, the input data vector
+    %
     % numBins, the number of bins to use in the histogram.
-    % 
+    
     ----------------------------------------
     """
 
@@ -1405,13 +1323,11 @@ class DN_Mean(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Measures a given type of 'mean', or measure of location of the time series.
-    % 
+    %
     %---INPUTS:
-    % 
-    % y, the input time series
-    % 
+    %
+    % y, the input data vector
+    %
     % meanType, (i) 'norm' or 'arithmetic', arithmetic mean
     %           (ii) 'median', median
     %           (iii) 'geom', geometric mean
@@ -1419,7 +1335,7 @@ class DN_Mean(HCTSASuper):
     %           (v) 'rms', root-mean-square
     %           (vi) 'iqm', interquartile mean
     %           (vii) 'midhinge', midhinge
-    % 
+    
     ----------------------------------------
     """
 
@@ -1441,15 +1357,13 @@ class DN_MinMax(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Returns the maximum and minimum values of the input time series.
-    % 
+    %
     %---INPUTS:
-    % 
-    % y, the input time series
-    % 
+    %
+    % y, the input data vector
+    %
     % minOrMax, either 'min' or 'max' to return either the minimum or maximum of y
-    % 
+    
     ----------------------------------------
     """
 
@@ -1471,15 +1385,14 @@ class DN_Moments(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Output is the moment of the distribution of the input time series.
+    %
     % Normalizes by the standard deviation
     % Uses the moment function from Matlab's Statistics Toolbox
-    % 
+    %
     %---INPUTS:
-    % y, the input time series
-    % n, the moment to calculate (a scalar)
-    % 
+    % y, the input data vector
+    % theMom, the moment to calculate (a scalar)
+    
     ----------------------------------------
     """
 
@@ -1487,53 +1400,53 @@ class DN_Moments(HCTSASuper):
 
     TAGS = ('distribution', 'moment', 'raw', 'shape', 'spreaddep')
 
-    def __init__(self, n=10.0):
+    def __init__(self, theMom=10.0):
         super(DN_Moments, self).__init__()
-        self.n = n
+        self.theMom = theMom
 
     def _eval_hook(self, eng, x):
-        if self.n is None:
+        if self.theMom is None:
             return eng.run_function(1, 'DN_Moments', x, )
-        return eng.run_function(1, 'DN_Moments', x, self.n)
+        return eng.run_function(1, 'DN_Moments', x, self.theMom)
 
 
 class DN_OutlierInclude(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Measures a range of different statistics about the time series as more and
     % more outliers are included in the calculation according to a specified rule:
-    % 
+    %
     % (i) 'abs': outliers are furthest from the mean,
     % (ii) 'p': outliers are the greatest positive deviations from the mean, or
     % (iii) 'n': outliers are the greatest negative deviations from the mean.
-    % 
+    %
     % The threshold for including time-series data points in the analysis increases
     % from zero to the maximum deviation, in increments of 0.01*sigma (by default),
     % where sigma is the standard deviation of the time series.
-    % 
+    %
     % At each threshold, the mean, standard error, proportion of time series points
     % included, median, and standard deviation are calculated, and outputs from the
     % algorithm measure how these statistical quantities change as more extreme
     % points are included in the calculation.
-    % 
+    %
     %---INPUTS:
     % y, the input time series (ideally z-scored)
-    % 
+    %
     % thresholdHow, the method of how to determine outliers: 'abs', 'p', or 'n' (see above
     %           for descriptions)
-    % 
+    %
     % inc, the increment to move through (fraction of std if input time series is
     %       z-scored)
-    % 
+    %
     % Most of the outputs measure either exponential, i.e., f(x) = Aexp(Bx)+C, or
     % linear, i.e., f(x) = Ax + B, fits to the sequence of statistics obtained in
     % this way.
-    % 
+    %
     % [future: could compare differences in outputs obtained with 'p', 'n', and
     %               'abs' -- could give an idea as to asymmetries/nonstationarities??]
-    % 
+    
     ----------------------------------------
     """
 
@@ -1558,19 +1471,19 @@ class DN_OutlierTest(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Removes the p% of highest and lowest values in the time series (i.e., 2*p%
     % removed from the time series in total) and returns the ratio of either the
     % mean or the standard deviation of the time series, before and after this
     % transformation.
-    % 
+    %
     %---INPUTS:
-    % y, the input time series
+    % y, the input data vector
     % p, the percentage of values to remove beyond upper and lower percentiles
     % justMe [opt], just returns a number:
     %               (i) 'mean' -- returns the mean of the middle portion of the data
     %               (ii) 'std' -- returns the std of the middle portion of the data
-    % 
+    
     ----------------------------------------
     """
 
@@ -1595,19 +1508,19 @@ class DN_ProportionValues(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Returns statistics on the values of the raw time series: the proportion
     % of zeros in the raw time series, the proportion of positive values, and the
     % proportion of values greater than or equal to zero.
-    % 
+    %
     %---INPUTS:
     % x, the input time series
-    % 
+    %
     % propWhat, the proportion of a given type of value in the time series:
     %           (i) 'zeros': values that equal zero
     %           (ii) 'positive': values that are strictly positive
     %           (iii) 'geq0': values that are greater than or equal to zero
-    % 
+    
     ----------------------------------------
     """
 
@@ -1629,14 +1542,14 @@ class DN_Quantile(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Calculates the quantile value at a specified proportion p using the Statistics
-    % Toolbox function, quantile.
-    % 
-    % INPUTS:
-    % y, the input time series
+    %
+    % Calculates the quantile value at a specified proportion, p, using the
+    % Statistics Toolbox function, quantile.
+    %
+    %---INPUTS:
+    % y, the input data vector
     % p, the quantile proportion
-    % 
+    
     ----------------------------------------
     """
 
@@ -1658,14 +1571,11 @@ class DN_RemovePoints(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Analyze how some time-series properties function changes as points are removed
-    % from a time series.
-    % 
+    %
     % A proportion, p, of points are removed from the time series according to some
     % rule, and a set of statistics are computed before and after the change.
-    % 
-    % INPUTS:
+    %
+    %---INPUTS:
     % y, the input time series
     % removeHow, how to remove points from the time series:
     %               (i) 'absclose': those that are the closest to the mean,
@@ -1673,14 +1583,14 @@ class DN_RemovePoints(HCTSASuper):
     %               (iii) 'min': the lowest values,
     %               (iv) 'max': the highest values,
     %               (v) 'random': at random.
-    %               
+    %
     % p, the proportion of points to remove
-    % 
-    % Output statistics include the change in autocorrelation, time scales, mean,
+    %
+    %---OUTPUTS: Statistics include the change in autocorrelation, time scales, mean,
     % spread, and skewness.
-    % 
-    % Note that this is a similar idea to that implemented in DN_OutlierInclude.
-    % 
+    %
+    % NOTE: This is a similar idea to that implemented in DN_OutlierInclude.
+    
     ----------------------------------------
     """
 
@@ -1705,17 +1615,16 @@ class DN_SimpleFit(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Fits different distributions or simple time-series models to the time series
-    % using 'fit' function from Matlab's Curve Fitting Toolbox.
-    % 
+    %
+    % Uses the 'fit' function from Matlab's Curve Fitting Toolbox.
+    %
     % The distribution of time-series values is estimated using either a
     % kernel-smoothed density via the Matlab function ksdensity with the default
     % width parameter, or by a histogram with a specified number of bins, numBins.
-    % 
+    %
     %---INPUTS:
     % x, the input time series
-    % 
+    %
     % dmodel, the model to fit:
     %       (I) distribution models:
     %           (i) 'gauss1'
@@ -1729,14 +1638,14 @@ class DN_SimpleFit(HCTSASuper):
     %           (iv) 'fourier1'
     %           (v) 'fourier2'
     %           (vi) 'fourier3'
-    % 
+    %
     % numBins, the number of bins for a histogram-estimate of the distribution of
     %       time-series values. If numBins = 0, uses ksdensity instead of histogram.
-    % 
-    % 
+    %
+    %
     %---OUTPUTS: the goodness of fifit, R^2, rootmean square error, the
     % autocorrelation of the residuals, and a runs test on the residuals.
-    % 
+    
     ----------------------------------------
     """
 
@@ -1761,19 +1670,19 @@ class DN_Spread(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Returns the spread of the raw time series, as the standard deviation,
+    %
+    % Returns the spread of the raw data vector, as the standard deviation,
     % inter-quartile range, mean absolute deviation, or median absolute deviation.
-    % 
+    %
     %---INPUTS:
-    % y, the input time series
-    % 
+    % y, the input data vector
+    %
     % spreadMeasure, the spead measure:
     %               (i) 'std': standard deviation
     %               (ii) 'iqr': interquartile range
     %               (iii) 'mad': mean absolute deviation
     %               (iv) 'mead': median absolute deviation
-    %               
+    
     ----------------------------------------
     """
 
@@ -1795,15 +1704,12 @@ class DN_TrimmedMean(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Outputs the mean of the trimmed time series using the Matlab function
-    % trimmean.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % n, the percent of highest and lowest values in y to exclude from the mean
     %     calculation
-    % 
+    
     ----------------------------------------
     """
 
@@ -1825,14 +1731,11 @@ class DN_Withinp(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Measures the proportion of the time-series data points that lie within
-    % p standard deviations of its mean.
-    % 
+    %
     %---INPUTS:
-    % x, the input time series
+    % x, the input data vector
     % p, the number (proportion) of standard deviations.
-    % 
+    
     ----------------------------------------
     """
 
@@ -1854,15 +1757,16 @@ class DN_cv(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Calculates the coefficient of variation, sigma^k / mu^k, of order k.
-    % 
+    %
+    % Coefficient of variation of order k is sigma^k / mu^k (for sigma, standard
+    % deviation and mu, mean) of a data vector, x
+    %
     %---INPUTS:
-    % 
-    % x, the input time series
-    % 
-    % k, the order of coefficient of variation (k = 1 is usual)
-    % 
+    %
+    % x, the input data vector
+    %
+    % k, the order of coefficient of variation (k = 1 is default)
+    
     ----------------------------------------
     """
 
@@ -1884,14 +1788,14 @@ class DN_nlogL_norm(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Fits a Gaussian distribution to the data using the normfit function in
     % Matlab's Statistics Toolbox and returns the negative log likelihood of the
     % data coming from a Gaussian distribution using the normlike function.
-    % 
+    %
     %---INPUT:
     % y, the time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -1910,7 +1814,7 @@ class DN_pleft(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Measures the maximum distance from the mean at which a given fixed proportion,
     % p, of the time-series data points are further.
     % Normalizes by the standard deviation of the time series
@@ -1918,10 +1822,10 @@ class DN_pleft(HCTSASuper):
     % Uses the quantile function from Matlab's Statistics Toolbox
     %
     %---INPUTS:
-    % y, the input time series
+    % y, the input data vector
     % th, the proportion of data further than p from the mean
     %           (output p, normalized by standard deviation)
-    % 
+    
     ----------------------------------------
     """
 
@@ -1943,17 +1847,16 @@ class DT_IsSeasonal(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % A simple test of seasonality by fitting a 'sin1' model to the time series
-    % using fit function from the Curve Fitting Toolbox. The output is binary: 1 if
-    % the goodness of fit, R^2, exceeds 0.3 and the amplitude of the fitted periodic
-    % component exceeds 0.5, and 0 otherwise.
-    % 
+    %
+    % Fits a 'sin1' model to the time series using fit function from the Curve Fitting
+    % Toolbox. The output is binary: 1 if the goodness of fit, R^2, exceeds 0.3 and
+    % the amplitude of the fitted periodic component exceeds 0.5, and 0 otherwise.
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     %---OUTPUT: Binary: 1 (= seasonal), 0 (= non-seasonal)
-    % 
+    
     ----------------------------------------
     """
 
@@ -1972,22 +1875,22 @@ class EN_ApEn(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Estimates the Approximate Entropy of the time series, ApEn(m,r).
-    % 
+    %
+    % ApEn(m,r).
+    %
     % cf. S. M. Pincus, "Approximate entropy as a measure of system complexity",
     % P. Natl. Acad. Sci. USA, 88(6) 2297 (1991)
     %
     % For more information, cf. http://physionet.org/physiotools/ApEn/
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % mnom, the embedding dimension
     % rth, the threshold for judging closeness/similarity
     %
     %---NOTES:
-    % No record of where this was obtained from.
-    %
+    % No record of where this was code was derived from :-/
+    
     ----------------------------------------
     """
 
@@ -2012,18 +1915,18 @@ class EN_CID(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Estimates of 'complexity' of a time series as the stretched-out length of the
     % lines resulting from a line-graph of the time series.
-    % 
+    %
     % cf. Batista, G. E. A. P. A., Keogh, E. J., Tataw, O. M. & de Souza, V. M. A.
     % CID: an efficient complexity-invariant distance for time series. Data Min.
     % Knowl. Disc. 28, 634–669 (2014).
-    % 
+    %
     %---INPUTS:
     %
     % y, the input time series
-    % 
+    
     ----------------------------------------
     """
 
@@ -2042,32 +1945,34 @@ class EN_DistributionEntropy(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Estimates of entropy from the static distribution of the time series. The
+    %
+    % Estimates of entropy from the distribution of a data vector. The
     % distribution is estimated either using a histogram with numBins bins, or as a
     % kernel-smoothed distribution, using the ksdensity function from Matlab's
     % Statistics Toolbox with width parameter, w (specified as the iunput numBins).
-    % 
+    %
     % An optional additional parameter can be used to remove a proportion of the
     % most extreme positive and negative deviations from the mean as an initial
     % pre-processing.
-    % 
+    %
     %---INPUTS:
     %
     % y, the input time series
-    % 
+    %
     % histOrKS: 'hist' for histogram, or 'ks' for ksdensity
-    % 
+    %
     % numBins: (*) (for 'hist'): an integer, uses a histogram with that many bins
     %          (*) (for 'ks'): a positive real number, for the width parameter for
     %                       ksdensity (can also be empty for default width
     %                                       parameter, optimum for Gaussian)
-    %                                       
+    %
     % olremp [opt]: the proportion of outliers at both extremes to remove
     %               (e.g., if olremp = 0.01; keeps only the middle 98% of data; 0
     %               keeps all data. This parameter ought to be less than 0.5, which
     %               keeps none of the data).
-    % 
+    %               If olremp is specified, returns the difference in entropy from
+    %               removing the outliers.
+    
     ----------------------------------------
     """
 
@@ -2075,7 +1980,7 @@ class EN_DistributionEntropy(HCTSASuper):
 
     TAGS = ('entropy', 'raw', 'spreaddep')
 
-    def __init__(self, histOrKS='ks', numBins=(), olremp=0.1):
+    def __init__(self, histOrKS='ks', numBins=0.05, olremp=0.0):
         super(EN_DistributionEntropy, self).__init__()
         self.histOrKS = histOrKS
         self.numBins = numBins
@@ -2095,26 +2000,25 @@ class EN_MS_shannon(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Calculates the approximate Shannon entropy of a time series using an
-    % nbin-bin encoding and depth-symbol sequences.
+    %
+    % Uses an nbin-bin encoding and depth-symbol sequences.
     % Uniform population binning is used, and the implementation uses Michael Small's code
     % MS_shannon.m (renamed from the original, simply shannon.m)
-    % 
+    %
     % cf. M. Small, Applied Nonlinear Time Series Analysis: Applications in Physics,
     % Physiology, and Finance (book) World Scientific, Nonlinear Science Series A,
     % Vol. 52 (2005)
     % Michael Small's code is available at available at http://small.eie.polyu.edu.hk/matlab/
-    % 
+    %
     % In this wrapper function, you can evaluate the code at a given n and d, and
     % also across a range of depth and nbin to return statistics on how the obtained
     % entropies change.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % nbin, the number of bins to discretize the time series into (i.e., alphabet size)
     % depth, the length of strings to analyze
-    % 
+    
     ----------------------------------------
     """
 
@@ -2139,17 +2043,16 @@ class EN_PermEn(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Estimates the Permutation Entropy of the time series
-    % 
+    % EN_PermEn     Permutation Entropy of a time series.
+    %
     % "Permutation Entropy: A Natural Complexity Measure for Time Series"
     % C. Bandt and B. Pompe, Phys. Rev. Lett. 88(17) 174102 (2002)
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % m, the embedding dimension (or order of the permutation entropy)
     % tau, the time-delay for the embedding
-    % 
+    %
     %---OUTPUT:
     % Outputs the permutation entropy and normalized version computed according to
     % different implementations
@@ -2178,17 +2081,15 @@ class EN_RM_entropy(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Measures the entropy of the time series using a function by Rudy Moddemeijer
-    % 
+    %
     % Original code, now RM_entropy, was obtained from:
     % http://www.cs.rug.nl/~rudy/matlab/
-    % 
+    %
     % The above website has code and documentation for the function.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    
     ----------------------------------------
     """
 
@@ -2207,16 +2108,15 @@ class EN_Randomize(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Progressively randomizes the input time series according to some randomization
-    % scheme, and returns measures of how the properties of the time series change
-    % with this process.
-    % 
+    %
+    % Progressively randomizes the input time series according to a specified
+    % randomization procedure
+    %
     % The procedure is repeated 2N times, where N is the length of the time series.
-    % 
+    %
     %---INPUTS:
     % y, the input (z-scored) time series
-    % 
+    %
     % randomizeHow, specifies the randomization scheme for each iteration:
     %      (i) 'statdist' -- substitutes a random element of the time series with
     %                           one from the original time-series distribution
@@ -2224,20 +2124,20 @@ class EN_Randomize(HCTSASuper):
     %                       series with another random element
     %      (iii) 'permute' -- permutes pairs of elements of the time
     %                       series randomly
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
+    %
     %---OUTPUTS: summarize how the properties change as one of these
     % randomization procedures is iterated, including the cross correlation with the
     % original time series, the autocorrelation of the randomized time series, its
     % entropy, and stationarity.
-    % 
+    %
     % These statistics are calculated every N/10 iterations, and thus 20 times
     % throughout the process in total.
-    % 
+    %
     % Most statistics measure how these properties decay with randomization, by
     % fitting a function f(x) = Aexp(Bx).
-    % 
+    
     ----------------------------------------
     """
 
@@ -2262,10 +2162,9 @@ class EN_SampEn(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Estimates the Sample Entropy of the time series, SampEn(m,r), by referencing
-    % code from PhysioNet.
-    % 
+    %
+    % SampEn(m,r), using code from PhysioNet.
+    %
     % The publicly-available PhysioNet code, sampenc (renamed here to RN_sampenc) is
     % available from:
     % http://www.physionet.org/physiotools/sampen/matlab/1.1/sampenc.m
@@ -2273,24 +2172,24 @@ class EN_SampEn(HCTSASuper):
     % cf. "Physiological time-series analysis using approximate entropy and sample
     % entropy", J. S. Richman and J. R. Moorman, Am. J. Physiol. Heart Circ.
     % Physiol., 278(6) H2039 (2000)
-    % 
+    %
     % This function can also calculate the SampEn of successive increments of time
     % series, i.e., we using an incremental differencing pre-processing, as
     % used in the so-called Control Entropy quantity:
-    % 
+    %
     % "Control Entropy: A complexity measure for nonstationary signals"
     % E. M. Bollt and J. Skufca, Math. Biosci. Eng., 6(1) 1 (2009)
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % M, the embedding dimension
     % r, the threshold
     % preProcessHow [opt], (i) 'diff1', incremental difference preProcessingHow.
-    % 
+    
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (10,)
+    KNOWN_OUTPUTS_SIZES = (5,)
 
     TAGS = ('controlen', 'entropy', 'sampen')
 
@@ -2310,50 +2209,27 @@ class EN_SampEn(HCTSASuper):
         return eng.run_function(1, 'EN_SampEn', x, self.M, self.r, self.preProcessHow)
 
 
-class EN_Shannonpdf(HCTSASuper):
-    """
-    Matlab doc:
-    ----------------------------------------
-    % 
-    % Estimates the (log_2) Shannon entropy from the probability distribution of the time
-    % series.
-    % 
-    %---INPUT:
-    % y, the input time series.
-    % 
-    ----------------------------------------
-    """
-
-    KNOWN_OUTPUTS_SIZES = (1,)
-
-    TAGS = ('entropy',)
-
-    def __init__(self):
-        super(EN_Shannonpdf, self).__init__()
-
-    def _eval_hook(self, eng, x):
-        return eng.run_function(1, 'EN_Shannonpdf', x, )
-
-
 class EN_rpde(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % Performs fast recurrence period density entropy (RPDE) analysis on an input
-    % signal to obtain an estimate of the H_norm value and other related statistics.
-    % 
+    % EN_rpde   Recurrence period density entropy (RPDE).
+    %
+    % Fast RPDE analysis on an input signal to obtain an estimate of the H_norm value
+    % and other related statistics.
+    %
     % Based on Max Little's code rpde (see below)
     %
     %---USAGE:
     % [H_norm, rpd] = rpde(x, m, tau)
     % [H_norm, rpd] = rpde(x, m, tau, epsilon)
     % [H_norm, rpd] = rpde(x, m, tau, epsilon, T_max)
-    % 
+    %
     %---INPUTS:
     %    x       - input signal: must be a row vector
     %    m       - embedding dimension
     %    tau     - embedding time delay
-    %    
+    %
     %---OPTIONAL INPUTS:
     %    epsilon - recurrence neighbourhood radius
     %              (If not specified, then a suitable value is chosen automatically)
@@ -2362,7 +2238,7 @@ class EN_rpde(HCTSASuper):
     %---OUTPUTS:
     %    H_norm  - Estimated RPDE value
     %    rpd     - Estimated recurrence period density
-    % 
+    
     ----------------------------------------
     """
 
@@ -2393,10 +2269,9 @@ class EN_wentropy(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Uses the wentropy function from Matlab's Wavelet toolbox to
-    % estimate the entropy of the input time series.
-    % 
+    %
+    % Uses the wentropy function from Matlab's Wavelet toolbox.
+    %
     %--INPUTS:
     % y, the input time series
     % whaten, the entropy type:
@@ -2406,10 +2281,10 @@ class EN_wentropy(HCTSASuper):
     %               'sure' (with a given parameter).
     %               (see the wentropy documentaiton for information)
     % p, the additional parameter needed for threshold and sure entropies
-    % 
+    %
     %---NOTE:
     % It seems likely that this implementation of wentropy is nonsense.
-    % 
+    
     ----------------------------------------
     """
 
@@ -2434,32 +2309,31 @@ class EX_MovingThreshold(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % A measure based on a moving threshold model for extreme events. Inspired by an
-    % idea contained in the following paper:
+    %
+    % Inspired by an idea contained in:
     % "Reactions to extreme events: Moving threshold model"
     % Altmann et al., Physica A 364, 435--444 (2006)
-    % 
+    %
     % This algorithm is based on this idea: it uses the occurrence of extreme events
     % to modify a hypothetical 'barrier' that classes new points as 'extreme' or not.
     % The barrier begins at sigma, and if the absolute value of the next data point
     % is greater than the barrier, the barrier is increased by a proportion 'a',
     % otherwise the position of the barrier is decreased by a proportion 'b'.
-    % 
+    %
     %---INPUTS:
     % y, the input (z-scored) time series
     % a, the barrier jump parameter (in extreme event)
     % b, the barrier decay proportion (in absence of extreme event)
-    % 
+    %
     %---OUTPUTS: the mean, spread, maximum, and minimum of the time series for the
     % barrier, the mean of the difference between the barrier and the time series
     % values, and statistics on the occurrence of 'kicks' (times at which the
     % threshold is modified), and by how much the threshold changes on average.
-    % 
+    %
     % In future could make a variant operation that optimizes a and b to minimize the
     % quantity meanqover/pkick (hugged the shape as close as possible with the
     % minimum number of kicks), and returns a and b...?
-    % 
+    
     ----------------------------------------
     """
 
@@ -2484,26 +2358,26 @@ class FC_LocalSimple(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Does local forecasting using very simple predictors using the past l values
-    % of the time series to predict its next value.
-    % 
+    %
+    % Simple predictors using the past trainLength values of the time series to
+    % predict its next value.
+    %
     %---INPUTS:
     % y, the input time series
-    % 
-    % fmeth, the forecasting method:
-    %          (i) 'mean': local mean prediction using the past ltrain time-series
+    %
+    % forecastMeth, the forecasting method:
+    %          (i) 'mean': local mean prediction using the past trainLength time-series
     %                       values,
-    %          (ii) 'median': local median prediction using the past ltrain
+    %          (ii) 'median': local median prediction using the past trainLength
     %                         time-series values
-    %          (iii) 'lfit': local linear prediction using the past ltrain
+    %          (iii) 'lfit': local linear prediction using the past trainLength
     %                         time-series values.
-    % 
-    % ltrain, the number of time-series values to use to forecast the next value
-    % 
+    %
+    % trainLength, the number of time-series values to use to forecast the next value
+    %
     %---OUTPUTS: the mean error, stationarity of residuals, Gaussianity of
     % residuals, and their autocorrelation structure.
-    % 
+    
     ----------------------------------------
     """
 
@@ -2511,39 +2385,40 @@ class FC_LocalSimple(HCTSASuper):
 
     TAGS = ('forecasting',)
 
-    def __init__(self, fmeth='mean', ltrain=3.0):
+    def __init__(self, forecastMeth='mean', trainLength=3.0):
         super(FC_LocalSimple, self).__init__()
-        self.fmeth = fmeth
-        self.ltrain = ltrain
+        self.forecastMeth = forecastMeth
+        self.trainLength = trainLength
 
     def _eval_hook(self, eng, x):
-        if self.fmeth is None:
+        if self.forecastMeth is None:
             return eng.run_function(1, 'FC_LocalSimple', x, )
-        elif self.ltrain is None:
-            return eng.run_function(1, 'FC_LocalSimple', x, self.fmeth)
-        return eng.run_function(1, 'FC_LocalSimple', x, self.fmeth, self.ltrain)
+        elif self.trainLength is None:
+            return eng.run_function(1, 'FC_LocalSimple', x, self.forecastMeth)
+        return eng.run_function(1, 'FC_LocalSimple', x, self.forecastMeth, self.trainLength)
 
 
 class FC_LoopLocalSimple(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Analyzes the outputs of FC_LocalSimple for a range of local window lengths, l.
     % Loops over the length of the data to use for FC_LocalSimple prediction
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
-    % fmeth, the prediction method:
+    %
+    % forecastMeth, the prediction method:
     %            (i) 'mean', local mean prediction
     %            (ii) 'median', local median prediction
-    % 
-    %---OUTPUTS: statistics including whether the mean square error increases or
-    % decreases, testing for peaks, variability, autocorrelation, stationarity, and
-    % a fit of exponential decay, f(x) = A*exp(Bx) + C, to the variation.
-    % 
+    %
+    %---OUTPUTS:
+    % Statistics including whether the mean square error increases or decreases,
+    % testing for peaks, variability, autocorrelation, stationarity, and a fit of
+    % exponential decay, f(x) = A*exp(Bx) + C, to the variation.
+    
     ----------------------------------------
     """
 
@@ -2551,38 +2426,35 @@ class FC_LoopLocalSimple(HCTSASuper):
 
     TAGS = ('forecasting',)
 
-    def __init__(self, fmeth='mean'):
+    def __init__(self, forecastMeth='mean'):
         super(FC_LoopLocalSimple, self).__init__()
-        self.fmeth = fmeth
+        self.forecastMeth = forecastMeth
 
     def _eval_hook(self, eng, x):
-        if self.fmeth is None:
+        if self.forecastMeth is None:
             return eng.run_function(1, 'FC_LoopLocalSimple', x, )
-        return eng.run_function(1, 'FC_LoopLocalSimple', x, self.fmeth)
+        return eng.run_function(1, 'FC_LoopLocalSimple', x, self.forecastMeth)
 
 
 class FC_Surprise(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % How surprised you might be by the next recorded data points given the data
-    % recorded in recent memory.
-    % 
+    %
     % Coarse-grains the time series, turning it into a sequence of symbols of a
     % given alphabet size, numGroups, and quantifies measures of surprise of a
     % process with local memory of the past memory values of the symbolic string.
-    % 
+    %
     % We then consider a memory length, memory, of the time series, and
     % use the data in the proceeding memory samples to inform our expectations of
     % the following sample.
-    % 
+    %
     % The 'information gained', log(1/p), at each sample using expectations
     % calculated from the previous memory samples, is estimated.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % whatPrior, the type of information to store in memory:
     %           (i) 'dist': the values of the time series in the previous memory
     %                       samples,
@@ -2590,12 +2462,12 @@ class FC_Surprise(HCTSASuper):
     %                       memory samples, and
     %           (iii) 'T2': the two-point transition probabilities in the previous
     %                       memory samples.
-    %                       
+    %
     % memory, the memory length (either number of samples, or a proportion of the
     %           time-series length, if between 0 and 1)
-    %           
+    %
     % numGroups, the number of groups to coarse-grain the time series into
-    % 
+    %
     % cgmeth, the coarse-graining, or symbolization method:
     %          (i) 'quantile': an equiprobable alphabet by the value of each
     %                          time-series datapoint,
@@ -2603,15 +2475,15 @@ class FC_Surprise(HCTSASuper):
     %                         changes in the time-series values, and
     %          (iii) 'embed2quadrants': by the quadrant each data point resides in
     %                          in a two-dimensional embedding space.
-    % 
+    %
     % numIters, the number of iterations to repeat the procedure for.
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
+    %
     %---OUTPUTS: summaries of this series of information gains, including the
     %            minimum, maximum, mean, median, lower and upper quartiles, and
     %            standard deviation.
-    % 
+    
     ----------------------------------------
     """
 
@@ -2651,20 +2523,20 @@ class HT_DistributionTest(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Fits a distribution to the data and then performs an appropriate hypothesis
-    % test to quantify the difference between the two distributions. We fit
-    % Gaussian, Extreme Value, Uniform, Beta, Rayleigh, Exponential, Gamma,
-    % Log-Normal, and Weibull distributions, using code described for
-    % DN_M_kscomp.
+    % test to quantify the difference between the two distributions.
     % 
+    % We fit Gaussian, Extreme Value, Uniform, Beta, Rayleigh, Exponential, Gamma,
+    % Log-Normal, and Weibull distributions, using code described for DN_M_kscomp.
+    %
     %---INPUTS:
-    % x, the input time series
+    % x, the input data vector
     % theTest, the hypothesis test to perform:
     %           (i) 'chi2gof': chi^2 goodness of fit test
     %           (ii) 'ks': Kolmogorov-Smirnov test
     %           (iii) 'lillie': Lilliefors test
-    % 
+    %
     % theDistn, the distribution to fit:
     %           (i) 'norm' (Normal)
     %           (ii) 'ev' (Extreme value)
@@ -2675,12 +2547,12 @@ class HT_DistributionTest(HCTSASuper):
     %           (vii) 'gamma' (Gamma)
     %           (viii) 'logn' (Log-normal)
     %           (ix) 'wbl' (Weibull)
-    % 
+    %
     % numBins, the number of bins to use for the chi2 goodness of fit test
-    % 
+    %
     % All of these functions for hypothesis testing are implemented in Matlab's
     % Statistics Toolbox.
-    % 
+    
     ----------------------------------------
     """
 
@@ -2708,16 +2580,13 @@ class HT_HypothesisTest(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Outputs the p-value from a statistical hypothesis test applied to the
-    % time series.
-    % 
+    %
     % Tests are implemented as functions in Matlab's Statistics Toolbox.
     % (except Ljung-Box Q-test, which uses the Econometrics Toolbox)
-    % 
+    %
     %---INPUTS:
     % x, the input time series
-    % 
+    %
     % theTest, the hypothesis test to perform:
     %           (i) sign test ('signtest'),
     %           (ii) runs test ('runstest'),
@@ -2726,10 +2595,10 @@ class HT_HypothesisTest(HCTSASuper):
     %           (v) Wilcoxon signed rank test for a zero median ('signrank'),
     %           (vi) Jarque-Bera test of composite normality ('jbtest').
     %           (vii) Ljung-Box Q-test for residual autocorrelation ('lbq')
-    %           
+    %
     %---OUTPUT:
-    % the p-value from the statistical test
-    % 
+    % p-value from the specified statistical test
+    
     ----------------------------------------
     """
 
@@ -2751,25 +2620,22 @@ class IN_AutoMutualInfo(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Decided to implement some more rigorous mutual information estimators
-    % from the information dynamics toolkit.
-    % 
+    %
     %---INPUTS:
     %
     % y: input time series
-    % 
+    %
     % timeDelay: time lag for automutual information calculation
-    % 
+    %
     % estMethod: the estimation method used to compute the mutual information:
     %           (*) 'gaussian'
     %           (*) 'kernel'
     %           (*) 'kraskov1'
     %           (*) 'kraskov2'
-    % 
+    %
     % cf. Kraskov, A., Stoegbauer, H., Grassberger, P., Estimating mutual
     % information: http://dx.doi.org/10.1103/PhysRevE.69.066138
-    % 
+    
     ----------------------------------------
     """
 
@@ -2797,21 +2663,18 @@ class IN_AutoMutualInfoStats(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Returns statistics on the automutual information function computed on the time
-    % series
-    % 
+    %
     %---INPUTS:
     % y, column vector of time series data
-    % 
+    %
     % maxTau, maximal time delay
-    % 
+    %
     % estMethod, extraParam -- cf. inputs to IN_AutoMutualInfo.m
-    % 
+    %
     %---OUTPUTS:
     % Statistics on the AMIs and their pattern across the range of specified time
     % delays
-    % 
+    
     ----------------------------------------
     """
 
@@ -2839,20 +2702,18 @@ class IN_Initialize_MI(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Initializes Information Dynamics Toolkit object for MI computation.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % estMethod: the estimation method used to compute the mutual information:
     %           (*) 'gaussian'
     %           (*) 'kernel'
     %           (*) 'kraskov1'
     %           (*) 'kraskov2'
-    % 
+    %
     % cf. Kraskov, A., Stoegbauer, H., Grassberger, P., Estimating mutual
     % information: http://dx.doi.org/10.1103/PhysRevE.69.066138
-    % 
+    
     ----------------------------------------
     """
 
@@ -2874,24 +2735,23 @@ class IN_MutualInfo(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Decided to implement some more rigorous mutual information estimators
-    % from the information dynamics toolkit.
-    % 
+    %
+    % Uses the information dynamics toolkit implementation.
+    %
     %---INPUTS:
     %
     % y1: input time series 1
     % y2: input time series 2
-    % 
+    %
     % estMethod: the estimation method used to compute the mutual information:
     %           (*) 'gaussian'
     %           (*) 'kernel'
     %           (*) 'kraskov1'
     %           (*) 'kraskov2'
-    % 
+    %
     % cf. Kraskov, A., Stoegbauer, H., Grassberger, P., Estimating mutual
     % information: http://dx.doi.org/10.1103/PhysRevE.69.066138
-    % 
+    
     ----------------------------------------
     """
 
@@ -2919,35 +2779,32 @@ class MD_hrv_classic(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Packages up a bunch of classic heart rate variability (HRV) statistics and
-    % applies them to the input time series.
-    % 
-    % Assumes an NN/RR time series in units of seconds.
-    % 
+    %
+    % Typically assumes an NN/RR time series in units of seconds.
+    %
     %---INPUTS:
     % y, the input time series.
-    % 
+    %
     % Includes:
     %  (i) pNNx
     %  cf. "The pNNx files: re-examining a widely used heart rate variability
     %           measure", J.E. Mietus et al., Heart 88(4) 378 (2002)
-    % 
+    %
     %  (ii) Power spectral density ratios in different frequency ranges
     %   cf. "Heart rate variability: Standards of measurement, physiological
     %       interpretation, and clinical use",
     %       M. Malik et al., Eur. Heart J. 17(3) 354 (1996)
-    % 
+    %
     %  (iii) Triangular histogram index, and
-    %  
+    %
     %  (iv) Poincare plot measures
     %  cf. "Do existing measures of Poincare plot geometry reflect nonlinear
     %       features of heart rate variability?"
     %       M. Brennan, et al., IEEE T. Bio.-Med. Eng. 48(11) 1342 (2001)
-    %  
+    %
     % Code is heavily derived from that provided by Max A. Little:
     % http://www.maxlittle.net/
-    % 
+    
     ----------------------------------------
     """
 
@@ -2966,24 +2823,24 @@ class MD_pNN(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Applies pNNx measures to time series assumed to represent sequences of
     % consecutive RR intervals measured in milliseconds.
-    % 
+    %
     % cf. "The pNNx files: re-examining a widely used heart rate variability
     %           measure", J.E. Mietus et al., Heart 88(4) 378 (2002)
-    % 
+    %
     %---INPUTS:
     % x, the input time series
-    % 
+    %
     % This code is derived from MD_hrv_classic.m becuase it doesn't make medical
     % sense to do PNN on a z-scored time series.
-    % 
+    %
     % But now PSD doesn't make too much sense, so we just evaluate the pNN measures.
-    % 
+    %
     % Code is heavily derived from that provided by Max A. Little:
     % http://www.maxlittle.net/
-    % 
+    
     ----------------------------------------
     """
 
@@ -3002,33 +2859,31 @@ class MD_polvar(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
+    %
+    % Measures the probability of obtaining a sequence of consecutive ones or zeros.
     % 
-    % Calculates the POLVARd measure for a time series.
     % The first mention may be in Wessel et al., PRE (2000), called Plvar
     % cf. "Short-term forecasting of life-threatening cardiac arrhythmias based on
     % symbolic dynamics and finite-time growth rates",
     %       N. Wessel et al., Phys. Rev. E 61(1) 733 (2000)
-    % 
-    % The output from this function is the probability of obtaining a sequence of
-    % consecutive ones or zeros.
-    % 
+    %
     % Although the original measure used raw thresholds, d, on RR interval sequences
     % (measured in milliseconds), this code can be applied to general z-scored time
     % series. So now d is not the time difference in milliseconds, but in units of
     % std.
-    % 
+    %
     % The measure was originally applied to sequences of RR intervals and this code
     % is heavily derived from that provided by Max A. Little, January 2009.
     % cf. http://www.maxlittle.net/
-    % 
+    %
     %---INPUTS:
     % x, the input time series
     % d, the symbolic coding (amplitude) difference,
     % D, the word length (classically words of length 6).
-    % 
+    %
     %---OUPUT:
     % p - probability of obtaining a sequence of consecutive ones/zeros
-    % 
+    
     ----------------------------------------
     """
 
@@ -3053,20 +2908,20 @@ class MD_rawHRVmeas(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Evaluates the triangular histogram index and Poincare plot measures to a time
+    %
+    % Computes the triangular histogram index and Poincare plot measures to a time
     % series assumed to measure sequences of consecutive RR intervals measured in
     % milliseconds. Doesn't make much sense for other time series
-    % 
+    %
     % cf. "Do existing measures of Poincare plot geometry reflect nonlinear
     %      features of heart rate variability?"
     %      M. Brennan, et al., IEEE T. Bio.-Med. Eng. 48(11) 1342 (2001)
-    % 
+    %
     % Note that pNNx is not done here, but in MD_pNN.m
-    % 
+    %
     % This code is heavily derived from Max Little's hrv_classic.m code
     % Max Little: http://www.maxlittle.net/
-    % 
+    
     ----------------------------------------
     """
 
@@ -3085,29 +2940,29 @@ class MF_ARMA_orders(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Given a set of AR orders, p, and a set of MA orders, q, this operation fits
     % ARMA(p,q) models to the time series and evaluates the goodness of fit from all
     % combinations (p,q).
-    % 
+    %
     % Uses functions iddata, armax, and aic from Matlab's System Identification toolbox
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % pr, a vector specifying the range of AR model orders to analyze
     % qr, a vector specifying the range of MA model orders to analyze
-    % 
+    %
     %---OUTPUTS: statistics on the appropriateness of different types of models,
     % including the goodness of fit from the best model, and the optimal orders of
     % fitted ARMA(p,q) models.
-    % 
+    %
     % ** Future improvements **
     % (1) May want to quantify where a particular order starts to stand out, i.e.,
     % may be quite sensitive to wanting p > 2, but may be quite indiscriminate
     % when it comes to the MA order.
     % (2) May want to do some prediction and get more statistics on quality of
     % model rather than just in-sample FPE/AIC...
-    % 
+    
     ----------------------------------------
     """
 
@@ -3132,18 +2987,17 @@ class MF_AR_arcov(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Fits an AR model of a given order, p, using arcov code from Matlab's Signal
-    % Processing Toolbox.
-    % 
+    %
+    % Uses arcov code from Matlab's Signal Processing Toolbox.
+    %
     %---INPUTS:
     % y, the input time series
     % p, the AR model order
-    % 
+    %
     %---OUTPUTS: include the parameters of the fitted model, the variance estimate of a
     % white noise input to the AR model, the root-mean-square (RMS) error of a
     % reconstructed time series, and the autocorrelation of residuals.
-    % 
+    
     ----------------------------------------
     """
 
@@ -3151,7 +3005,7 @@ class MF_AR_arcov(HCTSASuper):
 
     TAGS = ('ar', 'fit', 'gof', 'model')
 
-    def __init__(self, p=3.0):
+    def __init__(self, p=4.0):
         super(MF_AR_arcov, self).__init__()
         self.p = p
 
@@ -3165,21 +3019,19 @@ class MF_CompareAR(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Compares fits of AR models of various orders to the input time series.
-    % 
+    %
     % Uses functions from Matlab's System Identification Toolbox: iddata, arxstruc,
     % and selstruc
-    % 
+    %
     %---INPUTS:
-    % y, vector of equally-spaced time series data
+    % y, vector of time-series data
     % orders, a vector of possible model orders
     % testHow, specify a fraction, or provide a string 'all' to train and test on
     %            all the data
-    % 
+    %
     %---OUTPUTS: statistics on the loss at each model order, which are obtained by
     % applying the model trained on the training data to the testing data.
-    % 
+    
     ----------------------------------------
     """
 
@@ -3204,24 +3056,24 @@ class MF_CompareTestSets(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Looks at robustness of test set goodness of fit over different samples in
-    % the time series from fitting a given time-series model.
-    % 
+    %
+    % Robustness is quantified over different samples in the time series from
+    % fitting a specified time-series model.
+    %
     % Similar to MF_FitSubsegments, except fits the model on the full time
     % series and compares how well it predicts time series in different local
     % time-series segments.
-    % 
+    %
     % Says something of stationarity in spread of values, and something of the
     % suitability of model in level of values.
-    % 
+    %
     % Uses function iddata and predict from Matlab's System Identification Toolbox,
     % as well as either ar, n4sid, or armax from Matlab's System Identification
     % Toolbox to fit the models, depending on the specified model to fit to the data.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % theModel, the type of time-series model to fit:
     %           (i) 'ar', fits an AR model
     %           (ii) 'ss', first a state-space model
@@ -3233,16 +3085,16 @@ class MF_CompareTestSets(HCTSASuper):
     %           (i) 'rand', select at random
     %           (ii) 'uniform', uniformly distributed segments throughout the time
     %                   series
-    %                   
+    %
     % samplep, a two-vector specifying the sampling parameters
     %           e.g., [20, 0.1] repeats 20 times for segments 10% the length of the
     %                           time series
-    % 
+    %
     % steps, the number of steps ahead to do the predictions.
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     %               (when 'rand' specified for subsetHow)
-    % 
+    
     ----------------------------------------
     """
 
@@ -3250,7 +3102,7 @@ class MF_CompareTestSets(HCTSASuper):
 
     TAGS = ('ar', 'arfit', 'model', 'prediction', 'statespace', 'systemidentificationtoolbox')
 
-    def __init__(self, theModel='ar', ordd='best', subsetHow='uniform',
+    def __init__(self, theModel='ss', ordd=2.0, subsetHow='uniform',
                  samplep=(25.0, 0.10000000000000001), steps=1.0, randomSeed=None):
         super(MF_CompareTestSets, self).__init__()
         self.theModel = theModel
@@ -3282,31 +3134,31 @@ class MF_ExpSmoothing(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Fits an exponential smoothing model to the time series using a training set to
     % fit the optimal smoothing parameter, alpha, and then applies the result to the
     % try to predict the rest of the time series.
-    % 
+    %
     % cf. "The Analysis of Time Series", C. Chatfield, CRC Press LLC (2004)
-    % 
+    %
     % Code is adapted from original code provided by Siddharth Arora:
     % Siddharth.Arora@sbs.ox.ac.uk
-    % 
+    %
     %---INPUTS:
     % x, the input time series
-    % 
+    %
     % ntrain, the number of samples to use for training (can be a proportion of the
     %           time-series length)
-    %           
+    %
     % alpha, the exponential smoothing parameter
-    % 
+    %
     %---OUTPUTS: include the fitted alpha, and statistics on the residuals from the
     % prediction phase.
-    % 
+    %
     % Future alteration could take a number of training sets and average to some
     % optimal alpha, for example, rather than just fitting it in an initial portion
     % of the time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -3331,20 +3183,17 @@ class MF_FitSubsegments(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Looks at the robustness of fitted parameters from a model applied to different
-    % segments of the time series.
-    % 
+    %
     % The spread of parameters obtained (including in-sample goodness of fit
     % statistics) provide some indication of stationarity.
-    % 
+    %
     % Values of goodness of fit provide some indication of model suitability.
-    % 
+    %
     % N.B., this code inherits strongly from this MF_CompareTestSets
-    % 
+    %
     %---INPUTS:
     % y, the input time series.
-    % 
+    %
     % model, the model to fit in each segments of the time series:
     %           'arsbc': fits an AR model using the ARfit package. Outputs
     %                       statistics are on how the optimal order, p_{opt}, and
@@ -3361,20 +3210,20 @@ class MF_FitSubsegments(HCTSASuper):
     %           'arma': fits an ARMA model using armax code from Matlab's System
     %                   Identification Toolbox. Outputs are statistics on the FPE,
     %                   and fitted AR and MA parameters.
-    %                   
+    %
     % subsetHow, how to choose segments from the time series, either 'uniform'
     %               (uniformly) or 'rand' (at random).
-    %               
+    %
     % samplep, a two-vector specifying how many segments to take and of what length.
     %           Of the form [nsamples, length], where length can be a proportion of
     %           the time-series length. e.g., [20,0.1] takes 20 segments of 10% the
     %           time-series length.
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     %               (for when subsetHow is 'rand')
-    % 
-    %---OUTPUTS: depend on the model, as described above.
     %
+    %---OUTPUTS: depend on the model, as described above.
+    
     ----------------------------------------
     """
 
@@ -3410,38 +3259,38 @@ class MF_GARCHcompare(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % This code fits a set of GARCH(p,q) models to the time series and
     % returns statistics on the goodness of fits across a range of p and
     % q parameters.
-    % 
+    %
     % Uses the following functions from Matlab's Econometrics Toolbox: archtest,
     % lbqtest, autocorr, parcorr, garchset, garchfit, garchcount, aicbic
-    % 
+    %
     % Compares all combinations of p and q and output statistics are on the models
     % with the best fit.
-    % 
+    %
     % This operation focuses on the GARCH/variance component, and therefore
     % attempts to pre-whiten and assumes a constant mean process (applies a linear
     % detrending).
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % preProc, a preprocessing to apply:
     %           (i) 'none': no preprocessing is performed
     %           (ii) 'ar': performs a preprocessing that maximizes AR(2) whiteness,
-    %           
+    %
     % pr, a vector of model orders, p, to compare
-    % 
+    %
     % qr, a vector of model orders, q, to compare
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
-    % 
+    %
+    %
     %---OUTPUTS: include log-likelihoods, Bayesian Information  Criteria (BIC),
     % Akaike's Information Criteria (AIC), outputs from Engle's ARCH test and the
     % Ljung-Box Q-test, and estimates of optimal model orders.
-    % 
+    
     ----------------------------------------
     """
 
@@ -3476,10 +3325,10 @@ class MF_GARCHfit(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Simulates a procedure for fitting Generalized Autoregressive Conditional
     % Heteroskedasticity (GARCH) models to a time series, namely:
-    % 
+    %
     % (1) Preprocessing the data to remove strong trends,
     % (2) Pre-estimation to calculate initial correlation properties of the time
     %       series and motivate a GARCH model,
@@ -3487,43 +3336,43 @@ class MF_GARCHfit(HCTSASuper):
     %           of the fitted model, and
     % (4) Post-estimation, involves calculating statistics on residuals and
     %           standardized residuals.
-    % 
+    %
     % The idea is that all of these stages can be pre-specified or skipped using
     % arguments to the function.
-    % 
+    %
     % Uses functions from Matlab's Econometrics Toolbox: archtest, lbqtest,
     % autocorr, parcorr, garchset, garchfit, garchcount, aicbic
-    % 
+    %
     % All methods implemented are from Matlab's Econometrics Toolbox, including
     % Engle's ARCH test (archtest), the Ljung-Box Q-test (lbqtest), estimating the
     % partial autocorrelation function (parcorr), as well as specifying (garchset)
     % and fitting (garchfit) the GARCH model to the time series.
-    % 
+    %
     % As part of this code, a very basic automatic pre-processing routine,
     % PP_ModelFit, is implemented, that applies a range of pre-processings and
     % returns the preprocessing of the time series that shows the worst fit to an
     % AR(2) model.
-    % 
+    %
     % In the case that no simple transformations of the time series are
     % significantly more stationary/less trivially correlated than the original time
     % series (by more than 5%), the original time series is simply used without
     % transformation.
-    % 
+    %
     % Where r and m are the autoregressive and moving average orders of the model,
     % respectively, and p and q control the conditional variance parameters.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % preproc, the preprocessing to apply, can be 'ar' or 'none'
-    % 
+    %
     % P, the GARCH model order
-    % 
+    %
     % Q, the ARCH model order
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     %               (for pre-processing: PP_PreProcess)
-    % 
+    
     ----------------------------------------
     """
 
@@ -3554,23 +3403,23 @@ class MF_GP_FitAcross(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Trains a Gaussian Process model on equally-spaced points throughout the time
     % series and uses the model to predict its intermediate values.
-    % 
+    %
     % Uses GP fitting code from the gpml toolbox, which is available here:
     % http://gaussianprocess.org/gpml/code.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % covFunc, the covariance function (structured in the standard way for the gpml toolbox)
     % npoints, the number of points through the time series to fit the GP model to
-    % 
+    %
     %---OUTPUTS: summarize the error and fitted hyperparameters.
-    % 
+    %
     % In future could do a better job of the sampling of points -- perhaps to take
     % into account the autocorrelation of the time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -3595,16 +3444,15 @@ class MF_GP_LearnHyperp(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Function used by main Gaussian Process model fitting operations that learns
-    % Gaussian Process hyperparameters for the time series.
-    % 
+    %
+    % Used by main Gaussian Process model fitting operations.
+    %
     % References code 'minimize' from the GAUSSIAN PROCESS REGRESSION AND
     % CLASSIFICATION Toolbox version 3.2, which is avilable at:
     % http://gaussianprocess.org/gpml/code
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % t,             time
     % y,             data
     % covFunc,       the covariance function, formatted as gpml likes it
@@ -3612,7 +3460,7 @@ class MF_GP_LearnHyperp(HCTSASuper):
     % likFunc, the likelihood function, formatted as gpml likes it
     % infAlg, the inference algorithm (in gpml form)
     % nfevals,       the number of function evaluations
-    % 
+    
     ----------------------------------------
     """
 
@@ -3656,26 +3504,23 @@ class MF_GP_LocalPrediction(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Fits a given Gaussian Process model to a section of the time series and uses
     % it to predict to the subsequent datapoint.
-    % 
-    % % Uses GP fitting code from the gpml toolbox, which is available here:
-    % http://gaussianprocess.org/gpml/code.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % covFunc, covariance function in the standard form for the gpml package.
-    %           E.g., covFunc = {'covSum', {'covSEiso','covNoise'}} combines squared 
+    %           E.g., covFunc = {'covSum', {'covSEiso','covNoise'}} combines squared
     %           exponential and noise terms
-    %           
+    %
     % numTrain, the number of training samples (for each iteration)
-    % 
+    %
     % numTest, the number of testing samples (for each interation)
-    % 
+    %
     % numPreds, the number of predictions to make
-    % 
+    %
     % pmode, the prediction mode:
     %       (i) 'beforeafter': predicts the preceding time series values by training
     %                           on the following values,
@@ -3683,13 +3528,15 @@ class MF_GP_LocalPrediction(HCTSASuper):
     %                    training on preceding values, and
     %       (iii) 'randomgap': predicts random values within a segment of time
     %                    series by training on the other values in that segment.
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
     %               (for 'randomgap' prediction)
-    % 
+    %
     %---OUTPUTS: summaries of the quality of predictions made, the mean and
     % spread of obtained hyperparameter values, and marginal likelihoods.
-    % 
+    
+    % Uses GP fitting code from the gpml toolbox, which is available here:
+    % http://gaussianprocess.org/gpml/code.
     ----------------------------------------
     """
 
@@ -3698,7 +3545,7 @@ class MF_GP_LocalPrediction(HCTSASuper):
     TAGS = ('gaussianprocess',)
 
     def __init__(self, covFunc=('covSum', ('covSEiso', 'covNoise')),
-                 numTrain=5.0, numTest=3.0, numPreds=10.0, pmode='beforeafter', randomSeed=None):
+                 numTrain=10.0, numTest=3.0, numPreds=20.0, pmode='frombefore', randomSeed=None):
         super(MF_GP_LocalPrediction, self).__init__()
         self.covFunc = covFunc
         self.numTrain = numTrain
@@ -3730,39 +3577,35 @@ class MF_GP_hyperparameters(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Fits a Gaussian Process model to a portion of the time series and returns the
-    % fitted hyperparameters, as well as statistics describing the goodness of fit
-    % of the model.
-    % 
+    %
     % Uses GP fitting code from the gpml toolbox, which is available here:
     % http://gaussianprocess.org/gpml/code.
-    % 
+    %
     % The code can accomodate a range of covariance functions, e.g.:
     % (i) a sum of squared exponential and noise terms, and
     % (ii) a sum of squared exponential, periodic, and noise terms.
-    % 
+    %
     % The model is fitted to <> samples from the time series, which are
     % chosen by:
     % (i) resampling the time series down to this many data points,
     % (ii) taking the first 200 samples from the time series, or
     % (iii) taking random samples from the time series.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % covFunc, the covariance function, in the standard form of the gmpl package
-    % 
+    %
     % squishorsquash, whether to squash onto the unit interval, or spread across 1:N
-    % 
+    %
     % maxN, the maximum length of time series to consider -- inputs greater than
     %           this length are resampled down to maxN
-    %           
+    %
     % resampleHow, specifies the method of how to resample time series longer than maxN
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed,
     %             for settings of resampleHow that involve random number generation
-    % 
+    
     ----------------------------------------
     """
 
@@ -3771,7 +3614,7 @@ class MF_GP_hyperparameters(HCTSASuper):
     TAGS = ('gaussianprocess',)
 
     def __init__(self, covFunc=('covSum', ('covSEiso', 'covNoise')),
-                 squishorsquash=1.0, maxN=200.0, resampleHow='first', randomSeed=None):
+                 squishorsquash=1.0, maxN=200.0, resampleHow='resample', randomSeed=None):
         super(MF_GP_hyperparameters, self).__init__()
         self.covFunc = covFunc
         self.squishorsquash = squishorsquash
@@ -3799,16 +3642,16 @@ class MF_ResidualAnalysis(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Given an input residual time series residuals, e, this function exports a
-    % structure with fields corresponding to structural tests on the residuals.
+    %
+    % Given an input residual time series residuals, e, this function returns a
+    % structure with fields corresponding to statistical tests on the residuals.
     % These are motivated by a general expectation of model residuals to be
     % uncorrelated.
     %
     %---INPUT:
     % e, should be raw residuals as prediction minus data (e = yp - y) as a column
-    %       vector. Will take absolute values / even powers of e as necessary.
-    % 
+    %       vector.
+    
     ----------------------------------------
     """
 
@@ -3827,19 +3670,19 @@ class MF_StateSpaceCompOrder(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Fits state space models using n4sid (from Matlab's System Identification
     % Toolbox) of orders 1, 2, ..., maxOrder and returns statistics on how the
     % goodness of fit changes across this range.
-    % 
+    %
     % c.f., MF_CompareAR -- does a similar thing for AR models
     % Uses the functions iddata, n4sid, and aic from Matlab's System Identification
     % Toolbox
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % maxOrder, the maximum model order to consider.
-    % 
+    
     ----------------------------------------
     """
 
@@ -3861,31 +3704,28 @@ class MF_StateSpace_n4sid(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Fits a state space model of given order to the time series using the n4sid
-    % function in Matlab's System Identification Toolbox.
-    % 
+    %
     % First fits the model to the whole time series, then trains it on the first
     % portion and tries to predict the rest.
-    % 
+    %
     % In the second portion of this code, the state space model is fitted to the
     % first p*N samples of the time series, where p is a given proportion and N is
     % the length of the time series.
-    % 
+    %
     % This model is then used to predict the latter portion of the time
     % series (i.e., the subsequent (1-p)*N samples).
-    % 
-    % Uses the functions iddata, n4sid, aic, and predict from Matlab's System Identification Toolbox
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % ord, the order of state-space model to implement (can also be the string 'best')
     % ptrain, the proportion of the time series to use for training
     % steps, the number of steps ahead to predict
-    % 
+    %
     %---OUTPUTS: parameters from the model fitted to the entire time series, and
     % goodness of fit and residual analysis from n4sid prediction.
-    % 
+    
+    % Uses the functions iddata, n4sid, aic, and predict from Matlab's System
+    % Identification Toolbox
     ----------------------------------------
     """
 
@@ -3913,34 +3753,32 @@ class MF_arfit(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Fit an AR model to the time series then returns statistics about it.
-    % 
+    %
     % Uses various functions implemented in the ARfit package, which is
     % freely-available at http://www.gps.caltech.edu/~tapio/arfit/
-    % 
+    %
     % cf. "Estimation of parameters and eigenmodes of multivariate autoregressive
     %       models", A. Neumaier and T. Schneider, ACM Trans. Math. Softw. 27, 27 (2001)
-    % 
+    %
     % cf. "Algorithm 808: ARFIT---a Matlab package for the estimation of parameters
     %      and eigenmodes of multivariate autoregressive models",
     %      T. Schneider and A. Neumaier, ACM Trans. Math. Softw. 27, 58 (2001)
-    % 
+    %
     % Autoregressive (AR) models are fitted with orders p = pmin, pmin + 1, ..., pmax.
-    % 
+    %
     % The optimal model order is selected using Schwartz's Bayesian Criterion (SBC).
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % pmin, the minimum AR model order to fit
     % pmax, the maximum AR model order to fit
     % selector, crierion to select optimal time-series model order (e.g., 'sbc', cf.
     %           ARFIT package documentation)
-    % 
+    %
     %---OUTPUTS: include the model coefficients obtained, the SBCs at each model order,
     % various tests on residuals, and statistics from an eigendecomposition of the
     % time series using the estimated AR model.
-    % 
+    
     ----------------------------------------
     """
 
@@ -3968,30 +3806,27 @@ class MF_armax(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Fits an ARMA(p,q) model to the time series and returns various statistics on
-    % the result.
-    % 
+    %
     % Uses the functions iddata, armax, aic, and predict from Matlab's System
     % Identification Toolbox
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % orders, a two-vector for p and q, the AR and MA components of the model,
     %           respectively,
-    % 
+    %
     % ptrain, the proportion of data to train the model on (the remainder is used
     %           for testing),
-    % 
+    %
     % nsteps, number of steps to predict into the future for testing the model.
-    % 
-    % 
+    %
+    %
     %---OUTPUTS: include the fitted AR and MA coefficients, the goodness of fit in
     % the training data, and statistics on the residuals from using the fitted model
     % to predict the testing data.
-    % 
+    
     ----------------------------------------
     """
 
@@ -4019,10 +3854,10 @@ class MF_hmm_CompareNStates(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Fits HMMs with different numbers of states, and compares the resulting
     % test-set likelihoods.
-    % 
+    %
     % The code relies on Zoubin Gharamani's implementation of HMMs for real-valued
     % Gassian-distributed observations, including the hmm and hmm_cl routines (
     % renamed ZG_hmm and ZG_hmm_cl here).
@@ -4030,20 +3865,20 @@ class MF_hmm_CompareNStates(HCTSASuper):
     % http://www.gatsby.ucl.ac.uk/~zoubin/software.html
     % or, specifically:
     % http://www.gatsby.ucl.ac.uk/~zoubin/software/hmm.tar.gz
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % trainp, the initial proportion of the time series to train the model on
-    % 
+    %
     % nstater, the vector of state numbers to compare. E.g., (2:4) compares a number
     %               of states 2, 3, and 4.
-    % 
+    %
     %---OUTPUTS: statistics on how the log likelihood of the test data changes with
     % the number of states n_{states}$. We implement the code for p_{train} = 0.6$
     % as n_{states}$ varies across the range n_{states} = 2, 3, 4$.
-    % 
+    
     ----------------------------------------
     """
 
@@ -4068,20 +3903,19 @@ class MF_hmm_fit(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
+    %---INPUTS:
+    % y, the input time series
+    % trainp, the proportion of data to train on, 0 < trainp < 1
+    % numStates, the number of states in the HMM
+    
     % Uses Zoubin Gharamani's implementation of HMMs for real-valued Gaussian
     % observations:
     % http://www.gatsby.ucl.ac.uk/~zoubin/software.html
     % or, specifically:
     % http://www.gatsby.ucl.ac.uk/~zoubin/software/hmm.tar.gz
-    % 
+    %
     % Uses ZG_hmm (renamed from hmm) and ZG_hmm_cl (renamed from hmm_cl)
-    % 
-    %---INPUTS:
-    % y, the input time series
-    % trainp, the proportion of data to train on, 0 < trainp < 1
-    % numStates, the number of states in the HMM
-    % 
     ----------------------------------------
     """
 
@@ -4106,35 +3940,32 @@ class MF_steps_ahead(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Given a model, characterizes the variation in goodness of model predictions
     % across a range of prediction lengths, l, which is made to vary from
     % 1-step ahead to maxSteps steps-ahead predictions.
-    % 
+    %
     % Models are fit using code from Matlab's System Identification Toolbox:
     % (i) AR models using the ar function,
     % (ii) ARMA models using armax code, and
     % (iii) state-space models using n4sid code.
-    % 
+    %
     % The model is fitted on the full time series and then used to predict the same
     % data.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
     % model, the time-series model to fit: 'ar', 'arma', or 'ss'
-    % 
     % order, the order of the model to fit
-    % 
     % maxSteps, the maximum number of steps ahead to predict
-    % 
+    %
     %---OUTPUTS: include the errors, for prediction lengths l = 1, 2, ..., maxSteps,
     % returned for each model relative to the best performance from basic null
     % predictors, including sliding 1- and 2-sample mean predictors and simply
     % predicting each point as the mean of the full time series. Additional outputs
     % quantify how the errors change as the prediction length increases from l = 1,
     % ..., maxSteps (relative to a simple predictor).
-    %
+    
     ----------------------------------------
     """
 
@@ -4142,7 +3973,7 @@ class MF_steps_ahead(HCTSASuper):
 
     TAGS = ('ar', 'arfit', 'arma', 'model', 'prediction', 'statespace', 'systemidentificationtoolbox')
 
-    def __init__(self, model='ar', order='best', maxSteps=6.0):
+    def __init__(self, model='ss', order='best', maxSteps=6.0):
         super(MF_steps_ahead, self).__init__()
         self.model = model
         self.order = order
@@ -4162,22 +3993,20 @@ class NL_BoxCorrDim(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % References TSTOOL code, corrdim, to estimate the correlation dimension of a
     % time-delay embedded time series using a box-counting approach.
-    % 
+    %
     % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
+    %
     %---INPUTS:
     % y, column vector of time series data
-    % 
     % numBins, maximum number of partitions per axis
-    % 
     % embedParams [opt], embedding parameters as {tau,m} in 2-entry cell for a
     %                   time-delay, tau, and embedding dimension, m. As inputs to BF_embed.
-    % 
+    %
     %---OUTPUTS: Simple summaries of the outputs from corrdim.
-    % 
+    
     ----------------------------------------
     """
 
@@ -4202,32 +4031,26 @@ class NL_CaosMethod(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % References TSTOOL code cao, to determine the minimum embedding dimension for a
     % time series using Cao's method:
-    % 
+    %
     % "Practical method for determining the minimum embedding dimension of a scalar
     % time series", L. Cao, Physica D 110(1-2) 43 (1997)
-    % 
+    %
     % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
+    %
     % It computes the quantities E and E* for a range of embedding dimensions
     % m = 1, ..., m_{max}.
-    % 
+    %
     %---INPUTS:
-    % 
     % y, time series as a column vector
-    % 
     % maxdim, maximum embedding dimension to consider
-    % 
     % tau, time delay (can also be 'ac' or 'mi' for first zero-crossing of the
     %          autocorrelation function or the first minimum of the automutual information
     %          function)
-    %
     % NNR, number of nearest neighbours to use
-    % 
     % Nref, number of reference points (can also be a fraction; of data length)
-    % 
     % justanum [opt]: if not empty can just return a number, the embedding
     %                   dimension, based on the specified criterion:
     %                 (i) 'thresh', caoo1 passes above a threshold, th (given as
@@ -4237,11 +4060,10 @@ class NL_CaosMethod(HCTSASuper):
     %                                 mthresh in the threshold
     %                 (iii) 'mmthresh', analyzes incremental differences to find
     %                                   level-off point
-    %   
-    % 
+    %
     %---OUTPUTS: statistics on the result, including when the output quantity first
     % passes a given threshold, and the m at which it levels off.
-    % 
+    
     ----------------------------------------
     """
 
@@ -4275,14 +4097,14 @@ class NL_DVV(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Delay Vector Variance method for real and complex signals. Uses predictability
-    % of the signal in phase space to characterize the time series.
-    % 
+    % NL_DVV 	Delay Vector Variance method for real and complex signals.
+    %
+    % Uses predictability of the signal in phase space to characterize the
+    % time series.
+    %
     % This function uses the original code from the DVV toolbox to do the computation
     % and produces statistics on the outputs -- comparing the DVV curves for both
     % the real and the surrogate data.
-    %
     %
     %---USAGE:
     % outputStats = NL_DVV(x, m, numDVs, nd, Ntv, numSurr, randomSeed)
@@ -4301,9 +4123,9 @@ class NL_DVV(HCTSASuper):
     % (c) Copyright Danilo P. Mandic 2008
     % http://www.commsp.ee.ic.ac.uk/~mandic/dvv.htm
     % http://www.commsp.ee.ic.ac.uk/~mandic/dvv/papers/dvv_proj.pdf
-    % 
+    %
     % Modified by Ben Fulcher, 2015-05-13, for use in hctsa.
-    % 
+    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %   This program is free software; you can redistribute it and/or modify it
     %   under the terms of the GNU General Public License as published by the Free
@@ -4319,6 +4141,12 @@ class NL_DVV(HCTSASuper):
     %   http://www.gnu.org/copyleft/gpl.html or by writing to Free Software
     %   Foundation, Inc.,675 Mass Ave, Cambridge, MA 02139, USA.
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    % Plot output plot:
+    doPlot = 0;
+    
+    % Talk to me:
+    beVocal = 0;
     
     ----------------------------------------
     """
@@ -4356,30 +4184,28 @@ class NL_MS_LZcomplexity(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Calculates the Lempel-Ziv complexity of a n-bit encoding of the time
-    % series using Michael Small's code: 'complexity' (renamed MS_complexity here).
-    % 
-    % cf. M. Small, Applied Nonlinear Time Series Analysis: Applications in Physics,
-    % Physiology, and Finance (book) World Scientific, Nonlinear Science Series A,
-    % Vol. 52 (2005)
-    % Code is available at http://small.eie.polyu.edu.hk/matlab/
-    % 
-    % The code is a wrapper for Michael Small's original code and uses the
-    % associated mex file compiled from complexitybs.c (renamed MS_complexitybs.c
-    % here).
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % n, the (integer) number of bits to encode the data into
     % preProc [opt], first apply a given preProcessing to the time series. For now,
     %               just 'diff' is implemented, which zscores incremental
     %               differences and then applies the complexity method.
-    % 
+    %
     %---OUTPUT: the normalized Lempel-Ziv complexity: i.e., the number of distinct
     %           symbol sequences in the time series divided by the expected number
     %           of distinct symbols for a noise sequence.
+    
+    % Uses Michael Small's code: 'complexity' (renamed MS_complexity here).
     %
+    % cf. M. Small, Applied Nonlinear Time Series Analysis: Applications in Physics,
+    % Physiology, and Finance (book) World Scientific, Nonlinear Science Series A,
+    % Vol. 52 (2005)
+    % Code is available at http://small.eie.polyu.edu.hk/matlab/
+    %
+    % The code is a wrapper for Michael Small's original code and uses the
+    % associated mex file compiled from complexitybs.c (renamed MS_complexitybs.c
+    % here).
     ----------------------------------------
     """
 
@@ -4387,7 +4213,7 @@ class NL_MS_LZcomplexity(HCTSASuper):
 
     TAGS = ('LempelZiv', 'MichaelSmall', 'complexity', 'mex')
 
-    def __init__(self, n=7.0, preProc='diff'):
+    def __init__(self, n=9.0, preProc=()):
         super(NL_MS_LZcomplexity, self).__init__()
         self.n = n
         self.preProc = preProc
@@ -4404,43 +4230,42 @@ class NL_MS_fnn(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Determines the number of false nearest neighbors for the embedded time series
-    % using Michael Small's false nearest neighbor code, fnn (renamed MS_fnn here)
-    % 
+    % using Michael Small's false nearest neighbor code, fnn (renamed MS_fnn here).
+    %
+    % False nearest neighbors are judged using a ratio of the distances between the
+    % next k points and the neighboring points of a given datapoint.
+    %
+    %---INPUTS:
+    % y, the input time series
+    %
+    % de, the embedding dimensions to compare across (a vector)
+    %
+    % tau, the time-delay (can be 'ac' or 'mi' to be the first zero-crossing of ACF,
+    %                       or first minimum of AMI, respectively)
+    %
+    % th, the distance threshold for neighbours
+    %
+    % kth, the the distance to next points
+    %
+    % [opt] justBest, can be set to 1 to just return the best embedding dimension, m_{best}
+    %
+    % [opt] bestp, if justBest = 1, can set bestp as the proportion of false nearest
+    %              neighbours at which the optimal embedding dimension is selected.
+    %
+    % This function returns statistics on the proportion of false nearest neighbors
+    % as a function of the embedding dimension m = m_{min}, m_{min}+1, ..., m_{max}
+    % for a given time lag tau, and distance threshold for neighbors, d_{th}.
+    %
+    %---OUTPUTS: include the proportion of false nearest neighbors at each m, the mean
+    % and spread, and the smallest m at which the proportion of false nearest
+    % neighbors drops below each of a set of fixed thresholds.
+    
     % cf. M. Small, Applied Nonlinear Time Series Analysis: Applications in Physics,
     % Physiology, and Finance (book) World Scientific, Nonlinear Science Series A,
     % Vol. 52 (2005)
     % Code available at http://small.eie.polyu.edu.hk/matlab/
-    % 
-    % False nearest neighbors are judged using a ratio of the distances between the
-    % next k points and the neighboring points of a given datapoint.
-    % 
-    %---INPUTS:
-    % y, the input time series
-    % 
-    % de, the embedding dimensions to compare across (a vector)
-    % 
-    % tau, the time-delay (can be 'ac' or 'mi' to be the first zero-crossing of ACF,
-    %                       or first minimum of AMI, respectively)
-    %                       
-    % th, the distance threshold for neighbours
-    % 
-    % kth, the the distance to next points
-    % 
-    % [opt] justBest, can be set to 1 to just return the best embedding dimension, m_{best}
-    % 
-    % [opt] bestp, if justBest = 1, can set bestp as the proportion of false nearest
-    %              neighbours at which the optimal embedding dimension is selected.
-    % 
-    % This function returns statistics on the proportion of false nearest neighbors
-    % as a function of the embedding dimension m = m_{min}, m_{min}+1, ..., m_{max}
-    % for a given time lag tau, and distance threshold for neighbors, d_{th}.
-    % 
-    %---OUTPUTS: include the proportion of false nearest neighbors at each m, the mean
-    % and spread, and the smallest m at which the proportion of false nearest
-    % neighbors drops below each of a set of fixed thresholds.
-    % 
     ----------------------------------------
     """
 
@@ -4477,17 +4302,10 @@ class NL_MS_nlpe(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Computes the normalized 'drop-one-out' constant interpolation nonlinear
-    % prediction error for a time-delay embedded time series using Michael Small's
-    % code nlpe (renamed MS_nlpe here):
-    % 
-    % cf. M. Small, Applied Nonlinear Time Series Analysis: Applications in Physics,
-    % Physiology, and Finance (book) World Scientific, Nonlinear Science Series A,
-    % Vol. 52 (2005)
-    % 
-    % Michael Small's Matlab code is available at http://small.eie.polyu.edu.hk/matlab/
-    % 
+    %
+    % Computes the nlpe for a time-delay embedded time series using Michael Small's
+    % code, nlpe (renamed MS_nlpe here):
+    %
     %---INPUTS:
     % y, the input time series
     % de, the embedding dimension (can be an integer, or 'fnn' to select as the
@@ -4496,10 +4314,15 @@ class NL_MS_nlpe(HCTSASuper):
     % tau, the time-delay (can be an integer or 'ac' to be the first zero-crossing
     %       of the ACF or 'mi' to be the first minimum of the automutual information
     %       function)
-    % 
+    %
     %---OUTPUTS: include measures of the meanerror of the nonlinear predictor, and a
     % set of measures on the correlation, Gaussianity, etc. of the residuals.
-    % 
+    
+    % cf. M. Small, Applied Nonlinear Time Series Analysis: Applications in Physics,
+    % Physiology, and Finance (book) World Scientific, Nonlinear Science Series A,
+    % Vol. 52 (2005)
+    %
+    % Michael Small's Matlab code is available at http://small.eie.polyu.edu.hk/matlab/
     ----------------------------------------
     """
 
@@ -4527,43 +4350,41 @@ class NL_TISEAN_c1(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Implements the c1 and c2d routines from the TISEAN nonlinear time-series
     % analysis package that compute curves for the fixed mass computation of the
     % information dimension.
-    % 
-    % cf. "Practical implementation of nonlinear time series methods: The TISEAN
-    % package" Hegger, R. and Kantz, H. and Schreiber, T., Chaos 9(2) 413 (1999)
-    % 
-    % Available here:
-    % http://www.mpipks-dresden.mpg.de/~tisean/Tisean_3.0.1/index.html
-    % 
-    % The TISEAN routines are performed in the command line using 'system' commands
-    % in Matlab, and require that TISEAN is installed and compiled, and able to be
-    % executed in the command line.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the time series to analyze
-    % 
+    %
     % tau, the time-delay (can be 'ac' or 'mi' for the first zero-crossing of the
     %           autocorrelation function or first minimum of the automutual
     %           information function)
-    % 
+    %
     % mmm, a two-vector specifying the minimum and maximum embedding dimensions,
     %       e.g., [2,10] for m = 2 up to m = 10
-    % 
+    %
     % tsep, time separation (can be between 0 and 1 for a proportion of the
     %       time-series length)
-    %       
+    %
     % Nref, the number of reference points (can also be between 0 and 1 to specify a
     %       proportion of the time-series length)
-    % 
-    % 
+    %
     %---OUTPUTS: optimal scaling ranges and dimension estimates for a time delay,
     % tau, embedding dimensions, m, ranging from m_{min} to m_{max}, a time
     % separation, tsep, and a number of reference points, Nref.
-    % 
+    
+    % cf. "Practical implementation of nonlinear time series methods: The TISEAN
+    % package" Hegger, R. and Kantz, H. and Schreiber, T., Chaos 9(2) 413 (1999)
+    %
+    % Available here:
+    % http://www.mpipks-dresden.mpg.de/~tisean/Tisean_3.0.1/index.html
+    %
+    % The TISEAN routines are performed in the command line using 'system' commands
+    % in Matlab, and require that TISEAN is installed and compiled, and able to be
+    % executed in the command line.
     ----------------------------------------
     """
 
@@ -4594,52 +4415,49 @@ class NL_TISEAN_d2(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Implements the d2 routine from the popular TISEAN package for
-    % nonlinear time-series analysis:
-    % 
-    % cf. "Practical implementation of nonlinear time series methods: The TISEAN
-    % package", R. Hegger, H. Kantz, and T. Schreiber, Chaos 9(2) 413 (1999)
-    % 
-    % The TISEAN package is available here:
-    % http://www.mpipks-dresden.mpg.de/~tisean/Tisean_3.0.1/index.html
-    % 
-    % The TISEAN routines are performed in the command line using 'system' commands
-    % in Matlab, and require that TISEAN is installed and compiled, and able to be
-    % executed in the command line.
-    % 
+    %
     % The function estimates the correlation sum, the correlation dimension and
     % the correlation entropy of a given time series, y. Our code uses the outputs
     % from this algorithm to return a set of informative features about the results.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, input time series
-    % 
+    %
     % tau, time-delay (can be 'ac' or 'mi' for first zero-crossing of
     %       autocorrelation function, or first minimum of the automutual
     %       information)
-    %       
+    %
     % maxm, the maximum embedding dimension
-    % 
+    %
     % theilerWin, the Theiler window
-    % 
+    
+    % cf. "Practical implementation of nonlinear time series methods: The TISEAN
+    % package", R. Hegger, H. Kantz, and T. Schreiber, Chaos 9(2) 413 (1999)
+    %
+    % The TISEAN package is available here:
+    % http://www.mpipks-dresden.mpg.de/~tisean/Tisean_3.0.1/index.html
+    %
+    % The TISEAN routines are performed in the command line using 'system' commands
+    % in Matlab, and require that TISEAN is installed and compiled, and able to be
+    % executed in the command line.
+    %
     % cf. "Spurious dimension from correlation algorithms applied to limited
     % time-series data", J. Theiler, Phys. Rev. A, 34(3) 2427 (1986)
-    % 
+    %
     % cf. "Nonlinear Time Series Analysis", Cambridge University Press, H. Kantz
     % and T. Schreiber (2004)
-    % 
+    %
     % Taken's estimator is computed for the correlation dimension, as well as related
     % statistics, including other dimension estimates by finding appropriate scaling
     % ranges, and searching for a flat region in the output of TISEAN's h2
     % algorithm, which indicates determinism/deterministic chaos.
-    % 
+    %
     % To find a suitable scaling range, a penalized regression procedure is used to
     % determine an optimal scaling range that simultaneously spans the greatest
     % range of scales and shows the best fit to the data, and return the range, a
     % goodness of fit statistic, and a dimension estimate.
-    % 
+    
     ----------------------------------------
     """
 
@@ -4667,42 +4485,35 @@ class NL_TISEAN_fnn(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Uses the false_nearest routine from the TISEAN package for nonlinear time-series
-    % analysis.
-    % 
-    % cf. "Practical implementation of nonlinear time series methods: The TISEAN
-    % package", R. Hegger, H. Kantz, and T. Schreiber, Chaos 9(2) 413 (1999)
-    % 
-    % Available here:
-    % http://www.mpipks-dresden.mpg.de/~tisean/Tisean_3.0.1/index.html
-    % 
-    % Documentation here:
-    % http://www.mpipks-dresden.mpg.de/~tisean/TISEAN_2.1/docs/docs_c/false_nearest.html
-    % 
-    % The TISEAN routines are performed in the command line using 'system' commands
-    % in Matlab, and require that TISEAN is installed and compiled, and able to be
-    % executed in the command line.
-    % 
+    %
     %---INPUTS:
-    % 
     % y, the input time series
-    % 
     % tau, the time delay
-    % 
     % maxm, the maximum embedding dimension
-    % 
     % theilerWin, the Theiler window
-    % 
     % justBest, if 1 just outputs a scalar estimate of embedding dimension
-    % 
     % bestp, only used if justBest==1 -- the fnn threshold for picking an embedding
     %                dimension
-    % 
+    %
     %---OUTPUTS: individual false nearest neighbors proportions, as well as
     % summaries of neighborhood size, and embedding dimensions at which the
     % proportion of nearest neighbours falls below a range of thresholds
-    % 
+    
+    % Uses the false_nearest routine from the TISEAN package for nonlinear time-series
+    % analysis.
+    %
+    % cf. "Practical implementation of nonlinear time series methods: The TISEAN
+    % package", R. Hegger, H. Kantz, and T. Schreiber, Chaos 9(2) 413 (1999)
+    %
+    % Available here:
+    % http://www.mpipks-dresden.mpg.de/~tisean/Tisean_3.0.1/index.html
+    %
+    % Documentation here:
+    % http://www.mpipks-dresden.mpg.de/~tisean/TISEAN_2.1/docs/docs_c/false_nearest.html
+    %
+    % The TISEAN routines are performed in the command line using 'system' commands
+    % in Matlab, and require that TISEAN is installed and compiled, and able to be
+    % executed in the command line.
     ----------------------------------------
     """
 
@@ -4736,38 +4547,27 @@ class NL_TSTL_FractalDimensions(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
+    %---INPUTS:
+    % y, column vector of time series data
+    % kmin, minimum number of neighbours for each reference point
+    % kmax, maximum number of neighbours for each reference point
+    % Nref, number of randomly-chosen reference points (-1: use all points)
+    % gstart, starting value for moments
+    % gend, end value for moments
+    % past [opt], number of samples to exclude before an after each reference
+    %             index (default=0)
+    % steps [opt], number of moments to calculate (default=32);
+    % embedParams, how to embed the time series using a time-delay reconstruction
+    %
+    %---OUTPUTS: include basic statistics of D(q) and q, statistics from a linear fit,
+    % and an exponential fit of the form D(q) = Aexp(Bq) + C.
+    
     % Computes the fractal dimension spectrum, D(q), using moments of neighbor
     % distances for time-delay embedded time series by referencing the code,
     % fracdims, from the TSTOOL package.
-    % 
+    %
     % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
-    %---INPUTS:
-    % 
-    % y, column vector of time series data
-    % 
-    % kmin, minimum number of neighbours for each reference point
-    % 
-    % kmax, maximum number of neighbours for each reference point
-    % 
-    % Nref, number of randomly-chosen reference points (-1: use all points)
-    % 
-    % gstart, starting value for moments
-    % 
-    % gend, end value for moments
-    % 
-    % past [opt], number of samples to exclude before an after each reference
-    %             index (default=0)
-    % 
-    % steps [opt], number of moments to calculate (default=32);
-    % 
-    % embedParams, how to embed the time series using a time-delay reconstruction
-    % 
-    % 
-    %---OUTPUTS: include basic statistics of D(q) and q, statistics from a linear fit,
-    % and an exponential fit of the form D(q) = Aexp(Bq) + C.
-    % 
     ----------------------------------------
     """
 
@@ -4815,41 +4615,33 @@ class NL_TSTL_GPCorrSum(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Uses TSTOOL code corrsum (or corrsum2) to compute scaling of the correlation sum for a
-    % time-delay reconstructed time series by the Grassberger-Proccacia algorithm
-    % using fast nearest neighbor search.
-    % 
-    % cf. "Characterization of Strange Attractors", P. Grassberger and I. Procaccia,
-    % Phys. Rev. Lett. 50(5) 346 (1983)
-    % 
-    % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
+    %
     %---INPUTS:
     % y, column vector of time-series data
-    % 
     % Nref, number of (randomly-chosen) reference points (-1: use all points,
     %       if a decimal, then use this fraction of the time series length)
-    %       
     % r, maximum search radius relative to attractor size, 0 < r < 1
-    % 
     % thwin, number of samples to exclude before and after each reference index
     %        (~ Theiler window)
-    % 
     % nbins, number of partitioned bins
-    % 
-    % embedparams, embedding parameters to feed BF_embed.m for embedding the
+    % embedParams, embedding parameters to feed BF_embed.m for embedding the
     %               signal in the form {tau,m}
-    % 
     % doTwo, if this is set to 1, will use corrsum, if set to 2, will use corrsum2.
     %           For corrsum2, n specifies the number of pairs per bin. Default is 1,
     %           to use corrsum.
-    % 
-    % 
+    %
     %---OUTPUTS: basic statistics on the outputs of corrsum, including iteratively
     % re-weighted least squares linear fits to log-log plots using the robustfit
     % function in Matlab's Statistics Toolbox.
+    
+    % Uses TSTOOL code corrsum (or corrsum2) to compute scaling of the correlation
+    % sum for a time-delay reconstructed time series by the Grassberger-Proccacia
+    % algorithm using fast nearest-neighbor search.
     %
+    % cf. "Characterization of Strange Attractors", P. Grassberger and I. Procaccia,
+    % Phys. Rev. Lett. 50(5) 346 (1983)
+    %
+    % TSTOOL: http://www.physik3.gwdg.de/tstool/
     ----------------------------------------
     """
 
@@ -4857,13 +4649,13 @@ class NL_TSTL_GPCorrSum(HCTSASuper):
 
     TAGS = ('correlation', 'corrsum', 'nonlinear', 'stochastic', 'tstool')
 
-    def __init__(self, Nref=-1.0, r=0.1, thwin=40.0, nbins=40.0, embedparams=('ac', 'fnnmar'), doTwo=None):
+    def __init__(self, Nref=-1.0, r=0.1, thwin=40.0, nbins=40.0, embedParams=('ac', 'fnnmar'), doTwo=None):
         super(NL_TSTL_GPCorrSum, self).__init__()
         self.Nref = Nref
         self.r = r
         self.thwin = thwin
         self.nbins = nbins
-        self.embedparams = embedparams
+        self.embedParams = embedParams
         self.doTwo = doTwo
 
     def _eval_hook(self, eng, x):
@@ -4875,51 +4667,43 @@ class NL_TSTL_GPCorrSum(HCTSASuper):
             return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r)
         elif self.nbins is None:
             return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin)
-        elif self.embedparams is None:
+        elif self.embedParams is None:
             return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin, self.nbins)
         elif self.doTwo is None:
             return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin,
-                                    self.nbins, self.embedparams)
+                                    self.nbins, self.embedParams)
         return eng.run_function(1, 'NL_TSTL_GPCorrSum', x, self.Nref, self.r, self.thwin, self.nbins,
-                                self.embedparams, self.doTwo)
+                                self.embedParams, self.doTwo)
 
 
 class NL_TSTL_LargestLyap(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Computes the largest Lyapunov exponent of a time-delay reconstructed time
-    % series using the TSTOOL code 'largelyap'.
-    % 
-    % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
-    % The algorithm used (using formula (1.5) in Parlitz Nonlinear Time Series
-    % Analysis book) is very similar to the Wolf algorithm:
-    % "Determining Lyapunov exponents from a time series", A. Wolf et al., Physica D
-    % 16(3) 285 (1985)
-    % 
+    %
     %---INPUTS:
-    % 
     % y, the time series to analyze
-    % 
     % Nref, number of randomly-chosen reference points (-1 == all)
-    % 
     % maxtstep, maximum prediction length (samples)
-    % 
     % past, exclude -- Theiler window idea
-    % 
     % NNR, number of nearest neighbours
-    % 
     % embedParams, input to BF_embed, how to time-delay-embed the time series, in
     %               the form {tau,m}, where string specifiers can indicate standard
     %               methods of determining tau or m.
-    % 
+    %
     %---OUTPUTS: a range of statistics on the outputs from this function, including
     % a penalized linear regression to the scaling range in an attempt to fit to as
     % much of the range of scales as possible while simultaneously achieving the
     % best possible linear fit.
-    % 
+    
+    % Uses the TSTOOL code 'largelyap'.
+    %
+    % TSTOOL: http://www.physik3.gwdg.de/tstool/
+    %
+    % The algorithm used (using formula (1.5) in Parlitz Nonlinear Time Series
+    % Analysis book) is very similar to the Wolf algorithm:
+    % "Determining Lyapunov exponents from a time series", A. Wolf et al., Physica D
+    % 16(3) 285 (1985)
     ----------------------------------------
     """
 
@@ -4954,33 +4738,31 @@ class NL_TSTL_PoincareSection(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Obtains a Poincare section of the time-delay embedded time series, producing a
     % set of vector points projected orthogonal to the tangential vector at the
-    % specified index using TSTOOL code 'poincare'. This function then tries to
-    % obtain interesting structural measures from this output.
-    % 
-    % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
+    % specified index using TSTOOL code 'poincare'.
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % ref: the reference point. Can be an absolute number (2 takes the second point
     %      in the (embedded) time series) or a string like 'max' or 'min' that takes
     %      the first maximum, ... in the (scalar) time series, ...
-    % 
-    % embedparams: the usual thing to give BF_embed for the time-delay embedding, as
+    %
+    % embedParams: the usual thing to give BF_embed for the time-delay embedding, as
     %               {tau,m}. A common choice for m is 3 -- i.e., embed in a 3
     %               dimensional space so that the Poincare section is 2-dimensional.
-    % 
-    % 
+    %
     %---OUTPUTS: include statistics on the x- and y- components of these vectors on the
     % Poincare surface, on distances between adjacent points, distances from the
     % mean position, and the entropy of the vector cloud.
-    % 
+    %
+    % TSTOOL: http://www.physik3.gwdg.de/tstool/
+    
     % Another thing that could be cool to do is to analyze variation in the plots as
     % ref changes... (not done here)
-    % 
+    %
     ----------------------------------------
     """
 
@@ -4988,44 +4770,43 @@ class NL_TSTL_PoincareSection(HCTSASuper):
 
     TAGS = ('nonlinear', 'poincare', 'tstool')
 
-    def __init__(self, ref='max', embedparams=(1, 3, '_celltrick_')):
+    def __init__(self, ref='max', embedParams=(1, 3, '_celltrick_')):
         super(NL_TSTL_PoincareSection, self).__init__()
         self.ref = ref
-        self.embedparams = embedparams
+        self.embedParams = embedParams
 
     def _eval_hook(self, eng, x):
         if self.ref is None:
             return eng.run_function(1, 'NL_TSTL_PoincareSection', x, )
-        elif self.embedparams is None:
+        elif self.embedParams is None:
             return eng.run_function(1, 'NL_TSTL_PoincareSection', x, self.ref)
-        return eng.run_function(1, 'NL_TSTL_PoincareSection', x, self.ref, self.embedparams)
+        return eng.run_function(1, 'NL_TSTL_PoincareSection', x, self.ref, self.embedParams)
 
 
 class NL_TSTL_ReturnTime(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Computes a histogram of return times, the time taken for the time series to
-    % return to a similar location in phase space for a given reference point using
-    % the code return_time from TSTOOL.
-    % 
-    % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
+    %
+    % Return times are the time taken for the time series to return to a similar
+    % location in phase space for a given reference point
+    %
     % Strong peaks in the histogram are indicative of periodicities in the data.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, scalar time series as a column vector
     % NNR, number of nearest neighbours
     % maxT, maximum return time to consider
     % past, Theiler window
     % Nref, number of reference indicies
     % embedParams, to feed into BF_embed
-    % 
+    %
     %---OUTPUTS: include basic measures from the histogram, including the occurrence of
     % peaks, spread, proportion of zeros, and the distributional entropy.
-    % 
+    
+    % Uses the code, return_time, from TSTOOL.
+    % TSTOOL: http://www.physik3.gwdg.de/tstool/
     ----------------------------------------
     """
 
@@ -5060,24 +4841,21 @@ class NL_TSTL_TakensEstimator(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Implements the Taken's estimator for correlation dimension using the
-    % TSTOOL code takens_estimator.
     %
     % cf. "Detecting strange attractors in turbulence", F. Takens.
     % Lect. Notes Math. 898 p366 (1981)
-    % 
-    % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % Nref, the number of reference points (can be -1 to use all points)
     % rad, the maximum search radius (as a proportion of the attractor size)
     % past, the Theiler window
     % embedParams, the embedding parameters for BF_embed, in the form {tau,m}
-    % 
+    %
     %---OUTPUT: the Taken's estimator of the correlation dimension, d2.
-    % 
+    
+    % Uses the TSTOOL code, takens_estimator.
+    % TSTOOL: http://www.physik3.gwdg.de/tstool/
     ----------------------------------------
     """
 
@@ -5112,39 +4890,27 @@ class NL_TSTL_acp(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Implements the TSTOOL routine acp using a time lag, tau, a Theiler window,
-    % past, maximum delay, maxDelay, maximum embedding dimension, maxDim, and number
-    % of reference points, Nref.
-    % 
-    % The documentation isn't crystal clear, but I think this function has to do
-    % with cross-prediction.
-    % 
-    % TSTOOL: http://www.physik3.gwdg.de/tstool/
+    %
+    % The documentation isn't crystal clear, but this function seems to be related
+    % to cross-prediction.
     %
     %---INPUTS:
-    % 
     % y, time series
-    % 
     % tau, delay time
-    % 
     % past, number of samples to exclude before and after each index (to avoid
     %               correlation effects ~ Theiler window)
-    % 
     % maxDelay, maximal delay (<< length(y))
-    % 
     % maxDim, maximal dimension to use
-    % 
     % Nref, number of reference points
-    % 
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
+    %
     %---OUTPUTS: statistics summarizing the output of the routine.
-    % 
+    
+    % TSTOOL: http://www.physik3.gwdg.de/tstool/
+    %
     % May in future want to also make outputs normalized by first value; so get
     % metrics on both absolute values at each dimension but also some
     % indication of the shape
-    % 
     ----------------------------------------
     """
 
@@ -5182,28 +4948,24 @@ class NL_TSTL_dimensions(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Computes the box counting, information, and correlation dimension of a
     % time-delay embedded time series using the TSTOOL code 'dimensions'.
     % This function contains extensive code for estimating the best scaling range to
     % estimate the dimension using a penalized regression procedure.
-    % 
-    % TSTOOL, http://www.physik3.gwdg.de/tstool/
-    % 
+    %
     %---INPUTS:
-    % 
     % y, column vector of time series data
-    % 
-    % nbins, maximum number of partitions per axis.
-    % 
+    % nbins, maximum number of partitions per axis
     % embedParams, embedding parameters to feed BF_embed.m for embedding the
     %              signal in the form {tau,m}
-    % 
+    %
     %---OUTPUTS:
     % A range of statistics are returned about how each dimension estimate changes
     % with m, the scaling range in r, and the embedding dimension at which the best
     % fit is obtained.
-    % 
+    
+    % cf. TSTOOL, http://www.physik3.gwdg.de/tstool/
     ----------------------------------------
     """
 
@@ -5228,12 +4990,7 @@ class NL_crptool_fnn(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Computes and analyzes the false-nearest neighbours statistic.
-    % 
-    % Computation is done by referencing N. Marwan's code from the CRP Toolbox:
-    % http://tocsy.pik-potsdam.de/CRPtoolbox/
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % maxm, the maximum embedding dimension to consider
@@ -5241,12 +4998,14 @@ class NL_crptool_fnn(HCTSASuper):
     % taum, the method of determining the time delay, 'corr' for first zero-crossing
     %       of autocorrelation function, or 'mi' for the first minimum of the mutual
     %       information
-    % 
+    %
     % th [opt], returns the first time the number of false nearest neighbours drops
     %           under this threshold
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
+    
+    % Computation uses N. Marwan's code from the CRP Toolbox:
+    % http://tocsy.pik-potsdam.de/CRPtoolbox/
     ----------------------------------------
     """
 
@@ -5280,30 +5039,30 @@ class NL_embed_PCA(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Reconstructs the time series as a time-delay embedding, and performs Principal
     % Components Analysis on the result using princomp code from
     % Matlab's Bioinformatics Toolbox.
-    % 
-    % This technique is known as singular spectrum analysis
-    % 
+    %
+    % This technique is known as singular spectrum analysis.
+    %
     % "Extracting qualitative dynamics from experimental data"
     % D. S. Broomhead and G. P. King, Physica D 20(2-3) 217 (1986)
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % tau, the time-delay, can be an integer or 'ac', or 'mi' for first
     %               zero-crossing of the autocorrelation function or first minimum
     %               of the automutual information, respectively
-    %               
+    %
     % m, the embedding dimension
-    % 
+    %
     % OUTPUTS: Various statistics summarizing the obtained eigenvalue distribution.
-    % 
+    %
     % The suggestion to implement this idea was provided by Siddarth Arora.
     % (Siddharth Arora, <arora@maths.ox.ac.uk>)
-    % 
+    
     ----------------------------------------
     """
 
@@ -5328,43 +5087,39 @@ class NW_VisibilityGraph(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Constructs a visibility graph of the time series and returns various
     % statistics on the properties of the resulting network.
-    % 
+    %
     % cf.: "From time series to complex networks: The visibility graph"
     % Lacasa, Lucas and Luque, Bartolo and Ballesteros, Fernando and Luque, Jordi
     % and Nuno, Juan Carlos P. Natl. Acad. Sci. USA. 105(13) 4972 (2008)
-    % 
+    %
     % "Horizontal visibility graphs: Exact results for random time series"
     % Luque, B. and Lacasa, L. and Ballesteros, F. and Luque, J.
     % Phys. Rev. E. 80(4) 046103 (2009)
-    % 
-    % The normal visibility graph may not be implemented correctly, we focused only
-    % on the horizontal visibility graph.
-    % 
+    %
     %---INPUTS:
     % y, the time series (a column vector)
-    % 
+    %
     % meth, the method for constructing:
     % 			(i) 'norm': the normal visibility definition
     % 			(ii) 'horiz': uses only horizonatal lines to link nodes/datums
-    %             
+    %
     % maxL, the maximum number of samples to consider. Due to memory constraints,
     %               only the first maxL (6000 by default) points of time series are
     %               analyzed. Longer time series are reduced to their first maxL
     %               samples.
-    % 
-    % 
+    %
     %---OUTPUTS:
     % Statistics on the degree distribution, including the mode, mean,
     % spread, histogram entropy, and fits to gaussian, exponential, and powerlaw
     % distributions.
-    % 
+    
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (47,)
+    KNOWN_OUTPUTS_SIZES = (44,)
 
     TAGS = ('lengthdep', 'network', 'visibilitygraph')
 
@@ -5385,26 +5140,26 @@ class PD_PeriodicityWang(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Implements an idea based on the periodicity extraction measure proposed in:
-    % 
+    %
     % "Structure-based Statistical Features and Multivariate Time Series Clustering"
     % Wang, X. and Wirth, A. and Wang, L.
     % Seventh IEEE International Conference on Data Mining, 351--360 (2007)
     % DOI: 10.1109/ICDM.2007.103
     %
-    % This function detrends the time series using a single-knot cubic regression
-    % spline, and then computes autocorrelations up to one third of the length of
+    % Detrends the time series using a single-knot cubic regression spline
+    % and then computes autocorrelations up to one third of the length of
     % the time series. The frequency is the first peak in the autocorrelation
     % function satisfying a set of conditions.
-    % 
-    %---INPUTS:
+    %
+    %---INPUT:
     % y, the input time series.
-    % 
+    %
     % The single threshold of 0.01 was considered in the original paper, this code
     % uses a range of thresholds: 0, 0.01, 0.1, 0.2, 1\sqrt{N}, 5\sqrt{N}, and
     % 10\sqrt{N}, where N is the length of the time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -5423,42 +5178,41 @@ class PH_ForcePotential(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Couples the values of the time series to a given dynamical system. The input
-    % time series forces a particle in the given potential well.
-    % 
+    %
+    % The input time series forces a particle in the given potential well.
+    %
     % The time series contributes to a forcing term on a simulated particle in a:
-    % 
+    %
     % (i) Quartic double-well potential with potential energy V(x) = x^4/4 - alpha^2
     %           x^2/2, or a force F(x) = -x^3 + alpha^2 x
-    % 
+    %
     % (ii) Sinusoidal potential with V(x) = -cos(x/alpha), or F(x) = sin(x/alpha)/alpha
     %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % whatPotential, the potential function to simulate:
     %               (i) 'dblwell' (a double well potential function)
     %               (ii) 'sine' (a sinusoidal potential function)
-    % 
+    %
     % params, the parameters for simulation, should be in the form:
     %                   params = [alpha, kappa, deltat]
-    %                   
+    %
     %           (i) The double-well potential has three parameters:
     %               * alpha controls the relative positions of the wells,
     %               * kappa is the coefficient of friction,
     %               * deltat sets the time step for the simulation.
-    %           
+    %
     %           (ii) The sinusoidal potential also has three parameters:
     %               * alpha controls the period of oscillations in the potential
     %               * kappa is the coefficient of friction,
     %               * deltat sets the time step for the simulation.
-    % 
+    %
     %---OUTPUTS:
     % Statistics summarizing the trajectory of the simulated particle,
     % including its mean, the range, proportion positive, proportion of times it
     % crosses zero, its autocorrelation, final position, and standard deviation.
-    % 
+    
     ----------------------------------------
     """
 
@@ -5483,44 +5237,44 @@ class PH_Walker(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % This operation simulates a hypothetical particle (or 'walker'), that moves in
-    % the time domain in response to values of the time series at each point.
-    % 
+    %
+    % The hypothetical particle (or 'walker') moves in response to values of the
+    % time series at each point.
+    %
     % Outputs from this operation are summaries of the walker's motion, and
     % comparisons of it to the original time series.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % walkerRule, the kinematic rule by which the walker moves in response to the
     %             time series over time:
-    %             
+    %
     %             (i) 'prop': the walker narrows the gap between its value and that
     %                         of the time series by a given proportion p.
     %                         walkerParams = p;
-    %                         
+    %
     %             (ii) 'biasprop': the walker is biased to move more in one
     %                          direction; when it is being pushed up by the time
     %                          series, it narrows the gap by a proportion p_{up},
     %                          and when it is being pushed down by the time series,
     %                          it narrows the gap by a (potentially different)
     %                          proportion p_{down}. walkerParams = [pup,pdown].
-    %                          
+    %
     %             (iii) 'momentum': the walker moves as if it has mass m and inertia
     %                          from the previous time step and the time series acts
     %                          as a force altering its motion in a classical
     %                          Newtonian dynamics framework. [walkerParams = m], the mass.
-    %                          
+    %
     %              (iv) 'runningvar': the walker moves with inertia as above, but
     %                          its values are also adjusted so as to match the local
     %                          variance of time series by a multiplicative factor.
     %                          walkerParams = [m,wl], where m is the inertial mass and wl
     %                          is the window length.
-    % 
+    %
     % walkerParams, the parameters for the specified walkerRule, explained above.
-    % 
+    %
     %---OUTPUTS: include the mean, spread, maximum, minimum, and autocorrelation of the
     % walker's trajectory, the number of crossings between the walker and the
     % original time series, the ratio or difference of some basic summary statistics
@@ -5528,7 +5282,7 @@ class PH_Walker(HCTSASuper):
     % comparing the distributions of the walker and original time series, and
     % various statistics summarizing properties of the residuals between the
     % walker's trajectory and the original time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -5553,12 +5307,12 @@ class PP_Compare(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Applies a given pre-processing transformation to the time series, and returns
     % statistics on how various time-series properties change as a result.
-    % 
-    % Inputs are structured in a clunky way, unfortunately...
-    % 
+    %
+    % Inputs are structured in a clunky way, unfortunately:
+    %
     %---INPUTS:
     % y, the input time series
     % detrndmeth, the method to use for detrending:
@@ -5608,14 +5362,14 @@ class PP_Compare(HCTSASuper):
     %                       data, else returns a NaN.
     %      (ix) 'boxcox': makes a Box-Cox transformation of the data. Only valid for
     %                     positive only data; otherwise returns a NaN.
-    % 
+    %
     % If multiple detrending methods are specified, they should be in a cell of
     % strings; the methods will be executed in order, e.g., {'poly1','sin1'} does a
     % linear polynomial then a simple one-frequency seasonal detrend (in that order)
-    % 
+    %
     %---OUTPUTS: include comparisons of stationarity and distributional measures
     % between the original and transformed time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -5637,15 +5391,13 @@ class PP_Iterate(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Iteratively applies a transformation to the time series and measures how
-    % various properties of is change as the transformation is iteratively applied
-    % to it.
-    % 
+    %
+    % The pre-processing transformation is iteratively applied to the time series.
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % dtMeth, the detrending method to apply:
     %           (i) 'spline' removes a spine fit,
     %           (ii) 'diff' takes incremental differences,
@@ -5653,7 +5405,7 @@ class PP_Iterate(HCTSASuper):
     %           (iv) 'rav' applies a running mean filter,
     %           (v) 'resampleup' progressively upsamples the time series,
     %           (vi) 'resampledown' progressively downsamples the time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -5676,35 +5428,32 @@ class PP_ModelFit(HCTSASuper):
     Matlab doc:
     ----------------------------------------
     % 
-    % Carries out a variety of preprocessings to look at improvement of fit to
-    % an AR model.
-    % 
     % After performing the range of transformations to the time series, returns the
     % in-sample root-mean-square (RMS) prediction errors for an AR model on each
     % transformed time series as a ratio of the RMS prediction error of the original
     % time series.
-    % 
+    %
     % PP_PreProcess.m is used to perform the preprocessings
-    % 
+    %
     % The AR model is fitted using the function ar and pe from Matlab's System
     % Identification Toolbox
-    % 
+    %
     % Transformations performed include:
     % (i) incremental differencing,
     % (ii) filtering of the power spectral density function,
     % (iii) removal of piece-wise polynomial trends, and
     % (iv) rank mapping the values of the time series to a Gaussian distribution.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
     % model, the time-series model to fit to the transformed time series (currently
     %           'ar' is the only option)
-    %           
+    %
     % order, the order of the AR model to fit to the data
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
+    
     ----------------------------------------
     """
 
@@ -5732,29 +5481,26 @@ class SB_BinaryStats(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Returns statistics on a binary symbolization of the time series (to a symbolic
-    % string of 0s and 1s).
-    % 
-    % Provides information about the coarse-grained behavior of the time series
-    % 
-    %---INPUTS:
     %
+    % Binary symbolization of the time series is a symbolic string of 0s and 1s.
+    %
+    % Provides information about the coarse-grained behavior of the time series
+    %
+    %---INPUTS:
     % y, the input time series
-    % 
+    %
     % binaryMethod, the symbolization rule:
     %         (i) 'diff': by whether incremental differences of the time series are
     %                      positive (1), or negative (0),
     %          (ii) 'mean': by whether each point is above (1) or below the mean (0)
     %          (iii) 'iqr': by whether the time series is within the interquartile range
     %                      (1), or not (0).
-    % 
-    %---OUTPUTS:
     %
+    %---OUTPUTS:
     % Include the Shannon entropy of the string, the longest stretches of 0s
     % or 1s, the mean length of consecutive 0s or 1s, and the spread of consecutive
     % strings of 0s or 1s.
-    % 
+    
     ----------------------------------------
     """
 
@@ -5776,24 +5522,24 @@ class SB_BinaryStretch(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % (DOESN'T ACTUALLY, see note) measure the longest stretch of consecutive zeros or ones in
     % a symbolized time series as a proportion of the time-series length.
-    % 
+    %
     % The time series is symbolized to a binary string by whether it's above (1) or
     % below (0) its mean.
-    % 
+    %
     %---INPUTS:
     %
     % x, the input time series
-    % 
+    %
     % stretchWhat, (i) 'lseq1', measures something related to consecutive 1s
     %              (ii) 'lseq0', measures something related to consecutive 0s
-    % 
+    %
     %---NOTES:
     % It doesn't actually measure what it's supposed to measure correctly, due to an
     % implementation error, but it's still kind of an interesting operation...!
-    % 
+    
     ----------------------------------------
     """
 
@@ -5815,16 +5561,13 @@ class SB_CoarseGrain(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Coarse-grains the continuous time series to a discrete alphabet
-    % by a given method.
-    % 
+    %
     %---INPUTS:
     % howtocg, the method of coarse-graining
-    % 
+    %
     % numGroups, either specifies the size of the alphabet for 'quantile' and 'updown'
     %       or sets the timedelay for the embedding subroutines
-    % 
+    
     ----------------------------------------
     """
 
@@ -5849,19 +5592,18 @@ class SB_MotifThree(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % As for SB_MotifTwo, but using an alphabet of three letters, i.e., looks for
-    % motifs in a course-graining of the time series to an alphabet of three letters
-    % 
+    %
+    % (As SB_MotifTwo but with a 3-letter alphabet)
+    %
     %---INPUTS:
     % y, time series to analyze
     % cgHow, the coarse-graining method to use:
     %       (i) 'quantile': equiprobable alphabet by time-series value
     %       (ii) 'diffquant': equiprobably alphabet by time-series increments
-    % 
+    %
     %---OUTPUTS:
     % Statistics on words of length 1, 2, 3, and 4.
-    % 
+    
     ----------------------------------------
     """
 
@@ -5883,26 +5625,23 @@ class SB_MotifTwo(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Looks at local motifs in a binary symbolization of the time series, which is
-    % performed by:
-    % 
-    %---INPUTS:
     %
+    % Coarse-graining is performed by a given binarization method.
+    %
+    %---INPUTS:
     % y, the input time series
-    % 
-    % bint, the binary transformation method:
+    % binarizeHow, the binary transformation method:
     %       (i) 'diff': incremental time-series increases are encoded as 1, and
     %                   decreases as 0,
     %       (ii) 'mean': time-series values above its mean are given 1, and those
     %                    below the mean are 0,
     %       (iii) 'median': time-series values above the median are given 1, and
     %       those below the median 0.
-    % 
+    %
     %---OUTPUTS:
     % Probabilities of words in the binary alphabet of lengths 1, 2, 3, and 4, and
     % their entropies.
-    % 
+    
     ----------------------------------------
     """
 
@@ -5910,28 +5649,27 @@ class SB_MotifTwo(HCTSASuper):
 
     TAGS = ('motifs',)
 
-    def __init__(self, bint='mean'):
+    def __init__(self, binarizeHow='mean'):
         super(SB_MotifTwo, self).__init__()
-        self.bint = bint
+        self.binarizeHow = binarizeHow
 
     def _eval_hook(self, eng, x):
-        if self.bint is None:
+        if self.binarizeHow is None:
             return eng.run_function(1, 'SB_MotifTwo', x, )
-        return eng.run_function(1, 'SB_MotifTwo', x, self.bint)
+        return eng.run_function(1, 'SB_MotifTwo', x, self.binarizeHow)
 
 
 class SB_TransitionMatrix(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Calculates the transition probabilities between different states of the time
-    % series given a method to symbolize or coarse-grain the time series.
-    % 
+    %
+    % The time series is coarse-grained according to a given method.
+    %
     % The input time series is transformed into a symbolic string using an
     % equiprobable alphabet of numGroups letters. The transition probabilities are
     % calculated at a lag tau.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     %
@@ -5945,11 +5683,11 @@ class SB_TransitionMatrix(HCTSASuper):
     %      discretization as normal, or do the discretization and then just
     %      look at this dicrete lag. Here we do the former. Can also set tau to 'ac'
     %      to set tau to the first zero-crossing of the autocorrelation function.
-    % 
+    %
     %---OUTPUTS: include the transition probabilities themselves, as well as the trace
     % of the transition matrix, measures of asymmetry, and eigenvalues of the
     % transition matrix.
-    % 
+    
     ----------------------------------------
     """
 
@@ -5977,29 +5715,26 @@ class SB_TransitionpAlphabet(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Calculates the transition probabilities and measures how they change as the
-    % size of the alphabet increases.
-    % 
+    %
     % Discretization is done by quantile separation.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % numGroups, the number of groups in the coarse-graining (scalar for constant, or a
     %       vector of numGroups to compare across this range)
-    % 
+    %
     % tau: the time-delay; transition matricies corresponding to this time-delay. We
     %      can either downsample the time series at this lag and then do the
     %      discretization as normal, or do the discretization and then just
     %      look at this dicrete lag. Here we do the former. (scalar for
     %      constant tau, vector for range to vary across)
-    % 
+    %
     %---OUTPUTS: include the decay rate of the sum, mean, and maximum of diagonal
     % elements of the transition matrices, changes in symmetry, and the eigenvalues
     % of the transition matrix.
-    % 
+    
     ----------------------------------------
     """
 
@@ -6024,40 +5759,38 @@ class SC_FluctAnal(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Implements fluctuation analysis by a variety of methods.
-    % 
+    %
     % Much of our implementation is based on the well-explained discussion of
     % scaling methods in:
     % "Power spectrum and detrended fluctuation analysis: Application to daily
     % temperatures" P. Talkner and R. O. Weber, Phys. Rev. E 62(1) 150 (2000)
-    % 
+    %
     % The main difference between algorithms for estimating scaling exponents amount to
     % differences in how fluctuations, F, are quantified in time-series segments.
     % Many alternatives are implemented in this function.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % q, the parameter in the fluctuation function q = 2 (usual) gives RMS fluctuations.
-    % 
+    %
     % wtf, (what to fluctuate)
     %       (i) 'endptdiff', calculates the differences in end points in each segment
     %       (ii) 'range' calculates the range in each segment
     %       (iii) 'std' takes the standard deviation in each segment
-    %       
+    %
     %           cf. "Evaluating scaled windowed variance methods for estimating the
     %               Hurst coefficient of time series", M. J. Cannon et al. Physica A
     %               241(3-4) 606 (1997)
-    %       
+    %
     %       (iv) 'iqr' takes the interquartile range in each segment
     %       (v) 'dfa' removes a polynomial trend of order k in each segment,
     %       (vi) 'rsrange' returns the range after removing a straight line fit
-    %       
+    %
     %           cf. "Analyzing exact fractal time series: evaluating dispersional
     %           analysis and rescaled range methods",  D. C. Caccia et al., Physica
     %           A 246(3-4) 609 (1997)
-    %       
+    %
     %       (vii) 'rsrangefit' fits a polynomial of order k and then returns the
     %           range. The parameter q controls the order of fluctuations, for which
     %           we mostly use the standard choice, q = 2, corresponding to root mean
@@ -6067,37 +5800,37 @@ class SC_FluctAnal(HCTSASuper):
     %           by: "Using detrended fluctuation analysis for lagged correlation
     %           analysis of nonstationary signals" J. Alvarez-Ramirez et al. Phys.
     %           Rev. E 79(5) 057202 (2009)
-    % 
+    %
     % tauStep, increments in tau for linear range (i.e., if logInc = 0), or number of tau
     %           steps in logarithmic range if login = 1
     %           The spacing of time scales, tau, is commonly logarithmic through a range from
     %           5 samples to a quarter of the length of the time series, as suggested in
     %           "Statistical properties of DNA sequences", C.-K. Peng et al. Physica A
     %           221(1-3) 180 (1995)
-    %           
+    %
     %           Max A. Little's fractal paper used L = 4 to L = N/2:
     %           "Exploiting Nonlinear Recurrence and Fractal Scaling Properties for Voice Disorder Detection"
     %           M. A. Little et al. Biomed. Eng. Online 6(1) 23 (2007)
-    %           
+    %
     % k, polynomial order of detrending for 'dfa', 'rsrangefit'
-    % 
+    %
     % lag, optional time-lag, as in Alvarez-Ramirez (see (vii) above)
-    % 
+    %
     % logInc, whether to use logarithmic increments in tau (it should be logarithmic).
-    % 
+    %
     %---OUTPUTS: include statistics of fitting a linear function to a plot of log(F) as
     % a function of log(tau), and for fitting two straight lines to the same data,
     % choosing the split point at tau = tau_{split} as that which minimizes the
     % combined fitting errors.
-    % 
+    %
     % This function can also be applied to the absolute deviations of the time
     % series from its mean, and also for just the sign of deviations from the mean
     % (i.e., converting the time series into a series of +1, when the time series is
     % above its mean, and -1 when the time series is below its mean).
-    % 
+    %
     % All results are obtained with both linearly, and logarithmically-spaced time
     % scales tau.
-    % 
+    
     ----------------------------------------
     """
 
@@ -6134,11 +5867,9 @@ class SC_MMA(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Physionet implementation of multiscale multifractal analysis
-    % 
-    % Scale-dependent estimates of multifractal scaling in a time series
-    % 
+    %
+    % Scale-dependent estimates of multifractal scaling in a time series.
+    
     ----------------------------------------
     """
 
@@ -6166,16 +5897,15 @@ class SC_fastdfa(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Measures the scaling exponent of the time series using a fast implementation
     % of detrended fluctuation analysis (DFA).
-    % 
-    % The original fastdfa code is by Max A. Little and publicly-available at
-    % http://www.maxlittle.net/software/index.php
     %
     %---INPUT:
     % y, the input time series, is fed straight into the fastdfa script.
-    % 
+    
+    % The original fastdfa code is by Max A. Little and publicly-available at
+    % http://www.maxlittle.net/software/index.php
     ----------------------------------------
     """
 
@@ -6194,33 +5924,30 @@ class SD_MakeSurrogates(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Generates surrogate time series given a method (surrogates), number of
-    % surrogates (numSurrs), and any extra parameters (extraParams)
-    % 
+    %
     % Method described relatively clearly in Guarin Lopez et al. (arXiv, 2010)
     % Used bits of aaft code that references (and presumably was obtained from)
     % "ìSurrogate data test for nonlinearity including monotonic
     % transformations", D. Kugiumtzis, Phys. Rev. E, vol. 62, no. 1, 2000.
-    % 
+    %
     % Note that many other surrogate data methods exist that could later be
     % implemented, cf. references in "Improvements to surrogate data methods for
     % nonstationary time series", J. H. Lucio et al., Phys. Rev. E 85, 056202 (2012)
-    % 
+    %
     %---INPUTS:
     % x, the input time series
-    % 
+    %
     % surrMethod, the method for generating surrogates:
     %             (i) 'RP' -- random phase surrogates
     %             (ii) 'AAFT' -- amplitude adjusted Fourier transform
     %             (iii) 'TFT' -- truncated Fourier transform
-    % 
+    %
     % numSurrs, the number of surrogates to generate
-    % 
+    %
     % extraParams, extra parameters required by the selected surrogate generation method
     %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
+    
     ----------------------------------------
     """
 
@@ -6252,20 +5979,17 @@ class SD_SurrogateTest(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Analyzes the test statistics obtained from surrogate time series compared to
-    % those measured from the given time series.
-    % 
-    % This code was based on information found in:
+    %
+    % This function is based on information found in:
     % "Surrogate data test for nonlinearity including nonmonotonic transforms"
     % D. Kugiumtzis Phys. Rev. E 62(1) R25 (2000)
-    % 
+    %
     % The generation of surrogates is done by the periphery function,
     % SD_MakeSurrogates
-    % 
+    %
     %---INPUTS:
     % x, the input time series
-    % 
+    %
     % surrMeth, the method for generating surrogate time series:
     %       (i) 'RP': random phase surrogates that maintain linear correlations in
     %                 the data but destroy any nonlinear structure through phase
@@ -6278,12 +6002,12 @@ class SD_SurrogateTest(HCTSASuper):
     %                    with non-stationarity, cf.:
     %               "A new surrogate data method for nonstationary time series",
     %                   D. L. Guarin Lopez et al., arXiv 1008.1804 (2010)
-    % 
+    %
     % numSurrs, the number of surrogates to compute (default is 99 for a 0.01
     %         significance level 1-sided test)
-    % 
+    %
     % extrap, extra parameter, the cut-off frequency for 'TFT'
-    % 
+    %
     % theTestStat, the test statistic to evalute on all surrogates and the original
     %           time series. Can specify multiple options in a cell and will return
     %           output for each specified test statistic:
@@ -6299,9 +6023,9 @@ class SD_SurrogateTest(HCTSASuper):
     %           (iv) 'tc3': a time-reversal asymmetry measure. Outputs of the
     %                 function include a z-test between the two distributions, and
     %                 some comparative rank-based statistics.
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
+    
     ----------------------------------------
     """
 
@@ -6338,35 +6062,33 @@ class SD_TSTL_surrogates(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Generates surrogate time series and tests them against the original time
     % series according to some test statistics: T_{C3}, using the TSTOOL code tc3 or
     % T_{rev}, using TSTOOL code trev.
-    % 
-    % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
+    %
     %---INPUTS:
-    % 
     % y, the input time series
-    % 
+    %
     % tau, the autocorrelation lag length <x_n x_{n-tau} x_{n-2tau)>/abs(<x_n
     %                                                   x_{n-tau}|^3/2
     % nsurr, the number of surrogates to generate
-    % 
+    %
     % surrmeth, the method of generating surrogates:
     %               (i) 1: randomizes phases of fourier spectrum
     %               (ii) 2:  (see Theiler algorithm II)
     %               (iii) 3: permutes samples randomly
-    % 
-    % 
+    %
     % surrfn, the surrogate statistic to evaluate on all surrogates, either 'tc3' or
     %           'trev'
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
+    %
     %---OUTPUTS: include the Gaussianity of the test statistics, a z-test, and
     % various tests based on fitted kernel densities.
-    % 
+    %
+    % TSTOOL: http://www.physik3.gwdg.de/tstool/
+    
     ----------------------------------------
     """
 
@@ -6401,44 +6123,41 @@ class SP_Summaries(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Returns a set of measures summarizing an estimate of the Fourier transform of
-    % the signal.
-    % 
+    %
     % The estimation can be done using a periodogram, using the periodogram code in
     % Matlab's Signal Processing Toolbox, or a fast fourier transform, implemented
     % using Matlab's fft code.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % psdmeth, the method of obtaining the spectrum from the signal:
     %               (i) 'periodogram': periodogram
     %               (ii) 'fft': fast fourier transform
-    % 
+    %
     % wmeth, the window to use:
     %               (i) 'boxcar'
     %               (iii) 'bartlett'
     %               (iv) 'hann'
     %               (v) 'hamming'
     %               (vi) 'none'
-    %               
+    %
     % nf, the number of frequency components to include, if
     %           empty (default), it's approx length(y)
-    %       
+    %
     % dologabs, if 1, takes log amplitude of the signal before
     %           transforming to the frequency domain.
-    % 
+    %
     % doPower, analyzes the power spectrum rather than amplitudes of a Fourier
     %          transform
-    % 
+    %
     %---OUTPUTS:
     % Statistics summarizing various properties of the spectrum,
     % including its maximum, minimum, spread, correlation, centroid, area in certain
     % (normalized) frequency bands, moments of the spectrum, Shannon spectral
     % entropy, a spectral flatness measure, power-law fits, and the number of
     % crossings of the spectrum at various amplitude thresholds.
-    % 
+    
     ----------------------------------------
     """
 
@@ -6472,20 +6191,17 @@ class ST_FitPolynomial(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Fits a polynomial of order k to the time series, and returns the mean
-    % square error of the fit.
-    % 
+    %
     % Usually kind of a stupid thing to do with a time series, but it's sometimes
     % somehow informative for time series with large trends.
-    % 
+    %
     %---INPUTS:
     % y, the input time series.
     % k, the order of the polynomial to fit to y.
-    % 
+    %
     %---OUTPUT:
     % RMS error of the fit.
-    %
+    
     ----------------------------------------
     """
 
@@ -6507,14 +6223,12 @@ class ST_Length(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Measures the length of the input time series vector.
-    % 
-    %---INPUT:
-    % y, the time series vector
-    % 
-    %---OUTPUT: the length of the time series
     %
+    %---INPUT:
+    % y, data vector
+    %
+    %---OUTPUT: the length of the time series
+    
     ----------------------------------------
     """
 
@@ -6533,14 +6247,13 @@ class ST_LocalExtrema(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Finds maximums and minimums within given segments of the time series and
-    % analyses the results. Outputs quantify how local maximums and minimums vary
-    % across the time series.
-    % 
+    % analyses the results.
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % lorf, whether to use:
     %     (i) 'l', windows of a given length (in which case the third input, n
     %             specifies the length)
@@ -6549,9 +6262,9 @@ class ST_LocalExtrema(HCTSASuper):
     %     (iii) 'tau', sets a window length equal to the correlation length of the
     %                 time series, the first zero-crossing of the autocorrelation
     %                 function.
-    %                   
+    %
     % n, somehow specifies the window length given the setting of lorf above.
-    % 
+    
     ----------------------------------------
     """
 
@@ -6576,27 +6289,24 @@ class ST_MomentCorr(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Calculates correlations between simple statistics summarizing the distribution
-    % of values in local windows of the signal.
-    % 
-    % Idea to implement this operation was of Nick S. Jones.
-    % 
+    %
+    % Idea to implement by Nick S. Jones.
+    %
     %---INPUTS:
     % x, the input time series
-    % 
+    %
     % windowLength, the sliding window length (can be a fraction to specify a proportion of
     %       the time-series length)
-    %       
+    %
     % wOverlap, the overlap between consecutive windows as a fraction of the window
     %       length,
-    % 
+    %
     % mom1, mom2: the statistics to investigate correlations between (in each window):
     %               (i) 'iqr': interquartile range
     %               (ii) 'median': median
     %               (iii) 'std': standard deviation (about the local mean)
     %               (iv) 'mean': mean
-    % 
+    %
     % whatTransform: the pre-processing whatTransformormation to apply to the time series before
     %         analyzing it:
     %               (i) 'abs': takes absolute values of all data points
@@ -6604,7 +6314,7 @@ class ST_MomentCorr(HCTSASuper):
     %                            data points
     %               (iii) 'sq': takes the square of every data point
     %               (iv) 'none': does no whatTransformormation
-    % 
+    
     ----------------------------------------
     """
 
@@ -6639,13 +6349,11 @@ class ST_SimpleStats(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Returns a basic statistic about the input time series, depending on the input whatstat
-    % 
+    %
     %---INPUTS:
     % x, the input time series
-    % 
-    % whatstat, the statistic to return:
+    %
+    % whatStat, the statistic to return:
     %          (i) 'zcross': the proportionof zero-crossings of the time series
     %                        (z-scored input thus returns mean-crossings),
     %          (ii) 'maxima': the proportion of the time series that is a local maximum
@@ -6657,7 +6365,7 @@ class ST_SimpleStats(HCTSASuper):
     %                          the mean).
     %          (v) 'zsczcross': the ratio of zero crossings of raw to detrended
     %                           time series where the raw has zero mean.
-    % 
+    
     ----------------------------------------
     """
 
@@ -6665,48 +6373,47 @@ class ST_SimpleStats(HCTSASuper):
 
     TAGS = ('distribution', 'noisiness')
 
-    def __init__(self, whatstat='pmcross'):
+    def __init__(self, whatStat='pmcross'):
         super(ST_SimpleStats, self).__init__()
-        self.whatstat = whatstat
+        self.whatStat = whatStat
 
     def _eval_hook(self, eng, x):
-        if self.whatstat is None:
+        if self.whatStat is None:
             return eng.run_function(1, 'ST_SimpleStats', x, )
-        return eng.run_function(1, 'ST_SimpleStats', x, self.whatstat)
+        return eng.run_function(1, 'ST_SimpleStats', x, self.whatStat)
 
 
 class SY_DriftingMean(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
+    % Splits the time series into segments, computes the mean and variance in each
+    % segment and compares the maximum and minimum mean to the mean variance.
+    %
     % This function implements an idea found in the Matlab Central forum:
     % http://www.mathworks.de/matlabcentral/newsreader/view_thread/136539
-    % 
+    %
     % >> It seems to me that you are looking for a measure for a drifting mean.
     % >> If so, this is what I would try:
-    % >> 
+    % >>
     % >> - Decide on a frame length N
     % >> - Split your signal in a number of frames of length N
     % >> - Compute the means of each frame
     % >> - Compute the variance for each frame
     % >> - Compare the ratio of maximum and minimum mean
     % >>   with the mean variance of the frames.
-    % >> 
+    % >>
     % >> Rune
-    % 
-    % This operation splits the time series into segments, computes the mean and
-    % variance in each segment and compares the maximum and minimum mean to the mean
-    % variance.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % howl, (i) 'fix': fixed-length segments (of length l)
     %       (ii) 'num': a given number, l, of segments
-    %       
+    %
     % l, either the length ('fix') or number of segments ('num')
-    % 
+    
     ----------------------------------------
     """
 
@@ -6731,31 +6438,28 @@ class SY_DynWin(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Analyzes how stationarity estimates depend on the number of segments used to
-    % segment up the time series.
-    % 
+    %
     % Specifically, variation in a range of local measures are implemented: mean,
     % standard deviation, skewness, kurtosis, ApEn(1,0.2), SampEn(1,0.2), AC(1),
     % AC(2), and the first zero-crossing of the autocorrelation function.
-    % 
+    %
     % The standard deviation of local estimates of these quantities across the time
     % series are calculated as an estimate of the stationarity in this quantity as a
     % function of the number of splits, n_{seg}, of the time series.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % maxnseg, the maximum number of segments to consider. Will sweep from 2
     %           segments to maxnseg.
-    % 
-    % 
+    %
+    %
     %---OUTPUTS:
     %
     % The standard deviation of this set of 'stationarity' estimates
     % across these window sizes.
-    % 
+    
     ----------------------------------------
     """
 
@@ -6777,26 +6481,26 @@ class SY_KPSStest(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Performs the KPSS stationarity test, of Kwiatkowski, Phillips, Schmidt, and Shin,
+    %
+    % The KPSS stationarity test, of Kwiatkowski, Phillips, Schmidt, and Shin:
     % "Testing the null hypothesis of stationarity against the alternative of a
     % unit root: How sure are we that economic time series have a unit root?"
     % Kwiatkowski, Denis and Phillips, Peter C. B. and Schmidt, Peter and Shin, Yongcheol
     % J. Econometrics, 54(1-3) 159 (2002)
-    % 
+    %
     % Uses the function kpsstest from Matlab's Econometrics Toolbox. The null
     % hypothesis is that a univariate time series is trend stationary, the
     % alternative hypothesis is that it is a non-stationary unit-root process.
-    % 
+    %
     % The code can implemented for a specific time lag, tau. Alternatively, measures
     % of change in p-values and test statistics will be outputted if the input is a
     % vector of time lags.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
     % lags, can be either a scalar (returns basic test statistic and p-value), or
     %                   vector (returns statistics on changes across these time lags)
-    % 
+    
     ----------------------------------------
     """
 
@@ -6818,32 +6522,31 @@ class SY_LocalDistributions(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Compares the distribution in consecutive partitions of the signal,
-    % returning the sum of differences between each kernel-smoothed distributions
+    %
+    % Returns the sum of differences between each kernel-smoothed distributions
     % (using the Matlab function ksdensity).
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % nseg, the number of segments to break the time series into
-    % 
-    % eachorpar, (i) 'par': compares each local distribution to the parent (full time
+    %
+    % eachOrPar, (i) 'par': compares each local distribution to the parent (full time
     %                       series) distribution
     %            (ii) 'each': compare each local distribution to all other local
     %                         distributions
-    % 
-    % npoints, number of points to compute the distribution across (in each local
+    %
+    % numPoints, number of points to compute the distribution across (in each local
     %          segments)
-    % 
+    %
     % The operation behaves in one of two modes: each compares the distribution in
     % each segment to that in every other segment, and par compares each
     % distribution to the so-called 'parent' distribution, that of the full signal.
-    % 
+    %
     %---OUTPUTS: measures of the sum of absolute deviations between distributions
     % across the different pairwise comparisons.
-    % 
+    
     ----------------------------------------
     """
 
@@ -6851,53 +6554,50 @@ class SY_LocalDistributions(HCTSASuper):
 
     TAGS = ('stationarity',)
 
-    def __init__(self, nseg=4.0, eachorpar='each', npoints=None):
+    def __init__(self, nseg=4.0, eachOrPar='each', numPoints=None):
         super(SY_LocalDistributions, self).__init__()
         self.nseg = nseg
-        self.eachorpar = eachorpar
-        self.npoints = npoints
+        self.eachOrPar = eachOrPar
+        self.numPoints = numPoints
 
     def _eval_hook(self, eng, x):
         if self.nseg is None:
             return eng.run_function(1, 'SY_LocalDistributions', x, )
-        elif self.eachorpar is None:
+        elif self.eachOrPar is None:
             return eng.run_function(1, 'SY_LocalDistributions', x, self.nseg)
-        elif self.npoints is None:
-            return eng.run_function(1, 'SY_LocalDistributions', x, self.nseg, self.eachorpar)
-        return eng.run_function(1, 'SY_LocalDistributions', x, self.nseg, self.eachorpar, self.npoints)
+        elif self.numPoints is None:
+            return eng.run_function(1, 'SY_LocalDistributions', x, self.nseg, self.eachOrPar)
+        return eng.run_function(1, 'SY_LocalDistributions', x, self.nseg, self.eachOrPar, self.numPoints)
 
 
 class SY_LocalGlobal(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Compares statistics measured in a local region of the time series to that
-    % measured of the full time series.
-    % 
+    %
     %---INPUTS:
     % y, the time series to analyze
-    % 
+    %
     % subsetHow, the local subset of time series to study:
     %             (i) 'l': the first n points in a time series,
     %             (ii) 'p': an initial proportion of the full time series, n
     %             (iii) 'unicg': n evenly-spaced points throughout the time series
     %             (iv) 'randcg': n randomly-chosen points from the time series
     %                               (chosen with replacement)
-    % 
+    %
     % n, the parameter for the method specified above
-    % 
+    %
     % randomSeed, an option for whether (and how) to reset the random seed, for the
     % 'randcg' input
-    % 
+    %
     %---OUTPUTS: the mean, standard deviation, median, interquartile range,
     % skewness, kurtosis, AC(1), and SampEn(1,0.1).
-    % 
+    %
     % This is not the most reliable or systematic operation because only a single
     % sample is taken from the time series and compared to the full time series.
     % A better approach would be to repeat over many local subsets and compare the
     % statistics of these local regions to the full time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -6925,29 +6625,28 @@ class SY_PPtest(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Performs the Phillips-Peron unit root test for a time series via the code
-    % pptest from Matlab's Econometrics Toolbox.
-    % 
+    %
+    % Uses the pptest code from Matlab's Econometrics Toolbox.
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % lags, a vector of lags
-    % 
+    %
     % model, a specified model:
     %               'ar': autoregressive
     %               'ard': autoregressive with drift, or
     %               'ts': trend stationary,
     %               (see Matlab documentation for information)
-    %               
+    %
     % testStatistic, the test statistic:
     %               't1': the standard t-statistic, or
     %               't2' a lag-adjusted, 'unStudentized' t statistic.
     %               (see Matlab documentation for information)
-    %               
+    %
     %---OUTPUTS: statistics on the p-values and lags obtained from the set of tests, as
     % well as measures of the regression statistics.
-    % 
+    
     ----------------------------------------
     """
 
@@ -6955,7 +6654,7 @@ class SY_PPtest(HCTSASuper):
 
     TAGS = ('aic', 'bic', 'econometricstoolbox', 'hqc', 'pptest', 'pvalue', 'rmse', 'unitroot')
 
-    def __init__(self, lags=MatlabSequence('0:5'), model='ts', testStatistic='t1'):
+    def __init__(self, lags=MatlabSequence('0:5'), model='ard', testStatistic='t1'):
         super(SY_PPtest, self).__init__()
         self.lags = lags
         self.model = model
@@ -6975,16 +6674,16 @@ class SY_RangeEvolve(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Measures of the range of the time series as a function of time,
     % i.e., range(x_{1:i}) for i = 1, 2, ..., N, where N is the length of the time
     % series.
-    % 
+    %
     %---INPUT:
     % y, the time series
-    % 
+    %
     %---OUTPUTS: based on the dynamics of how new extreme events occur with time.
-    % 
+    
     ----------------------------------------
     """
 
@@ -7003,18 +6702,18 @@ class SY_SlidingWindow(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % This function is based on sliding a window along the time series, measuring
     % some quantity in each window, and outputting some summary of this set of local
     % estimates of that quantity.
-    % 
+    %
     % Another way of saying it: calculate 'windowStat' in each window, and computes
     % 'acrossWinStat' for the set of statistics calculated in each window.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % windowStat, the measure to calculate in each window:
     %               (i) 'mean', mean
     %               (ii) 'std', standard deviation
@@ -7025,7 +6724,7 @@ class SY_SlidingWindow(HCTSASuper):
     %               (vii) 'lillie', the p-value for a Lilliefors Gaussianity test
     %               (viii) 'AC1', the lag-1 autocorrelation
     %               (ix) 'apen', Approximate Entropy
-    % 
+    %
     % acrossWinStat, controls how the obtained sequence of local estimates is
     %                   compared (as a ratio to the full time series):
     %                       (i) 'std': standard deviation
@@ -7034,14 +6733,14 @@ class SY_SlidingWindow(HCTSASuper):
     %                               cf. "Approximate entropy as a measure of system
     %                               complexity", S. M. Pincus, P. Natl. Acad. Sci.
     %                               USA 88(6) 2297 (1991)
-    % 
+    %
     % numSeg, the number of segments to divide the time series up into, thus
     %       controlling the window length
-    % 
+    %
     % incMove, the increment to move the window at each iteration, as 1/fraction of the
     %       window length (e.g., incMove = 2, means the window moves half the length of the
     %       window at each increment)
-    % 
+    
     ----------------------------------------
     """
 
@@ -7073,30 +6772,29 @@ class SY_SpreadRandomLocal(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Implements a bootstrap-based stationarity measure: numSegs time-series segments
-    % of length l are selected at random from the time series and in each
-    % segment some statistic is calculated: mean, standard deviation, skewness,
-    % kurtosis, ApEn(1,0.2), SampEn(1,0.2), AC(1), AC(2), and the first
-    % zero-crossing of the autocorrelation function.
+    %
+    % numSegs time-series segments of length l are selected at random from the time
+    % series and in each segment some statistic is calculated: mean, standard
+    % deviation, skewness, kurtosis, ApEn(1,0.2), SampEn(1,0.2), AC(1), AC(2), and the
+    % first zero-crossing of the autocorrelation function.
     % Outputs summarize how these quantities vary in different local segments of the
     % time series.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % l, the length of local time-series segments to analyze as a positive integer.
     %    Can also be a specified character string:
     %       (i) 'ac2': twice the first zero-crossing of the autocorrelation function
     %       (ii) 'ac5': five times the first zero-crossing of the autocorrelation function
-    % 
+    %
     % numSegs, the number of randomly-selected local segments to analyze
-    % 
+    %
     % randomSeed, the input to BF_ResetSeed to control reproducibility
-    % 
+    %
     %---OUTPUTS: the mean and also the standard deviation of this set of 100 local
     % estimates.
-    % 
+    
     ----------------------------------------
     """
 
@@ -7124,24 +6822,25 @@ class SY_StatAv(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % The StatAv measure is a simple mean-stationarity metric that divides
-    % the time series into non-overlapping subsegments, calculates the mean in each
-    % of these segments and returns the standard deviation of this set of means.
-    % 
-    % "Heart rate control in normal and aborted-SIDS infants", S. M. Pincus et al.
+    %
+    % The StatAv measure divides the time series into non-overlapping subsegments,
+    % calculates the mean in each of these segments and returns the standard deviation
+    % of this set of means.
+    %
+    % cf. "Heart rate control in normal and aborted-SIDS infants", S. M. Pincus et al.
     % Am J. Physiol. Regul. Integr. Comp. Physiol. 264(3) R638 (1993)
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % whatType, the type of StatAv to perform:
     %           (i) 'seg': divide the time series into n segments
     %           (ii) 'len': divide the time series into segments of length n
-    % 
+    %
     % n, either the number of subsegments ('seg') or their length ('len')
-    % 
+    
+    % Might be nicer to use the 'buffer' function for this...?
     ----------------------------------------
     """
 
@@ -7166,25 +6865,23 @@ class SY_StdNthDer(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Estimates the standard deviation of the nth derivative of the time series.
-    % 
+    %
     % Based on an idea by Vladimir Vassilevsky, a DSP and Mixed Signal Design
     % Consultant in a Matlab forum, who stated that You can measure the standard
     % deviation of the nth derivative, if you like".
-    % 
+    %
     % cf. http://www.mathworks.de/matlabcentral/newsreader/view_thread/136539
-    % 
+    %
     % The derivative is estimated very simply by simply taking successive increments
     % of the time series; the process is repeated to obtain higher order
     % derivatives.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, time series to analyze
-    % 
+    %
     % n, the order of derivative to analyze
-    % 
+    
     ----------------------------------------
     """
 
@@ -7206,26 +6903,26 @@ class SY_StdNthDerChange(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % This operation returns statistics on how the output of SY_StdNthDer changes
-    % with the order of the derivative of the signal.
-    % 
+    %
+    % Order parameter controls the derivative of the signal.
+    %
     % Operation inspired by a comment on the Matlab Central forum: "You can
     % measure the standard deviation of the n-th derivative, if you like." --
     % Vladimir Vassilevsky, DSP and Mixed Signal Design Consultant from
     % http://www.mathworks.de/matlabcentral/newsreader/view_thread/136539
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % maxd, the maximum derivative to take.
-    % 
+    %
+    %---OUTPUTS:
     % An exponential function, f(x) = Aexp(bx), is fitted to the variation across
     % successive derivatives; outputs are the parameters and quality of this fit.
-    % 
+    %
     % Typically an excellent fit to exponential: regular signals decrease, irregular
     % signals increase...?
-    % 
+    
     ----------------------------------------
     """
 
@@ -7247,42 +6944,42 @@ class SY_TISEAN_nstat_z(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Uses the nstat_z routine from the TISEAN package for nonlinear time-series
     % analysis to calculate cross-forecast errors of zeroth-order models for the
     % time-delay embedded time series.
-    % 
+    %
     % The program looks for nonstationarity in a time series by dividing it
     % into a number of segments and calculating the cross-forecast errors
     % between the different segments. The model used for the forecast is
     % zeroth order model as proposed by Schreiber.
-    % 
+    %
     % cf. "Practical implementation of nonlinear time series methods: The TISEAN
     % package", R. Hegger, H. Kantz, and T. Schreiber, Chaos 9(2) 413 (1999)
-    % 
+    %
     % Available here:
     % http://www.mpipks-dresden.mpg.de/~tisean/Tisean_3.0.1/index.html
-    % 
+    %
     % The TISEAN routines are performed in the command line using 'system' commands
     % in Matlab, and require that TISEAN is installed and compiled, and able to be
     % executed in the command line.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % numSeg, the number of equally-spaced segments to divide the time series into,
     %       and used to predict the other time series segments
-    % 
+    %
     % embedParams, in the form {tau,m}, as usual for BF_embed. That is, for an
     %               embedding dimension, tau, and embedding dimension, m. E.g.,
     %               {1,3} has a time-delay of 1 and embedding dimension of 3.
-    % 
-    % 
+    %
+    %
     %---OUTPUTS: include the trace of the cross-prediction error matrix, the mean,
     % minimum, and maximum cross-prediction error, the minimum off-diagonal
     % cross-prediction error, and eigenvalues of the cross-prediction error matrix.
-    % 
+    
     ----------------------------------------
     """
 
@@ -7307,21 +7004,18 @@ class SY_Trend(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Quantifies various measures of trend in the time series.
-    % 
-    %---INPUT:
-    % y, the input time series
-    % 
-    %---OUTPUTS:
     %
+    %---INPUT:
+    % y, the input time series.
+    %
+    %---OUTPUTS:
     % Linearly detrends the time series using detrend, and returns the ratio of
     % standard deviations before and after the linear detrending. If a strong linear
     % trend is present in the time series, this operation should output a low value.
-    % 
+    %
     % Also fits a line and gives parameters from that fit, as well as statistics on
     % a cumulative sum of the time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -7340,22 +7034,21 @@ class SY_VarRatioTest(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % This code performs a variance ratio test on the time series, implemented using
-    % the vratiotest function from Matlab's Econometrics Toolbox.
-    % 
+    %
+    % Implemented using the vratiotest function from Matlab's Econometrics Toolbox.
+    %
     % The test assesses the null hypothesis of a random walk in the time series,
     % which is rejected for some critical p-value.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % periods, a vector (or scalar) of period(s)
-    % 
+    %
     % IIDs, a vector (or scalar) representing boolean values indicating whether to
     %       assume independent and identically distributed (IID) innovations for
     %       each period.
-    % 
+    
     ----------------------------------------
     """
 
@@ -7380,24 +7073,23 @@ class TSTL_delaytime(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Uses the TSTOOL code delaytime, that computes an optimal delay time using the
-    % method of Parlitz and Wichard (this method is specified in the TSTOOL
+    %
+    % Uses the TSTOOL code delaytime (this method is specified in the TSTOOL
     % documentation but without reference).
-    % 
+    %
     % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
+    %
     %---INPUTS:
     % y, column vector of time series data
-    % 
+    %
     % maxDelay, maximum value of the delay to consider (can also specify a
     %           proportion of time series length)
-    %           
+    %
     % past, the TSTOOL documentation describes this parameter as "?", which is
     %       relatively uninformative.
-    % 
+    %
     % randomSeed, whether (and how) to reset the random seed, using BF_ResetSeed
-    % 
+    
     ----------------------------------------
     """
 
@@ -7425,29 +7117,29 @@ class TSTL_localdensity(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Uses TSTOOL code localdensity, which is very poorly documented in the TSTOOL
-    % documentation, but we can assume it returns local density estimates in the
+    %
+    % TSTOOL code localdensity is very poorly documented in the TSTOOL
+    % package, can assume it returns local density estimates in the
     % time-delay embedding space.
-    % 
+    %
     % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the time series as a column vector
-    % 
+    %
     % NNR, number of nearest neighbours to compute
-    % 
+    %
     % past, number of time-correlated points to discard (samples)
-    % 
+    %
     % embedParams, the embedding parameters, inputs to BF_embed as {tau,m}, where
     %               tau and m can be characters specifying a given automatic method
     %               of determining tau and/or m (see BF_embed).
-    % 
+    %
     %---OUTPUTS: various statistics on the local density estimates at each point in
     % the time-delay embedding, including the minimum and maximum values, the range,
     % the standard deviation, mean, median, and autocorrelation.
-    % 
+    
     ----------------------------------------
     """
 
@@ -7475,23 +7167,23 @@ class TSTL_predict(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % References TSTOOL code 'predict', which does local constant iterative
-    % prediction for scalar data using fast nearest neighbour searching. There are
-    % four modes available for the prediction output.
-    % 
+    % prediction for scalar data using fast nearest neighbour searching.
+    % There are four modes available for the prediction output.
+    %
     % TSTOOL: http://www.physik3.gwdg.de/tstool/
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, scalar column vector time series
-    % 
+    %
     % plen, prediction length in samples or as proportion of time series length NNR,
-    % 
+    %
     % NNR, number of nearest neighbours
-    % 
+    %
     % stepSize, number of samples to step for each prediction
-    % 
+    %
     % pmode, prediction mode, four options:
     %           (i) 0: output vectors are means of images of nearest neighbours
     %           (ii) 1: output vectors are distance-weighted means of images
@@ -7502,7 +7194,7 @@ class TSTL_predict(HCTSASuper):
     %                    weighted mean of the images of the neighbours
     % embedParams, as usual to feed into BF_embed, except that now you can set
     %              to zero to not embed.
-    % 
+    
     ----------------------------------------
     """
 
@@ -7536,24 +7228,24 @@ class WL_DetailCoeffs(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Compares the detail coefficients obtained at each level of the wavelet
     % decomposition from 1 to the maximum possible level for the wavelet given the
     % length of the input time series (computed using wmaxlev from
     % Matlab's Wavelet Toolbox).
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % wname, the name of the mother wavelet to analyze the data with: e.g., 'db3',
     %           'sym2', cf. Wavelet Toolbox Documentation for details
-    %           
+    %
     % maxlevel, the maximum wavelet decomposition level (can also set to 'max' to be
     %               that determined by wmaxlev)
-    % 
+    %
     %---OUTPUTS:
-    % A set of statistics on the detail coefficients.
-    % 
+    % Statistics on the detail coefficients.
+    
     ----------------------------------------
     """
 
@@ -7578,20 +7270,20 @@ class WL_coeffs(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Performs a wavelet decomposition of the time series using a given wavelet at a
     % given level and returns a set of statistics on the coefficients obtained.
-    % 
+    %
     % Uses Matlab's Wavelet Toolbox.
-    % 
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % wname, the wavelet name, e.g., 'db3' (see Wavelet Toolbox Documentation for
     %                                       all options)
-    % 
+    %
     % level, the level of wavelet decomposition
-    % 
+    
     ----------------------------------------
     """
 
@@ -7616,23 +7308,21 @@ class WL_cwt(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Applies a continuous wavelet transform to the time series using the function
-    % cwt from Matlab's Wavelet Toolbox.
-    % 
+    %
+    % Uses the function cwt from Matlab's Wavelet Toolbox.
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % wname, the wavelet name, e.g., 'db3' (Daubechies wavelet), 'sym2' (Symlet),
     %                           etc. (see Wavelet Toolbox Documentation for all
     %                           options)
-    % 
+    %
     % maxScale, the maximum scale of wavelet analysis.
-    % 
-    % 
+    %
     %---OUTPUTS: statistics on the coefficients, entropy, and results of
     % coefficients summed across scales.
-    % 
+    
     ----------------------------------------
     """
 
@@ -7657,20 +7347,20 @@ class WL_dwtcoeff(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
+    %
     % Decomposes the time series using a given wavelet and outputs statistics on the
     % coefficients obtained up to a maximum level, level.
-    % 
+    %
     %---INPUTS:
-    % 
+    %
     % y, the input time series
-    % 
+    %
     % wname, the mother wavelet, e.g., 'db3', 'sym2' (see Wavelet Toolbox
     %           Documentation)
-    %           
+    %
     % level, the level of wavelet decomposition (can be set to 'max' for the maximum
     %               level determined by wmaxlev)
-    % 
+    
     ----------------------------------------
     """
 
@@ -7695,16 +7385,14 @@ class WL_fBM(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Uses the wfbmesti function from Matlab's Wavelet Toolbox to estimate the
-    % parameters of fractional Gaussian Noise, or fractional Brownian motion in a
-    % time series.
-    % 
+    %
+    % Uses the wfbmesti function from Matlab's Wavelet Toolbox
+    %
     %---INPUT:
     % y, the time series to analyze.
-    % 
+    %
     %---OUTPUTS: All three outputs of wfbmesti are returned from this function.
-    % 
+    
     ----------------------------------------
     """
 
@@ -7723,26 +7411,26 @@ class WL_scal2frq(HCTSASuper):
     """
     Matlab doc:
     ----------------------------------------
-    % 
-    % Estimates frequency components in a periodic time series using functions from
-    % Matlab's Wavelet Toolbox, including the scal2frq function.
-    % 
+    %
+    % Estimates frequency components using functions from Matlab's Wavelet Toolbox,
+    % including the scal2frq function.
+    %
     %---INPUTS:
     % y, the input time series
-    % 
+    %
     % wname, the name of the mother wavelet to analyze the data with: e.g., 'db3',
     %           'sym2', cf. Wavelet Toolbox Documentation for details
-    % 
+    %
     % amax, the maximum scale / level (can be 'max' to set according to wmaxlev)
-    % 
+    %
     % delta, the sampling period
-    % 
+    %
     %---OUTPUTS: the level with the highest energy coefficients, the dominant
     % period, and the dominant pseudo-frequency.
-    % 
+    %
     % Adapted from example in Matlab Wavelet Toolbox documentation. It's kind of a
     % weird idea to apply the method to generic time series.
-    % 
+    
     ----------------------------------------
     """
 
@@ -7782,7 +7470,6 @@ HCTSA_ALL_CLASSES = (
     CO_NonlinearAutocorr,
     CO_RM_AMInformation,
     CO_StickAngles,
-    CO_TSTL_AutoCorrMethod,
     CO_TSTL_amutual,
     CO_TranslateShape,
     CO_f1ecac,
@@ -7795,7 +7482,6 @@ HCTSA_ALL_CLASSES = (
     CP_wavelet_varchg,
     DN_Burstiness,
     DN_CompareKSFit,
-    DN_Compare_zscore,
     DN_Cumulants,
     DN_CustomSkewness,
     DN_FitKernelSmooth,
@@ -7826,7 +7512,6 @@ HCTSA_ALL_CLASSES = (
     EN_RM_entropy,
     EN_Randomize,
     EN_SampEn,
-    EN_Shannonpdf,
     EN_rpde,
     EN_wentropy,
     EX_MovingThreshold,
@@ -7939,10 +7624,9 @@ class HCTSAOperations(object):
     """Namespace for HCTSA selected operations."""
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
+    # outs: ami_at_5,firstUnder25,firstUnder50,firstUnder75,fitexpa
+    # outs: fitexpadjr2,fitexpb,fitexpr2,fitexprmse,fitlina
+    # outs: fitlinb,linfit_mse,meanch,pcrossmean,pdec
     # tags: AMI,correlation,entropy
     CO_AddNoise_1_quantiles_10 = HCTSAOperation(
         'CO_AddNoise_1_quantiles_10',
@@ -7950,10 +7634,9 @@ class HCTSAOperations(object):
         CO_AddNoise(tau=1, amiMethod='quantiles', extraParam=10, randomSeed='default'))
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
+    # outs: ami_at_5,firstUnder25,firstUnder50,firstUnder75,fitexpa
+    # outs: fitexpadjr2,fitexpb,fitexpr2,fitexprmse,fitlina
+    # outs: fitlinb,linfit_mse,meanch,pcrossmean,pdec
     # tags: AMI,correlation,entropy
     CO_AddNoise_ac_even_10 = HCTSAOperation(
         'CO_AddNoise_ac_even_10',
@@ -7961,10 +7644,9 @@ class HCTSAOperations(object):
         CO_AddNoise(tau='ac', amiMethod='even', extraParam=10, randomSeed='default'))
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
+    # outs: ami_at_5,firstUnder25,firstUnder50,firstUnder75,fitexpa
+    # outs: fitexpadjr2,fitexpb,fitexpr2,fitexprmse,fitlina
+    # outs: fitlinb,linfit_mse,meanch,pcrossmean,pdec
     # tags: AMI,correlation,entropy
     CO_AddNoise_ac_kraskov1_4 = HCTSAOperation(
         'CO_AddNoise_ac_kraskov1_4',
@@ -7972,10 +7654,9 @@ class HCTSAOperations(object):
         CO_AddNoise(tau='ac', amiMethod='kraskov1', extraParam='4', randomSeed='default'))
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
+    # outs: ami_at_5,firstUnder25,firstUnder50,firstUnder75,fitexpa
+    # outs: fitexpadjr2,fitexpb,fitexpr2,fitexprmse,fitlina
+    # outs: fitlinb,linfit_mse,meanch,pcrossmean,pdec
     # tags: AMI,correlation,entropy
     CO_AddNoise_1_even_10 = HCTSAOperation(
         'CO_AddNoise_1_even_10',
@@ -7983,10 +7664,9 @@ class HCTSAOperations(object):
         CO_AddNoise(tau=1, amiMethod='even', extraParam=10, randomSeed='default'))
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
+    # outs: ami_at_5,firstUnder25,firstUnder50,firstUnder75,fitexpa
+    # outs: fitexpadjr2,fitexpb,fitexpr2,fitexprmse,fitlina
+    # outs: fitlinb,linfit_mse,meanch,pcrossmean,pdec
     # tags: AMI,correlation,entropy
     CO_AddNoise_ac_gaussian = HCTSAOperation(
         'CO_AddNoise_ac_gaussian',
@@ -7994,10 +7674,9 @@ class HCTSAOperations(object):
         CO_AddNoise(tau='ac', amiMethod='gaussian', extraParam=(), randomSeed='default'))
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
+    # outs: ami_at_5,firstUnder25,firstUnder50,firstUnder75,fitexpa
+    # outs: fitexpadjr2,fitexpb,fitexpr2,fitexprmse,fitlina
+    # outs: fitlinb,linfit_mse,meanch,pcrossmean,pdec
     # tags: AMI,correlation,entropy
     CO_AddNoise_1_kraskov1_4 = HCTSAOperation(
         'CO_AddNoise_1_kraskov1_4',
@@ -8005,10 +7684,9 @@ class HCTSAOperations(object):
         CO_AddNoise(tau=1, amiMethod='kraskov1', extraParam='4', randomSeed='default'))
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
+    # outs: ami_at_5,firstUnder25,firstUnder50,firstUnder75,fitexpa
+    # outs: fitexpadjr2,fitexpb,fitexpr2,fitexprmse,fitlina
+    # outs: fitlinb,linfit_mse,meanch,pcrossmean,pdec
     # tags: AMI,correlation,entropy
     CO_AddNoise_ac_quantiles_10 = HCTSAOperation(
         'CO_AddNoise_ac_quantiles_10',
@@ -8016,10 +7694,9 @@ class HCTSAOperations(object):
         CO_AddNoise(tau='ac', amiMethod='quantiles', extraParam=10, randomSeed='default'))
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
+    # outs: ami_at_5,firstUnder25,firstUnder50,firstUnder75,fitexpa
+    # outs: fitexpadjr2,fitexpb,fitexpr2,fitexprmse,fitlina
+    # outs: fitlinb,linfit_mse,meanch,pcrossmean,pdec
     # tags: AMI,correlation,entropy
     CO_AddNoise_1_std1_10 = HCTSAOperation(
         'CO_AddNoise_1_std1_10',
@@ -8027,10 +7704,9 @@ class HCTSAOperations(object):
         CO_AddNoise(tau=1, amiMethod='std1', extraParam=10, randomSeed='default'))
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
+    # outs: ami_at_5,firstUnder25,firstUnder50,firstUnder75,fitexpa
+    # outs: fitexpadjr2,fitexpb,fitexpr2,fitexprmse,fitlina
+    # outs: fitlinb,linfit_mse,meanch,pcrossmean,pdec
     # tags: AMI,correlation,entropy
     CO_AddNoise_1_gaussian = HCTSAOperation(
         'CO_AddNoise_1_gaussian',
@@ -8038,10 +7714,9 @@ class HCTSAOperations(object):
         CO_AddNoise(tau=1, amiMethod='gaussian', extraParam=(), randomSeed='default'))
 
     # outs: ac1,ac2,ami_at_10,ami_at_15,ami_at_20
-    # outs: ami_at_5,ecorrLength,firstUnder1,firstUnder10,firstUnder2
-    # outs: firstUnder5,fitexpa,fitexpadjr2,fitexpb,fitexpr2
-    # outs: fitexprmse,fitlina,fitlinb,meanch,mse
-    # outs: pcrossmean,pdec
+    # outs: ami_at_5,firstUnder25,firstUnder50,firstUnder75,fitexpa
+    # outs: fitexpadjr2,fitexpb,fitexpr2,fitexprmse,fitlina
+    # outs: fitlinb,linfit_mse,meanch,pcrossmean,pdec
     # tags: AMI,correlation,entropy
     CO_AddNoise_ac_std1_10 = HCTSAOperation(
         'CO_AddNoise_ac_std1_10',
@@ -8620,41 +8295,41 @@ class HCTSAOperations(object):
         'CO_AutoCorrShape(y)',
         CO_AutoCorrShape())
 
-    # outs: conv4,iqr,max,maxp,mean
-    # outs: median,min,mode,modef,nlocmax
-    # outs: nunique,range,std
+    # outs: conv4,max,mean,median,min
+    # outs: mode,modef,nlocmax,nunique,range
+    # outs: std
     # tags: AMI,correlation
     CO_CompareMinAMI_std2_2_80 = HCTSAOperation(
         'CO_CompareMinAMI_std2_2_80',
         "CO_CompareMinAMI(y,'std2',[2:80])",
-        CO_CompareMinAMI(meth='std2', numBins=[MatlabSequence('2:80')]))
+        CO_CompareMinAMI(binMethod='std2', numBins=[MatlabSequence('2:80')]))
 
-    # outs: conv4,iqr,max,maxp,mean
-    # outs: median,min,mode,modef,nlocmax
-    # outs: nunique,range,std
+    # outs: conv4,max,mean,median,min
+    # outs: mode,modef,nlocmax,nunique,range
+    # outs: std
     # tags: AMI,correlation
     CO_CompareMinAMI_quantiles_2_80 = HCTSAOperation(
         'CO_CompareMinAMI_quantiles_2_80',
         "CO_CompareMinAMI(y,'quantiles',[2:80])",
-        CO_CompareMinAMI(meth='quantiles', numBins=[MatlabSequence('2:80')]))
+        CO_CompareMinAMI(binMethod='quantiles', numBins=[MatlabSequence('2:80')]))
 
-    # outs: conv4,iqr,max,maxp,mean
-    # outs: median,min,mode,modef,nlocmax
-    # outs: nunique,range,std
+    # outs: conv4,max,mean,median,min
+    # outs: mode,modef,nlocmax,nunique,range
+    # outs: std
     # tags: AMI,correlation
     CO_CompareMinAMI_even_2_80 = HCTSAOperation(
         'CO_CompareMinAMI_even_2_80',
         "CO_CompareMinAMI(y,'even',[2:80])",
-        CO_CompareMinAMI(meth='even', numBins=[MatlabSequence('2:80')]))
+        CO_CompareMinAMI(binMethod='even', numBins=[MatlabSequence('2:80')]))
 
-    # outs: conv4,iqr,max,maxp,mean
-    # outs: median,min,mode,modef,nlocmax
-    # outs: nunique,range,std
+    # outs: conv4,max,mean,median,min
+    # outs: mode,modef,nlocmax,nunique,range
+    # outs: std
     # tags: AMI,correlation
     CO_CompareMinAMI_std1_2_80 = HCTSAOperation(
         'CO_CompareMinAMI_std1_2_80',
         "CO_CompareMinAMI(y,'std1',[2:80])",
-        CO_CompareMinAMI(meth='std1', numBins=[MatlabSequence('2:80')]))
+        CO_CompareMinAMI(binMethod='std1', numBins=[MatlabSequence('2:80')]))
 
     # outs: arearat,areas_50,areas_all,eucdm1,eucdm2
     # outs: eucdm3,eucdm4,eucdm5,eucds1,eucds2
@@ -8702,7 +8377,7 @@ class HCTSAOperations(object):
         CO_Embed2_Basic(tau='tau'))
 
     # outs: d_ac1,d_ac2,d_ac3,d_cv,d_expfit_l
-    # outs: d_expfit_nlogL,d_expfit_sumdiff,d_iqr,d_max,d_mean
+    # outs: d_expfit_meandiff,d_expfit_nlogL,d_iqr,d_max,d_mean
     # outs: d_median,d_min,d_std
     # tags: correlation,embedding
     CO_Embed2_Dist_tau = HCTSAOperation(
@@ -8710,20 +8385,18 @@ class HCTSAOperations(object):
         "CO_Embed2_Dist(y,'tau')",
         CO_Embed2_Dist(tau='tau'))
 
-    # outs: ac1,ac2,hist10_ent,iqr,iqronrange
-    # outs: max,median,mode,mode_val,poissfit_absdiff
-    # outs: poissfit_l,poissfit_sqdiff,statav5_m,statav5_s,std
-    # outs: tau
+    # outs: ac1,ac2,hist_ent,iqr,iqronrange
+    # outs: max,mean,median,mode,mode_val
+    # outs: statav5_m,statav5_s,std,tau
     # tags: correlation,embedding
     CO_Embed2_Shapes_tau_circle_1 = HCTSAOperation(
         'CO_Embed2_Shapes_tau_circle_1',
         "CO_Embed2_Shapes(y,'tau','circle',1)",
         CO_Embed2_Shapes(tau='tau', shape='circle', r=1))
 
-    # outs: ac1,ac2,hist10_ent,iqr,iqronrange
-    # outs: max,median,mode,mode_val,poissfit_absdiff
-    # outs: poissfit_l,poissfit_sqdiff,statav5_m,statav5_s,std
-    # outs: tau
+    # outs: ac1,ac2,hist_ent,iqr,iqronrange
+    # outs: max,mean,median,mode,mode_val
+    # outs: statav5_m,statav5_s,std,tau
     # tags: correlation,embedding
     CO_Embed2_Shapes_tau_circle_01 = HCTSAOperation(
         'CO_Embed2_Shapes_tau_circle_01',
@@ -9339,10 +9012,10 @@ class HCTSAOperations(object):
     # outs: statav4_p_s,statav5_all_m,statav5_all_s,statav5_n_m,statav5_n_s
     # outs: statav5_p_m,statav5_p_s,std,std_n,std_p
     # outs: symks_n,symks_p,tau_all,tau_n,tau_p
-    # tags: correlation
-    CO_StickAngles_y = HCTSAOperation(
-        'CO_StickAngles_y',
-        'CO_StickAngles(y)',
+    # tags: correlation,locdep,raw,spreaddep
+    CO_StickAngles_x = HCTSAOperation(
+        'CO_StickAngles_x',
+        'CO_StickAngles(x)',
         CO_StickAngles())
 
     # outs: ac1_all,ac1_n,ac1_p,ac2_all,ac2_n
@@ -9358,18 +9031,21 @@ class HCTSAOperations(object):
     # outs: statav4_p_s,statav5_all_m,statav5_all_s,statav5_n_m,statav5_n_s
     # outs: statav5_p_m,statav5_p_s,std,std_n,std_p
     # outs: symks_n,symks_p,tau_all,tau_n,tau_p
-    # tags: correlation,locdep,raw,spreaddep
-    CO_StickAngles_x = HCTSAOperation(
-        'CO_StickAngles_x',
-        'CO_StickAngles(x)',
+    # tags: correlation
+    CO_StickAngles_y = HCTSAOperation(
+        'CO_StickAngles_y',
+        'CO_StickAngles(y)',
         CO_StickAngles())
 
-    # outs: None
+    # outs: eights,elevens,fives,fours,mode
+    # outs: nines,npatmode,ones,sevens,sixes
+    # outs: statav2_m,statav2_s,statav3_m,statav3_s,statav4_m
+    # outs: statav4_s,std,tens,threes,twos
     # tags: correlation
-    CO_TSTL_AutoCorrMethod_err = HCTSAOperation(
-        'CO_TSTL_AutoCorrMethod_err',
-        'CO_TSTL_AutoCorrMethod(y)',
-        CO_TSTL_AutoCorrMethod())
+    CO_TranslateShape_circle_55_pts = HCTSAOperation(
+        'CO_TranslateShape_circle_55_pts',
+        "CO_TranslateShape(y,'circle',5.5,'pts')",
+        CO_TranslateShape(shape='circle', d=5.5, howToMove='pts'))
 
     # outs: fives,fours,max,mode,npatmode
     # outs: ones,statav2_m,statav2_s,statav3_m,statav3_s
@@ -9389,16 +9065,6 @@ class HCTSAOperations(object):
         'CO_TranslateShape_circle_35_pts',
         "CO_TranslateShape(y,'circle',3.5,'pts')",
         CO_TranslateShape(shape='circle', d=3.5, howToMove='pts'))
-
-    # outs: eights,elevens,fives,fours,mode
-    # outs: nines,npatmode,ones,sevens,sixes
-    # outs: statav2_m,statav2_s,statav3_m,statav3_s,statav4_m
-    # outs: statav4_s,std,tens,threes,twos
-    # tags: correlation
-    CO_TranslateShape_circle_55_pts = HCTSAOperation(
-        'CO_TranslateShape_circle_55_pts',
-        "CO_TranslateShape(y,'circle',5.5,'pts')",
-        CO_TranslateShape(shape='circle', d=5.5, howToMove='pts'))
 
     # outs: max,mode,npatmode,ones,statav2_m
     # outs: statav2_s,statav3_m,statav3_s,statav4_m,statav4_s
@@ -9897,6 +9563,13 @@ class HCTSAOperations(object):
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
+    CP_wavelet_varchg_sym2_3_10_001 = HCTSAOperation(
+        'CP_wavelet_varchg_sym2_3_10_001',
+        "CP_wavelet_varchg(y,'sym2',3,10,0.01)",
+        CP_wavelet_varchg(wname='sym2', level=3, maxnchpts=10, minDelay=0.01))
+
+    # outs: None
+    # tags: varchg,wavelet,waveletTB
     CP_wavelet_varchg_db3_3_10_001 = HCTSAOperation(
         'CP_wavelet_varchg_db3_3_10_001',
         "CP_wavelet_varchg(y,'db3',3,10,0.01)",
@@ -9929,13 +9602,6 @@ class HCTSAOperations(object):
         'CP_wavelet_varchg_db3_4_10_001',
         "CP_wavelet_varchg(y,'db3',4,10,0.01)",
         CP_wavelet_varchg(wname='db3', level=4, maxnchpts=10, minDelay=0.01))
-
-    # outs: None
-    # tags: varchg,wavelet,waveletTB
-    CP_wavelet_varchg_sym2_3_10_001 = HCTSAOperation(
-        'CP_wavelet_varchg_sym2_3_10_001',
-        "CP_wavelet_varchg(y,'sym2',3,10,0.01)",
-        CP_wavelet_varchg(wname='sym2', level=3, maxnchpts=10, minDelay=0.01))
 
     # outs: None
     # tags: varchg,wavelet,waveletTB
@@ -9980,13 +9646,6 @@ class HCTSAOperations(object):
         DN_CompareKSFit(whatDistn='gamma'))
 
     # outs: adiff,olapint,peaksepx,peaksepy,relent
-    # tags: adiff,distribution,ksdensity,locdep,olapint,peaksepx,peaksepy,raw,rayleigh,relent,uni
-    DN_CompareKSFit_rayleigh = HCTSAOperation(
-        'DN_CompareKSFit_rayleigh',
-        "DN_CompareKSFit(x,'rayleigh')",
-        DN_CompareKSFit(whatDistn='rayleigh'))
-
-    # outs: adiff,olapint,peaksepx,peaksepy,relent
     # tags: adiff,beta,distribution,ksdensity,olapint,peaksepx,peaksepy,raw,relent,uni
     DN_CompareKSFit_beta = HCTSAOperation(
         'DN_CompareKSFit_beta',
@@ -10021,12 +9680,12 @@ class HCTSAOperations(object):
         "DN_CompareKSFit(x,'uni')",
         DN_CompareKSFit(whatDistn='uni'))
 
-    # outs: entropy,max,numpeaks
-    # tags: compare,distribution,entropy,ksdensity,raw,spreaddep
-    DN_Compare_zscorex = HCTSAOperation(
-        'DN_Compare_zscorex',
-        'DN_Compare_zscore(x)',
-        DN_Compare_zscore())
+    # outs: adiff,olapint,peaksepx,peaksepy,relent
+    # tags: adiff,distribution,ksdensity,locdep,olapint,peaksepx,peaksepy,raw,rayleigh,relent,uni
+    DN_CompareKSFit_rayleigh = HCTSAOperation(
+        'DN_CompareKSFit_rayleigh',
+        "DN_CompareKSFit(x,'rayleigh')",
+        DN_CompareKSFit(whatDistn='rayleigh'))
 
     # outs: None
     # tags: distribution,locdep,moment,raw,shape
@@ -10163,126 +9822,126 @@ class HCTSAOperations(object):
     DN_Moments_raw_10 = HCTSAOperation(
         'DN_Moments_raw_10',
         'DN_Moments(x,10)',
-        DN_Moments(n=10))
+        DN_Moments(theMom=10))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_11 = HCTSAOperation(
         'DN_Moments_raw_11',
         'DN_Moments(x,11)',
-        DN_Moments(n=11))
+        DN_Moments(theMom=11))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_8 = HCTSAOperation(
         'DN_Moments_raw_8',
         'DN_Moments(x,8)',
-        DN_Moments(n=8))
+        DN_Moments(theMom=8))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_9 = HCTSAOperation(
         'DN_Moments_raw_9',
         'DN_Moments(x,9)',
-        DN_Moments(n=9))
+        DN_Moments(theMom=9))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_3 = HCTSAOperation(
         'DN_Moments_raw_3',
         'DN_Moments(x,3)',
-        DN_Moments(n=3))
+        DN_Moments(theMom=3))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_6 = HCTSAOperation(
         'DN_Moments_raw_6',
         'DN_Moments(x,6)',
-        DN_Moments(n=6))
+        DN_Moments(theMom=6))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_7 = HCTSAOperation(
         'DN_Moments_raw_7',
         'DN_Moments(x,7)',
-        DN_Moments(n=7))
+        DN_Moments(theMom=7))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_4 = HCTSAOperation(
         'DN_Moments_raw_4',
         'DN_Moments(x,4)',
-        DN_Moments(n=4))
+        DN_Moments(theMom=4))
 
     # outs: None
     # tags: distribution,moment,raw,shape,spreaddep
     DN_Moments_raw_5 = HCTSAOperation(
         'DN_Moments_raw_5',
         'DN_Moments(x,5)',
-        DN_Moments(n=5))
+        DN_Moments(theMom=5))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_9 = HCTSAOperation(
         'DN_Moments_9',
         'DN_Moments(y,9)',
-        DN_Moments(n=9))
+        DN_Moments(theMom=9))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_8 = HCTSAOperation(
         'DN_Moments_8',
         'DN_Moments(y,8)',
-        DN_Moments(n=8))
+        DN_Moments(theMom=8))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_3 = HCTSAOperation(
         'DN_Moments_3',
         'DN_Moments(y,3)',
-        DN_Moments(n=3))
+        DN_Moments(theMom=3))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_5 = HCTSAOperation(
         'DN_Moments_5',
         'DN_Moments(y,5)',
-        DN_Moments(n=5))
+        DN_Moments(theMom=5))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_4 = HCTSAOperation(
         'DN_Moments_4',
         'DN_Moments(y,4)',
-        DN_Moments(n=4))
+        DN_Moments(theMom=4))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_7 = HCTSAOperation(
         'DN_Moments_7',
         'DN_Moments(y,7)',
-        DN_Moments(n=7))
+        DN_Moments(theMom=7))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_6 = HCTSAOperation(
         'DN_Moments_6',
         'DN_Moments(y,6)',
-        DN_Moments(n=6))
+        DN_Moments(theMom=6))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_11 = HCTSAOperation(
         'DN_Moments_11',
         'DN_Moments(y,11)',
-        DN_Moments(n=11))
+        DN_Moments(theMom=11))
 
     # outs: None
     # tags: distribution,moment,shape
     DN_Moments_10 = HCTSAOperation(
         'DN_Moments_10',
         'DN_Moments(y,10)',
-        DN_Moments(n=10))
+        DN_Moments(theMom=10))
 
     # outs: mdrm,mdrmd,mdrstd,mfexpa,mfexpadjr2
     # outs: mfexpb,mfexpc,mfexpr2,mfexprmse,mrm
@@ -10614,15 +10273,6 @@ class HCTSAOperations(object):
     # outs: kurtosisrat,mean,median,skewnessrat,std
     # outs: sumabsacfdiff
     # tags: correlation,distribution,outliers
-    DN_RemovePoints_max_05 = HCTSAOperation(
-        'DN_RemovePoints_max_05',
-        "DN_RemovePoints(y,'max',0.5)",
-        DN_RemovePoints(removeHow='max', p=0.5))
-
-    # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
-    # outs: kurtosisrat,mean,median,skewnessrat,std
-    # outs: sumabsacfdiff
-    # tags: correlation,distribution,outliers
     DN_RemovePoints_max_01 = HCTSAOperation(
         'DN_RemovePoints_max_01',
         "DN_RemovePoints(y,'max',0.1)",
@@ -10636,6 +10286,15 @@ class HCTSAOperations(object):
         'DN_RemovePoints_absfar_01',
         "DN_RemovePoints(y,'absfar',0.1)",
         DN_RemovePoints(removeHow='absfar', p=0.1))
+
+    # outs: ac2diff,ac2rat,ac3diff,ac3rat,fzcacrat
+    # outs: kurtosisrat,mean,median,skewnessrat,std
+    # outs: sumabsacfdiff
+    # tags: correlation,distribution,outliers
+    DN_RemovePoints_max_05 = HCTSAOperation(
+        'DN_RemovePoints_max_05',
+        "DN_RemovePoints(y,'max',0.5)",
+        DN_RemovePoints(removeHow='max', p=0.5))
 
     # outs: adjr2,r2,resAC1,resAC2,resruns
     # outs: rmse
@@ -11019,241 +10678,318 @@ class HCTSAOperations(object):
 
     # outs: None
     # tags: entropy
-    EN_histen_ks__01 = HCTSAOperation(
-        'EN_histen_ks__01',
-        "EN_DistributionEntropy(y,'ks',[],0.1)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.1))
+    EN_DistributionEntropy_ks_005_0 = HCTSAOperation(
+        'EN_DistributionEntropy_ks_005_0',
+        "EN_DistributionEntropy(y,'ks',0.05,0)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.05, olremp=0))
 
     # outs: None
     # tags: entropy
-    EN_histen_ks__02 = HCTSAOperation(
-        'EN_histen_ks__02',
-        "EN_DistributionEntropy(y,'ks',[],0.2)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.2))
+    EN_DistributionEntropy_hist_sqrt_0 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_sqrt_0',
+        "EN_DistributionEntropy(y,'hist','sqrt',0)",
+        EN_DistributionEntropy(histOrKS='hist', numBins='sqrt', olremp=0))
 
     # outs: None
     # tags: entropy
-    EN_histen_ks__03 = HCTSAOperation(
-        'EN_histen_ks__03',
-        "EN_DistributionEntropy(y,'ks',[],0.3)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.3))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_hist_10_005 = HCTSAOperation(
-        'EN_histen_hist_10_005',
-        "EN_DistributionEntropy(y,'hist',10,0.05)",
-        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.05))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_hist_10_001 = HCTSAOperation(
-        'EN_histen_hist_10_001',
-        "EN_DistributionEntropy(y,'hist',10,0.01)",
-        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.01))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_hist_10_002 = HCTSAOperation(
-        'EN_histen_hist_10_002',
-        "EN_DistributionEntropy(y,'hist',10,0.02)",
-        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.02))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_ks_01_0 = HCTSAOperation(
-        'EN_histen_ks_01_0',
+    EN_DistributionEntropy_ks_01_0 = HCTSAOperation(
+        'EN_DistributionEntropy_ks_01_0',
         "EN_DistributionEntropy(y,'ks',0.1,0)",
         EN_DistributionEntropy(histOrKS='ks', numBins=0.1, olremp=0))
 
     # outs: None
     # tags: entropy
-    EN_histen_ks_001_0 = HCTSAOperation(
-        'EN_histen_ks_001_0',
-        "EN_DistributionEntropy(y,'ks',0.01,0)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=0.01, olremp=0))
+    EN_DistributionEntropy_hist_auto_0 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_auto_0',
+        "EN_DistributionEntropy(y,'hist','auto',0)",
+        EN_DistributionEntropy(histOrKS='hist', numBins='auto', olremp=0))
 
     # outs: None
     # tags: entropy
-    EN_histen_ks_05_0 = HCTSAOperation(
-        'EN_histen_ks_05_0',
-        "EN_DistributionEntropy(y,'ks',0.5,0)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=0.5, olremp=0))
+    EN_DistributionEntropy_hist_fd_0 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_fd_0',
+        "EN_DistributionEntropy(y,'hist','fd',0)",
+        EN_DistributionEntropy(histOrKS='hist', numBins='fd', olremp=0))
 
     # outs: None
     # tags: entropy
-    EN_histen_hist_10_02 = HCTSAOperation(
-        'EN_histen_hist_10_02',
-        "EN_DistributionEntropy(y,'hist',10,0.2)",
-        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.2))
+    EN_DistributionEntropy_ks__01 = HCTSAOperation(
+        'EN_DistributionEntropy_ks__01',
+        "EN_DistributionEntropy(y,'ks',[],0.1)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.1))
 
     # outs: None
     # tags: entropy
-    EN_histen_hist_10_01 = HCTSAOperation(
-        'EN_histen_hist_10_01',
+    EN_DistributionEntropy_ks__03 = HCTSAOperation(
+        'EN_DistributionEntropy_ks__03',
+        "EN_DistributionEntropy(y,'ks',[],0.3)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.3))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_ks__02 = HCTSAOperation(
+        'EN_DistributionEntropy_ks__02',
+        "EN_DistributionEntropy(y,'ks',[],0.2)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.2))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_10_01 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_10_01',
         "EN_DistributionEntropy(y,'hist',10,0.1)",
         EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.1))
 
     # outs: None
     # tags: entropy
-    EN_histen_hist_5_0 = HCTSAOperation(
-        'EN_histen_hist_5_0',
+    EN_DistributionEntropy_hist_5_0 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_5_0',
         "EN_DistributionEntropy(y,'hist',5,0)",
         EN_DistributionEntropy(histOrKS='hist', numBins=5, olremp=0))
 
     # outs: None
     # tags: entropy
-    EN_histen_ks_1_0 = HCTSAOperation(
-        'EN_histen_ks_1_0',
-        "EN_DistributionEntropy(y,'ks',1,0)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=1, olremp=0))
-
-    # outs: None
-    # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks_01_0 = HCTSAOperation(
-        'EN_histen_raw_ks_01_0',
-        "EN_DistributionEntropy(x,'ks',0.1,0)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=0.1, olremp=0))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_ks_02_0 = HCTSAOperation(
-        'EN_histen_ks_02_0',
-        "EN_DistributionEntropy(y,'ks',0.2,0)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=0.2, olremp=0))
-
-    # outs: None
-    # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks__01 = HCTSAOperation(
-        'EN_histen_raw_ks__01',
-        "EN_DistributionEntropy(x,'ks',[],0.1)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.1))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_hist_20_0 = HCTSAOperation(
-        'EN_histen_hist_20_0',
+    EN_DistributionEntropy_hist_20_0 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_20_0',
         "EN_DistributionEntropy(y,'hist',20,0)",
         EN_DistributionEntropy(histOrKS='hist', numBins=20, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks_1_0 = HCTSAOperation(
-        'EN_histen_raw_ks_1_0',
+    EN_DistributionEntropy_raw_ks_02_0 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks_02_0',
+        "EN_DistributionEntropy(x,'ks',0.2,0)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.2, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_10_005 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_10_005',
+        "EN_DistributionEntropy(y,'hist',10,0.05)",
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.05))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_10_002 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_10_002',
+        "EN_DistributionEntropy(y,'hist',10,0.02)",
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.02))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_10_001 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_10_001',
+        "EN_DistributionEntropy(y,'hist',10,0.01)",
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.01))
+
+    # outs: None
+    # tags: entropy,raw,spreaddep
+    EN_DistributionEntropy_raw_ks_1_0 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks_1_0',
         "EN_DistributionEntropy(x,'ks',1,0)",
         EN_DistributionEntropy(histOrKS='ks', numBins=1, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks__03 = HCTSAOperation(
-        'EN_histen_raw_ks__03',
+    EN_DistributionEntropy_raw_ks__01 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks__01',
+        "EN_DistributionEntropy(x,'ks',[],0.1)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.1))
+
+    # outs: None
+    # tags: entropy,raw,spreaddep
+    EN_DistributionEntropy_raw_ks__02 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks__02',
+        "EN_DistributionEntropy(x,'ks',[],0.2)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.2))
+
+    # outs: None
+    # tags: entropy,raw,spreaddep
+    EN_DistributionEntropy_raw_ks__03 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks__03',
         "EN_DistributionEntropy(x,'ks',[],0.3)",
         EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.3))
 
     # outs: None
     # tags: entropy
-    EN_histen_ks_005_0 = HCTSAOperation(
-        'EN_histen_ks_005_0',
-        "EN_DistributionEntropy(y,'ks',0.05,0)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=0.05, olremp=0))
+    EN_DistributionEntropy_hist_auto_02 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_auto_02',
+        "EN_DistributionEntropy(y,'hist','auto',0.2)",
+        EN_DistributionEntropy(histOrKS='hist', numBins='auto', olremp=0.2))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_auto_03 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_auto_03',
+        "EN_DistributionEntropy(y,'hist','auto',0.3)",
+        EN_DistributionEntropy(histOrKS='hist', numBins='auto', olremp=0.3))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_auto_01 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_auto_01',
+        "EN_DistributionEntropy(y,'hist','auto',0.1)",
+        EN_DistributionEntropy(histOrKS='hist', numBins='auto', olremp=0.1))
 
     # outs: None
     # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks_05_0 = HCTSAOperation(
-        'EN_histen_raw_ks_05_0',
+    EN_DistributionEntropy_raw_ks_01_0 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks_01_0',
+        "EN_DistributionEntropy(x,'ks',0.1,0)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.1, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_ks_001_0 = HCTSAOperation(
+        'EN_DistributionEntropy_ks_001_0',
+        "EN_DistributionEntropy(y,'ks',0.01,0)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.01, olremp=0))
+
+    # outs: None
+    # tags: entropy,raw,spreaddep
+    EN_DistributionEntropy_raw_ks_05_0 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks_05_0',
         "EN_DistributionEntropy(x,'ks',0.5,0)",
         EN_DistributionEntropy(histOrKS='ks', numBins=0.5, olremp=0))
 
     # outs: None
     # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks_001_0 = HCTSAOperation(
-        'EN_histen_raw_ks_001_0',
-        "EN_DistributionEntropy(x,'ks',0.01,0)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=0.01, olremp=0))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_hist_10_0 = HCTSAOperation(
-        'EN_histen_hist_10_0',
-        "EN_DistributionEntropy(y,'hist',10,0)",
-        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0))
-
-    # outs: None
-    # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks_02_0 = HCTSAOperation(
-        'EN_histen_raw_ks_02_0',
-        "EN_DistributionEntropy(x,'ks',0.2,0)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=0.2, olremp=0))
-
-    # outs: None
-    # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks__02 = HCTSAOperation(
-        'EN_histen_raw_ks__02',
-        "EN_DistributionEntropy(x,'ks',[],0.2)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.2))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_hist_50_0 = HCTSAOperation(
-        'EN_histen_hist_50_0',
-        "EN_DistributionEntropy(y,'hist',50,0)",
-        EN_DistributionEntropy(histOrKS='hist', numBins=50, olremp=0))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_hist_10_03 = HCTSAOperation(
-        'EN_histen_hist_10_03',
-        "EN_DistributionEntropy(y,'hist',10,0.3)",
-        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.3))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_ks__001 = HCTSAOperation(
-        'EN_histen_ks__001',
-        "EN_DistributionEntropy(y,'ks',[],0.01)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.01))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_ks__002 = HCTSAOperation(
-        'EN_histen_ks__002',
-        "EN_DistributionEntropy(y,'ks',[],0.02)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.02))
-
-    # outs: None
-    # tags: entropy
-    EN_histen_ks__005 = HCTSAOperation(
-        'EN_histen_ks__005',
-        "EN_DistributionEntropy(y,'ks',[],0.05)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.05))
-
-    # outs: None
-    # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks__005 = HCTSAOperation(
-        'EN_histen_raw_ks__005',
+    EN_DistributionEntropy_raw_ks__005 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks__005',
         "EN_DistributionEntropy(x,'ks',[],0.05)",
         EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.05))
 
     # outs: None
     # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks__002 = HCTSAOperation(
-        'EN_histen_raw_ks__002',
-        "EN_DistributionEntropy(x,'ks',[],0.02)",
-        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.02))
-
-    # outs: None
-    # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks__001 = HCTSAOperation(
-        'EN_histen_raw_ks__001',
+    EN_DistributionEntropy_raw_ks__001 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks__001',
         "EN_DistributionEntropy(x,'ks',[],0.01)",
         EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.01))
 
     # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_10_0 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_10_0',
+        "EN_DistributionEntropy(y,'hist',10,0)",
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_scott_0 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_scott_0',
+        "EN_DistributionEntropy(y,'hist','scott',0)",
+        EN_DistributionEntropy(histOrKS='hist', numBins='scott', olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_10_02 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_10_02',
+        "EN_DistributionEntropy(y,'hist',10,0.2)",
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.2))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_10_03 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_10_03',
+        "EN_DistributionEntropy(y,'hist',10,0.3)",
+        EN_DistributionEntropy(histOrKS='hist', numBins=10, olremp=0.3))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_ks__002 = HCTSAOperation(
+        'EN_DistributionEntropy_ks__002',
+        "EN_DistributionEntropy(y,'ks',[],0.02)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.02))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_ks__001 = HCTSAOperation(
+        'EN_DistributionEntropy_ks__001',
+        "EN_DistributionEntropy(y,'ks',[],0.01)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.01))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_ks__005 = HCTSAOperation(
+        'EN_DistributionEntropy_ks__005',
+        "EN_DistributionEntropy(y,'ks',[],0.05)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.05))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_ks_1_0 = HCTSAOperation(
+        'EN_DistributionEntropy_ks_1_0',
+        "EN_DistributionEntropy(y,'ks',1,0)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=1, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_ks_02_0 = HCTSAOperation(
+        'EN_DistributionEntropy_ks_02_0',
+        "EN_DistributionEntropy(y,'ks',0.2,0)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.2, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_50_0 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_50_0',
+        "EN_DistributionEntropy(y,'hist',50,0)",
+        EN_DistributionEntropy(histOrKS='hist', numBins=50, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_auto_002 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_auto_002',
+        "EN_DistributionEntropy(y,'hist','auto',0.02)",
+        EN_DistributionEntropy(histOrKS='hist', numBins='auto', olremp=0.02))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_auto_001 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_auto_001',
+        "EN_DistributionEntropy(y,'hist','auto',0.01)",
+        EN_DistributionEntropy(histOrKS='hist', numBins='auto', olremp=0.01))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_auto_005 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_auto_005',
+        "EN_DistributionEntropy(y,'hist','auto',0.05)",
+        EN_DistributionEntropy(histOrKS='hist', numBins='auto', olremp=0.05))
+
+    # outs: None
     # tags: entropy,raw,spreaddep
-    EN_histen_raw_ks_005_0 = HCTSAOperation(
-        'EN_histen_raw_ks_005_0',
+    EN_DistributionEntropy_raw_ks_005_0 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks_005_0',
         "EN_DistributionEntropy(x,'ks',0.05,0)",
         EN_DistributionEntropy(histOrKS='ks', numBins=0.05, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_hist_sturges_0 = HCTSAOperation(
+        'EN_DistributionEntropy_hist_sturges_0',
+        "EN_DistributionEntropy(y,'hist','sturges',0)",
+        EN_DistributionEntropy(histOrKS='hist', numBins='sturges', olremp=0))
+
+    # outs: None
+    # tags: entropy,raw,spreaddep
+    EN_DistributionEntropy_raw_ks_001_0 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks_001_0',
+        "EN_DistributionEntropy(x,'ks',0.01,0)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.01, olremp=0))
+
+    # outs: None
+    # tags: entropy
+    EN_DistributionEntropy_ks_05_0 = HCTSAOperation(
+        'EN_DistributionEntropy_ks_05_0',
+        "EN_DistributionEntropy(y,'ks',0.5,0)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=0.5, olremp=0))
+
+    # outs: None
+    # tags: entropy,raw,spreaddep
+    EN_DistributionEntropy_raw_ks__002 = HCTSAOperation(
+        'EN_DistributionEntropy_raw_ks__002',
+        "EN_DistributionEntropy(x,'ks',[],0.02)",
+        EN_DistributionEntropy(histOrKS='ks', numBins=(), olremp=0.02))
 
     # outs: None
     # tags: MichaelSmall,entropy,mex,shannon
@@ -11446,10 +11182,10 @@ class HCTSAOperations(object):
     # outs: xc1hp,xcn1diff,xcn1fexpa,xcn1fexpadjr2,xcn1fexpb
     # outs: xcn1fexpr2,xcn1fexprmse,xcn1hp
     # tags: entropy,lengthdep,slow
-    EN_Randomize_permute = HCTSAOperation(
-        'EN_Randomize_permute',
-        "EN_Randomize(y,'permute','default')",
-        EN_Randomize(randomizeHow='permute', randomSeed='default'))
+    EN_Randomize_dyndist = HCTSAOperation(
+        'EN_Randomize_dyndist',
+        "EN_Randomize(y,'dyndist','default')",
+        EN_Randomize(randomizeHow='dyndist', randomSeed='default'))
 
     # outs: ac1diff,ac1fexpa,ac1fexpadjr2,ac1fexpb,ac1fexpr2
     # outs: ac1fexprmse,ac1hp,ac2diff,ac2fexpa,ac2fexpadjr2
@@ -11467,73 +11203,59 @@ class HCTSAOperations(object):
     # outs: xc1hp,xcn1diff,xcn1fexpa,xcn1fexpadjr2,xcn1fexpb
     # outs: xcn1fexpr2,xcn1fexprmse,xcn1hp
     # tags: entropy,lengthdep,slow
-    EN_Randomize_dyndist = HCTSAOperation(
-        'EN_Randomize_dyndist',
-        "EN_Randomize(y,'dyndist','default')",
-        EN_Randomize(randomizeHow='dyndist', randomSeed='default'))
+    EN_Randomize_permute = HCTSAOperation(
+        'EN_Randomize_permute',
+        "EN_Randomize(y,'permute','default')",
+        EN_Randomize(randomizeHow='permute', randomSeed='default'))
 
-    # outs: meanchp,meanchsampen,p1,p2,p3
-    # outs: p4,sampen1,sampen2,sampen3,sampen4
+    # outs: meanchsampen,sampen1,sampen2,sampen3,sampen4
     # tags: controlen,entropy
     EN_SampEn_4_02_diff1 = HCTSAOperation(
         'EN_SampEn_4_02_diff1',
         "EN_SampEn(y,4,0.2,'diff1')",
         EN_SampEn(M=4, r=0.2, preProcessHow='diff1'))
 
-    # outs: meanchp,meanchsampen,p1,p2,p3
-    # outs: p4,sampen1,sampen2,sampen3,sampen4
+    # outs: meanchsampen,sampen1,sampen2,sampen3,sampen4
     # tags: controlen,entropy
     EN_SampEn_4_01_diff1 = HCTSAOperation(
         'EN_SampEn_4_01_diff1',
         "EN_SampEn(y,4,0.1,'diff1')",
         EN_SampEn(M=4, r=0.1, preProcessHow='diff1'))
 
-    # outs: meanchp,meanchsampen,p1,p2,p3
-    # outs: p4,sampen1,sampen2,sampen3,sampen4
+    # outs: meanchsampen,sampen1,sampen2,sampen3,sampen4
     # tags: entropy,sampen
     EN_SampEn_4_01 = HCTSAOperation(
         'EN_SampEn_4_01',
         'EN_SampEn(y,4,0.1)',
         EN_SampEn(M=4, r=0.1))
 
-    # outs: meanchp,meanchsampen,p1,p2,p3
-    # outs: p4,sampen1,sampen2,sampen3,sampen4
+    # outs: meanchsampen,sampen1,sampen2,sampen3,sampen4
     # tags: entropy,sampen
     EN_SampEn_4_02 = HCTSAOperation(
         'EN_SampEn_4_02',
         'EN_SampEn(y,4,0.2)',
         EN_SampEn(M=4, r=0.2))
 
-    # outs: meanchp,meanchsampen,p1,p2,p3
-    # outs: p4,sampen1,sampen2,sampen3,sampen4
+    # outs: meanchsampen,sampen1,sampen2,sampen3,sampen4
     # tags: entropy,sampen
     EN_SampEn_4_03 = HCTSAOperation(
         'EN_SampEn_4_03',
         'EN_SampEn(y,4,0.3)',
         EN_SampEn(M=4, r=0.3))
 
-    # outs: meanchp,meanchsampen,p1,p2,p3
-    # outs: p4,sampen1,sampen2,sampen3,sampen4
+    # outs: meanchsampen,sampen1,sampen2,sampen3,sampen4
     # tags: entropy,sampen
     EN_SampEn_4_005 = HCTSAOperation(
         'EN_SampEn_4_005',
         'EN_SampEn(y,4,0.05)',
         EN_SampEn(M=4, r=0.05))
 
-    # outs: meanchp,meanchsampen,p1,p2,p3
-    # outs: p4,sampen1,sampen2,sampen3,sampen4
+    # outs: meanchsampen,sampen1,sampen2,sampen3,sampen4
     # tags: entropy,sampen
     EN_SampEn_4_015 = HCTSAOperation(
         'EN_SampEn_4_015',
         'EN_SampEn(y,4,0.15)',
         EN_SampEn(M=4, r=0.15))
-
-    # outs: None
-    # tags: entropy
-    EN_Shannonpdf = HCTSAOperation(
-        'EN_Shannonpdf',
-        'EN_Shannonpdf(y)',
-        EN_Shannonpdf())
 
     # outs: H,H_norm,maxRPD,meanNonZero,propNonZero
     # tags: entropy
@@ -11660,19 +11382,19 @@ class HCTSAOperations(object):
     # outs: mediankickf,medianq,minq,pkick,stdkickf
     # outs: stdq
     # tags: outliers
-    EX_MovingThreshold_01_01 = HCTSAOperation(
-        'EX_MovingThreshold_01_01',
-        'EX_MovingThreshold(y,0.1,0.1)',
-        EX_MovingThreshold(a=0.1, b=0.1))
+    EX_MovingThreshold_01_002 = HCTSAOperation(
+        'EX_MovingThreshold_01_002',
+        'EX_MovingThreshold(y,0.1,0.02)',
+        EX_MovingThreshold(a=0.1, b=0.02))
 
     # outs: iqrq,maxq,meankickf,meanq,meanqover
     # outs: mediankickf,medianq,minq,pkick,stdkickf
     # outs: stdq
     # tags: outliers
-    EX_MovingThreshold_01_002 = HCTSAOperation(
-        'EX_MovingThreshold_01_002',
-        'EX_MovingThreshold(y,0.1,0.02)',
-        EX_MovingThreshold(a=0.1, b=0.02))
+    EX_MovingThreshold_01_01 = HCTSAOperation(
+        'EX_MovingThreshold_01_01',
+        'EX_MovingThreshold(y,0.1,0.1)',
+        EX_MovingThreshold(a=0.1, b=0.1))
 
     # outs: iqrq,maxq,meankickf,meanq,meanqover
     # outs: mediankickf,medianq,minq,pkick,stdkickf
@@ -11690,7 +11412,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_mean3 = HCTSAOperation(
         'FC_LocalSimple_mean3',
         "FC_LocalSimple(y,'mean',3)",
-        FC_LocalSimple(fmeth='mean', ltrain=3))
+        FC_LocalSimple(forecastMeth='mean', trainLength=3))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11699,7 +11421,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_mean2 = HCTSAOperation(
         'FC_LocalSimple_mean2',
         "FC_LocalSimple(y,'mean',2)",
-        FC_LocalSimple(fmeth='mean', ltrain=2))
+        FC_LocalSimple(forecastMeth='mean', trainLength=2))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11708,7 +11430,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_mean1 = HCTSAOperation(
         'FC_LocalSimple_mean1',
         "FC_LocalSimple(y,'mean',1)",
-        FC_LocalSimple(fmeth='mean', ltrain=1))
+        FC_LocalSimple(forecastMeth='mean', trainLength=1))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11717,7 +11439,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_lfit4 = HCTSAOperation(
         'FC_LocalSimple_lfit4',
         "FC_LocalSimple(y,'lfit',4)",
-        FC_LocalSimple(fmeth='lfit', ltrain=4))
+        FC_LocalSimple(forecastMeth='lfit', trainLength=4))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11726,7 +11448,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_mean4 = HCTSAOperation(
         'FC_LocalSimple_mean4',
         "FC_LocalSimple(y,'mean',4)",
-        FC_LocalSimple(fmeth='mean', ltrain=4))
+        FC_LocalSimple(forecastMeth='mean', trainLength=4))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11735,7 +11457,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_lfittau = HCTSAOperation(
         'FC_LocalSimple_lfittau',
         "FC_LocalSimple(y,'lfit','ac')",
-        FC_LocalSimple(fmeth='lfit', ltrain='ac'))
+        FC_LocalSimple(forecastMeth='lfit', trainLength='ac'))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11744,7 +11466,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_median5 = HCTSAOperation(
         'FC_LocalSimple_median5',
         "FC_LocalSimple(y,'median',5)",
-        FC_LocalSimple(fmeth='median', ltrain=5))
+        FC_LocalSimple(forecastMeth='median', trainLength=5))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11753,7 +11475,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_lfit2 = HCTSAOperation(
         'FC_LocalSimple_lfit2',
         "FC_LocalSimple(y,'lfit',2)",
-        FC_LocalSimple(fmeth='lfit', ltrain=2))
+        FC_LocalSimple(forecastMeth='lfit', trainLength=2))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11762,7 +11484,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_lfit3 = HCTSAOperation(
         'FC_LocalSimple_lfit3',
         "FC_LocalSimple(y,'lfit',3)",
-        FC_LocalSimple(fmeth='lfit', ltrain=3))
+        FC_LocalSimple(forecastMeth='lfit', trainLength=3))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11771,7 +11493,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_lfit5 = HCTSAOperation(
         'FC_LocalSimple_lfit5',
         "FC_LocalSimple(y,'lfit',5)",
-        FC_LocalSimple(fmeth='lfit', ltrain=5))
+        FC_LocalSimple(forecastMeth='lfit', trainLength=5))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11780,7 +11502,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_meantau = HCTSAOperation(
         'FC_LocalSimple_meantau',
         "FC_LocalSimple(y,'mean','ac')",
-        FC_LocalSimple(fmeth='mean', ltrain='ac'))
+        FC_LocalSimple(forecastMeth='mean', trainLength='ac'))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11789,7 +11511,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_median7 = HCTSAOperation(
         'FC_LocalSimple_median7',
         "FC_LocalSimple(y,'median',7)",
-        FC_LocalSimple(fmeth='median', ltrain=7))
+        FC_LocalSimple(forecastMeth='median', trainLength=7))
 
     # outs: ac1,ac2,gofnadjr2,meanabserr,meanerr
     # outs: rmserr,stderr,swm,sws,taures
@@ -11798,7 +11520,7 @@ class HCTSAOperations(object):
     FC_LocalSimple_median3 = HCTSAOperation(
         'FC_LocalSimple_median3',
         "FC_LocalSimple(y,'median',3)",
-        FC_LocalSimple(fmeth='median', ltrain=3))
+        FC_LocalSimple(forecastMeth='median', trainLength=3))
 
     # outs: ac1_chn,ac1_meansgndiff,ac1_stdn,ac2_chn,ac2_meansgndiff
     # outs: ac2_stdn,rmserr_chn,rmserr_meansgndiff,rmserr_peakpos,rmserr_peaksize
@@ -11809,7 +11531,7 @@ class HCTSAOperations(object):
     FC_LoopLocalSimple_mean = HCTSAOperation(
         'FC_LoopLocalSimple_mean',
         "FC_LoopLocalSimple(y,'mean')",
-        FC_LoopLocalSimple(fmeth='mean'))
+        FC_LoopLocalSimple(forecastMeth='mean'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
@@ -12075,15 +11797,6 @@ class HCTSAOperations(object):
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
     # tags: information,symbolic
-    FC_Surprise_dist_100_5_udq_500 = HCTSAOperation(
-        'FC_Surprise_dist_100_5_udq_500',
-        "FC_Surprise(y,'dist',100,5,'updown',500,'default')",
-    
-                       FC_Surprise(whatPrior='dist', memory=100, numGroups=5, cgmeth='updown', numIters=500, randomSeed='default'))
-
-    # outs: lq,max,mean,median,min
-    # outs: std,tstat,uq
-    # tags: information,symbolic
     FC_Surprise_dist_100_5_q_500 = HCTSAOperation(
         'FC_Surprise_dist_100_5_q_500',
         "FC_Surprise(y,'dist',100,5,'quantile',500,'default')",
@@ -12125,6 +11838,15 @@ class HCTSAOperations(object):
         "FC_Surprise(y,'dist',5,2,'quantile',500,'default')",
     
                        FC_Surprise(whatPrior='dist', memory=5, numGroups=2, cgmeth='quantile', numIters=500, randomSeed='default'))
+
+    # outs: lq,max,mean,median,min
+    # outs: std,tstat,uq
+    # tags: information,symbolic
+    FC_Surprise_dist_100_5_udq_500 = HCTSAOperation(
+        'FC_Surprise_dist_100_5_udq_500',
+        "FC_Surprise(y,'dist',100,5,'updown',500,'default')",
+    
+                       FC_Surprise(whatPrior='dist', memory=100, numGroups=5, cgmeth='updown', numIters=500, randomSeed='default'))
 
     # outs: lq,max,mean,median,min
     # outs: std,tstat,uq
@@ -12171,13 +11893,6 @@ class HCTSAOperations(object):
         HT_DistributionTest(theTest='chi2gof', theDistn='logn', numBins=5))
 
     # outs: None
-    # tags: chi2gof,distribution,hypothesistest,raw
-    HT_DistributionTest_chi2beta25 = HCTSAOperation(
-        'HT_DistributionTest_chi2beta25',
-        "HT_DistributionTest(x,'chi2gof','beta',25)",
-        HT_DistributionTest(theTest='chi2gof', theDistn='beta', numBins=25))
-
-    # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2wbl100 = HCTSAOperation(
         'HT_DistributionTest_chi2wbl100',
@@ -12211,6 +11926,13 @@ class HCTSAOperations(object):
         'HT_DistributionTest_chi2uni100',
         "HT_DistributionTest(x,'chi2gof','uni',100)",
         HT_DistributionTest(theTest='chi2gof', theDistn='uni', numBins=100))
+
+    # outs: None
+    # tags: chi2gof,distribution,hypothesistest,raw
+    HT_DistributionTest_chi2norm25 = HCTSAOperation(
+        'HT_DistributionTest_chi2norm25',
+        "HT_DistributionTest(x,'chi2gof','norm',25)",
+        HT_DistributionTest(theTest='chi2gof', theDistn='norm', numBins=25))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
@@ -12305,6 +12027,13 @@ class HCTSAOperations(object):
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
+    HT_DistributionTest_chi2norm5 = HCTSAOperation(
+        'HT_DistributionTest_chi2norm5',
+        "HT_DistributionTest(x,'chi2gof','norm',5)",
+        HT_DistributionTest(theTest='chi2gof', theDistn='norm', numBins=5))
+
+    # outs: None
+    # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2ev5 = HCTSAOperation(
         'HT_DistributionTest_chi2ev5',
         "HT_DistributionTest(x,'chi2gof','ev',5)",
@@ -12330,13 +12059,6 @@ class HCTSAOperations(object):
         'HT_DistributionTest_chi2norm50',
         "HT_DistributionTest(x,'chi2gof','norm',50)",
         HT_DistributionTest(theTest='chi2gof', theDistn='norm', numBins=50))
-
-    # outs: None
-    # tags: distribution,hypothesistest,ks,locdep,raw
-    HT_DistributionTest_ks_wbl = HCTSAOperation(
-        'HT_DistributionTest_ks_wbl',
-        "HT_DistributionTest(x,'ks','wbl')",
-        HT_DistributionTest(theTest='ks', theDistn='wbl'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
@@ -12389,6 +12111,13 @@ class HCTSAOperations(object):
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
+    HT_DistributionTest_chi2beta25 = HCTSAOperation(
+        'HT_DistributionTest_chi2beta25',
+        "HT_DistributionTest(x,'chi2gof','beta',25)",
+        HT_DistributionTest(theTest='chi2gof', theDistn='beta', numBins=25))
+
+    # outs: None
+    # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta50 = HCTSAOperation(
         'HT_DistributionTest_chi2beta50',
         "HT_DistributionTest(x,'chi2gof','beta',50)",
@@ -12430,13 +12159,6 @@ class HCTSAOperations(object):
         HT_DistributionTest(theTest='chi2gof', theDistn='exp', numBins=50))
 
     # outs: None
-    # tags: chi2gof,distribution,hypothesistest,raw
-    HT_DistributionTest_chi2norm5 = HCTSAOperation(
-        'HT_DistributionTest_chi2norm5',
-        "HT_DistributionTest(x,'chi2gof','norm',5)",
-        HT_DistributionTest(theTest='chi2gof', theDistn='norm', numBins=5))
-
-    # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2wbl50 = HCTSAOperation(
         'HT_DistributionTest_chi2wbl50',
@@ -12451,18 +12173,18 @@ class HCTSAOperations(object):
         HT_DistributionTest(theTest='chi2gof', theDistn='logn', numBins=25))
 
     # outs: None
-    # tags: chi2gof,distribution,hypothesistest,raw
-    HT_DistributionTest_chi2ev10 = HCTSAOperation(
-        'HT_DistributionTest_chi2ev10',
-        "HT_DistributionTest(x,'chi2gof','ev',10)",
-        HT_DistributionTest(theTest='chi2gof', theDistn='ev', numBins=10))
-
-    # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
     HT_DistributionTest_chi2gam50 = HCTSAOperation(
         'HT_DistributionTest_chi2gam50',
         "HT_DistributionTest(x,'chi2gof','gamma',50)",
         HT_DistributionTest(theTest='chi2gof', theDistn='gamma', numBins=50))
+
+    # outs: None
+    # tags: distribution,hypothesistest,ks,locdep,raw
+    HT_DistributionTest_ks_wbl = HCTSAOperation(
+        'HT_DistributionTest_ks_wbl',
+        "HT_DistributionTest(x,'ks','wbl')",
+        HT_DistributionTest(theTest='ks', theDistn='wbl'))
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,locdep,raw
@@ -12473,17 +12195,17 @@ class HCTSAOperations(object):
 
     # outs: None
     # tags: chi2gof,distribution,hypothesistest,raw
+    HT_DistributionTest_chi2ev10 = HCTSAOperation(
+        'HT_DistributionTest_chi2ev10',
+        "HT_DistributionTest(x,'chi2gof','ev',10)",
+        HT_DistributionTest(theTest='chi2gof', theDistn='ev', numBins=10))
+
+    # outs: None
+    # tags: chi2gof,distribution,hypothesistest,raw
     HT_DistributionTest_chi2beta100 = HCTSAOperation(
         'HT_DistributionTest_chi2beta100',
         "HT_DistributionTest(x,'chi2gof','beta',100)",
         HT_DistributionTest(theTest='chi2gof', theDistn='beta', numBins=100))
-
-    # outs: None
-    # tags: chi2gof,distribution,hypothesistest,raw
-    HT_DistributionTest_chi2norm25 = HCTSAOperation(
-        'HT_DistributionTest_chi2norm25',
-        "HT_DistributionTest(x,'chi2gof','norm',25)",
-        HT_DistributionTest(theTest='chi2gof', theDistn='norm', numBins=25))
 
     # outs: None
     # tags: distribution,hypothesistest,ks,locdep,raw
@@ -12628,10 +12350,10 @@ class HCTSAOperations(object):
     # outs: pcrossmean,pcrossmedian,pcrossq10,pcrossq90,pextrema
     # outs: pmaxima,pminima,pmodeperiodmax,pmodeperiodmin,stdami
     # tags: AMI,correlation,information
-    IN_AutoMutualInfoStats_40_gaussian = HCTSAOperation(
-        'IN_AutoMutualInfoStats_40_gaussian',
-        "IN_AutoMutualInfoStats(y,40,'gaussian')",
-        IN_AutoMutualInfoStats(maxTau=40, estMethod='gaussian'))
+    IN_AutoMutualInfoStats_40_kraskov1_4 = HCTSAOperation(
+        'IN_AutoMutualInfoStats_40_kraskov1_4',
+        "IN_AutoMutualInfoStats(y,40,'kraskov1','4')",
+        IN_AutoMutualInfoStats(maxTau=40, estMethod='kraskov1', extraParam='4'))
 
     # outs: ami1,ami10,ami11,ami12,ami13
     # outs: ami14,ami15,ami16,ami17,ami18
@@ -12645,10 +12367,10 @@ class HCTSAOperations(object):
     # outs: pcrossmean,pcrossmedian,pcrossq10,pcrossq90,pextrema
     # outs: pmaxima,pminima,pmodeperiodmax,pmodeperiodmin,stdami
     # tags: AMI,correlation,information
-    IN_AutoMutualInfoStats_40_kraskov1_4 = HCTSAOperation(
-        'IN_AutoMutualInfoStats_40_kraskov1_4',
-        "IN_AutoMutualInfoStats(y,40,'kraskov1','4')",
-        IN_AutoMutualInfoStats(maxTau=40, estMethod='kraskov1', extraParam='4'))
+    IN_AutoMutualInfoStats_40_gaussian = HCTSAOperation(
+        'IN_AutoMutualInfoStats_40_gaussian',
+        "IN_AutoMutualInfoStats(y,40,'gaussian')",
+        IN_AutoMutualInfoStats(maxTau=40, estMethod='gaussian'))
 
     # outs: SD1,SD2,hf,lf,lfhf
     # outs: pnn10,pnn20,pnn30,pnn40,pnn5
@@ -12719,13 +12441,6 @@ class HCTSAOperations(object):
 
     # outs: None
     # tags: medical,symbolic
-    MD_polvar_05_4 = HCTSAOperation(
-        'MD_polvar_05_4',
-        'MD_polvar(y,0.5,4)',
-        MD_polvar(d=0.5, D=4))
-
-    # outs: None
-    # tags: medical,symbolic
     MD_polvar_05_3 = HCTSAOperation(
         'MD_polvar_05_3',
         'MD_polvar(y,0.5,3)',
@@ -12752,6 +12467,13 @@ class HCTSAOperations(object):
         'MD_polvar(y,0.1,4)',
         MD_polvar(d=0.1, D=4))
 
+    # outs: None
+    # tags: medical,symbolic
+    MD_polvar_05_4 = HCTSAOperation(
+        'MD_polvar_05_4',
+        'MD_polvar(y,0.5,4)',
+        MD_polvar(d=0.5, D=4))
+
     # outs: SD1,SD2,tri10,tri20,trisqrt
     # tags: medical,raw,spreaddep
     MD_rawHRVmeas = HCTSAOperation(
@@ -12766,6 +12488,14 @@ class HCTSAOperations(object):
         'MF_ARMA_orders_1_6_1_4',
         'MF_ARMA_orders(y,1:6,1:4)',
         MF_ARMA_orders(pr=MatlabSequence('1:6'), qr=MatlabSequence('1:4')))
+
+    # outs: AC1,AC2,a2,a3,a4
+    # outs: a5,e,mu,rms,std
+    # tags: ar,fit,gof,model
+    MF_AR_arcov_4 = HCTSAOperation(
+        'MF_AR_arcov_4',
+        'MF_AR_arcov(y,4)',
+        MF_AR_arcov(p=4))
 
     # outs: AC1,AC2,a2,a3,a4
     # outs: e,mu,rms,std
@@ -12800,14 +12530,6 @@ class HCTSAOperations(object):
         'MF_AR_arcov(y,5)',
         MF_AR_arcov(p=5))
 
-    # outs: AC1,AC2,a2,a3,a4
-    # outs: a5,e,mu,rms,std
-    # tags: ar,fit,gof,model
-    MF_AR_arcov_4 = HCTSAOperation(
-        'MF_AR_arcov_4',
-        'MF_AR_arcov(y,4)',
-        MF_AR_arcov(p=4))
-
     # outs: aic_n,best_n,bestaic,bestmdl,firstonmin
     # outs: maxdiff,maxonmed,maxv,mdl_n,meandiff
     # outs: meanv,meddiff,medianv,minstdfromi,minv
@@ -12832,22 +12554,22 @@ class HCTSAOperations(object):
     # outs: mabserr_mean,mabserr_median,mabserr_std,meandiffs_iqr,meandiffs_mean
     # outs: meandiffs_median,meandiffs_std,rmserr_iqr,rmserr_mean,rmserr_median
     # outs: rmserr_std,stdrats_iqr,stdrats_mean,stdrats_median,stdrats_std
-    # tags: ar,arfit,model,prediction,systemidentificationtoolbox
-    MF_CompareTestSets_y_ar_best_uniform_25_01_1 = HCTSAOperation(
-        'MF_CompareTestSets_y_ar_best_uniform_25_01_1',
-        "MF_CompareTestSets(y,'ar','best','uniform',[25,0.1],1)",
-        MF_CompareTestSets(theModel='ar', ordd='best', subsetHow='uniform', samplep=(25.0, 0.10000000000000001),
+    # tags: model,prediction,statespace,systemidentificationtoolbox
+    MF_CompareTestSets_y_ss_2_uniform_25_01_1 = HCTSAOperation(
+        'MF_CompareTestSets_y_ss_2_uniform_25_01_1',
+        "MF_CompareTestSets(y,'ss',2,'uniform',[25,0.1],1)",
+        MF_CompareTestSets(theModel='ss', ordd=2, subsetHow='uniform', samplep=(25.0, 0.10000000000000001),
                            steps=1))
 
     # outs: ac1s_iqr,ac1s_mean,ac1s_median,ac1s_std,mabserr_iqr
     # outs: mabserr_mean,mabserr_median,mabserr_std,meandiffs_iqr,meandiffs_mean
     # outs: meandiffs_median,meandiffs_std,rmserr_iqr,rmserr_mean,rmserr_median
     # outs: rmserr_std,stdrats_iqr,stdrats_mean,stdrats_median,stdrats_std
-    # tags: model,prediction,statespace,systemidentificationtoolbox
-    MF_CompareTestSets_y_ss_2_uniform_25_01_1 = HCTSAOperation(
-        'MF_CompareTestSets_y_ss_2_uniform_25_01_1',
-        "MF_CompareTestSets(y,'ss',2,'uniform',[25,0.1],1)",
-        MF_CompareTestSets(theModel='ss', ordd=2, subsetHow='uniform', samplep=(25.0, 0.10000000000000001),
+    # tags: ar,arfit,model,prediction,systemidentificationtoolbox
+    MF_CompareTestSets_y_ar_best_uniform_25_01_1 = HCTSAOperation(
+        'MF_CompareTestSets_y_ar_best_uniform_25_01_1',
+        "MF_CompareTestSets(y,'ar','best','uniform',[25,0.1],1)",
+        MF_CompareTestSets(theModel='ar', ordd='best', subsetHow='uniform', samplep=(25.0, 0.10000000000000001),
                            steps=1))
 
     # outs: ac1s_iqr,ac1s_mean,ac1s_median,ac1s_std,mabserr_iqr
@@ -12995,18 +12717,6 @@ class HCTSAOperations(object):
     # outs: minabserr_run,minerrbar,minmlik,minstderr,minstderr_run
     # outs: stdlogh1,stdlogh2,stdlogh3,stdmlik
     # tags: gaussianprocess
-    MF_GP_LocalPrediction_covSEiso_covNoise_5_3_10_beforeafter = HCTSAOperation(
-        'MF_GP_LocalPrediction_covSEiso_covNoise_5_3_10_beforeafter',
-        "MF_GP_LocalPrediction(y,{'covSum',{'covSEiso','covNoise'}},5,3,10,'beforeafter')",
-        MF_GP_LocalPrediction(covFunc=('covSum', ('covSEiso', 'covNoise')), numTrain=5, numTest=3,
-                              numPreds=10, pmode='beforeafter'))
-
-    # outs: maxabserr,maxabserr_run,maxerrbar,maxmlik,maxstderr
-    # outs: maxstderr_run,meanabserr,meanabserr_run,meanerrbar,meanlogh1
-    # outs: meanlogh2,meanlogh3,meanstderr,meanstderr_run,minabserr
-    # outs: minabserr_run,minerrbar,minmlik,minstderr,minstderr_run
-    # outs: stdlogh1,stdlogh2,stdlogh3,stdmlik
-    # tags: gaussianprocess
     MF_GP_LocalPrediction_covSEiso_covNoise_10_3_20_frombefore = HCTSAOperation(
         'MF_GP_LocalPrediction_covSEiso_covNoise_10_3_20_frombefore',
         "MF_GP_LocalPrediction(y,{'covSum',{'covSEiso','covNoise'}},10,3,20,'frombefore')",
@@ -13019,11 +12729,33 @@ class HCTSAOperations(object):
     # outs: minabserr_run,minerrbar,minmlik,minstderr,minstderr_run
     # outs: stdlogh1,stdlogh2,stdlogh3,stdmlik
     # tags: gaussianprocess
+    MF_GP_LocalPrediction_covSEiso_covNoise_5_3_10_beforeafter = HCTSAOperation(
+        'MF_GP_LocalPrediction_covSEiso_covNoise_5_3_10_beforeafter',
+        "MF_GP_LocalPrediction(y,{'covSum',{'covSEiso','covNoise'}},5,3,10,'beforeafter')",
+        MF_GP_LocalPrediction(covFunc=('covSum', ('covSEiso', 'covNoise')), numTrain=5, numTest=3,
+                              numPreds=10, pmode='beforeafter'))
+
+    # outs: maxabserr,maxabserr_run,maxerrbar,maxmlik,maxstderr
+    # outs: maxstderr_run,meanabserr,meanabserr_run,meanerrbar,meanlogh1
+    # outs: meanlogh2,meanlogh3,meanstderr,meanstderr_run,minabserr
+    # outs: minabserr_run,minerrbar,minmlik,minstderr,minstderr_run
+    # outs: stdlogh1,stdlogh2,stdlogh3,stdmlik
+    # tags: gaussianprocess
     MF_GP_LocalPrediction_covSEiso_covNoise_10_3_20_randomgap = HCTSAOperation(
         'MF_GP_LocalPrediction_covSEiso_covNoise_10_3_20_randomgap',
         "MF_GP_LocalPrediction(y,{'covSum',{'covSEiso','covNoise'}},10,3,20,'randomgap','default')",
         MF_GP_LocalPrediction(covFunc=('covSum', ('covSEiso', 'covNoise')), numTrain=10, numTest=3,
                               numPreds=20, pmode='randomgap', randomSeed='default'))
+
+    # outs: h1,h2,h3,logh1,logh2
+    # outs: logh3,mabserr_std,maxS,meanS,minS
+    # outs: mlikelihood,rmserr,std_S_data,std_mu_data
+    # tags: gaussianprocess
+    MF_GP_hyperparameters_covSEiso_covNoise_1_200_resample = HCTSAOperation(
+        'MF_GP_hyperparameters_covSEiso_covNoise_1_200_resample',
+        "MF_GP_hyperparameters(y,{'covSum',{'covSEiso','covNoise'}},1,200,'resample')",
+        MF_GP_hyperparameters(covFunc=('covSum', ('covSEiso', 'covNoise')), squishorsquash=1, maxN=200,
+                              resampleHow='resample'))
 
     # outs: h1,h2,h3,logh1,logh2
     # outs: logh3,mabserr_std,maxS,meanS,minS
@@ -13050,11 +12782,11 @@ class HCTSAOperations(object):
     # outs: logh3,mabserr_std,maxS,meanS,minS
     # outs: mlikelihood,rmserr,std_S_data,std_mu_data
     # tags: gaussianprocess
-    MF_GP_hyperparameters_covSEiso_covNoise_1_200_resample = HCTSAOperation(
-        'MF_GP_hyperparameters_covSEiso_covNoise_1_200_resample',
-        "MF_GP_hyperparameters(y,{'covSum',{'covSEiso','covNoise'}},1,200,'resample')",
-        MF_GP_hyperparameters(covFunc=('covSum', ('covSEiso', 'covNoise')), squishorsquash=1, maxN=200,
-                              resampleHow='resample'))
+    MF_GP_hyperparameters_covSEiso_covNoise_1_50_random_i = HCTSAOperation(
+        'MF_GP_hyperparameters_covSEiso_covNoise_1_50_random_i',
+        "MF_GP_hyperparameters(y,{'covSum',{'covSEiso','covNoise'}},1,50,'random_i','default')",
+        MF_GP_hyperparameters(covFunc=('covSum', ('covSEiso', 'covNoise')), squishorsquash=1, maxN=50,
+                              resampleHow='random_i', randomSeed='default'))
 
     # outs: h1,h2,h3,h4,h5
     # outs: logh1,logh2,logh3,logh4,logh5
@@ -13066,16 +12798,6 @@ class HCTSAOperations(object):
         "MF_GP_hyperparameters(y,{'covSum',{'covSEiso','covPeriodic','covNoise'}},1,200,'resample')",
         MF_GP_hyperparameters(covFunc=('covSum', ('covSEiso', 'covPeriodic', 'covNoise')), squishorsquash=1,
                               maxN=200, resampleHow='resample'))
-
-    # outs: h1,h2,h3,logh1,logh2
-    # outs: logh3,mabserr_std,maxS,meanS,minS
-    # outs: mlikelihood,rmserr,std_S_data,std_mu_data
-    # tags: gaussianprocess
-    MF_GP_hyperparameters_covSEiso_covNoise_1_50_random_i = HCTSAOperation(
-        'MF_GP_hyperparameters_covSEiso_covNoise_1_50_random_i',
-        "MF_GP_hyperparameters(y,{'covSum',{'covSEiso','covNoise'}},1,50,'random_i','default')",
-        MF_GP_hyperparameters(covFunc=('covSum', ('covSEiso', 'covNoise')), squishorsquash=1, maxN=50,
-                              resampleHow='random_i', randomSeed='default'))
 
     # outs: aic2,aicopt,fpe2,lossfn2,lossfnopt
     # outs: maxdiffaic,meandiffaic,minaic,mindiffaic,minlossfn
@@ -13223,22 +12945,22 @@ class HCTSAOperations(object):
     # outs: mabserr_5,mabserr_6,maxdiffrms,meandiffrms,meandiffrmsabs
     # outs: ndown,rmserr_1,rmserr_2,rmserr_3,rmserr_4
     # outs: rmserr_5,rmserr_6,stddiffrms
-    # tags: ar,arfit,model,prediction,systemidentificationtoolbox
-    MF_steps_ahead_ar_best_6 = HCTSAOperation(
-        'MF_steps_ahead_ar_best_6',
-        "MF_steps_ahead(y,'ar','best',6)",
-        MF_steps_ahead(model='ar', order='best', maxSteps=6))
+    # tags: model,prediction,statespace,systemidentificationtoolbox
+    MF_steps_ahead_ss_best_6 = HCTSAOperation(
+        'MF_steps_ahead_ss_best_6',
+        "MF_steps_ahead(y,'ss','best',6)",
+        MF_steps_ahead(model='ss', order='best', maxSteps=6))
 
     # outs: ac1_1,ac1_2,ac1_3,ac1_4,ac1_5
     # outs: ac1_6,mabserr_1,mabserr_2,mabserr_3,mabserr_4
     # outs: mabserr_5,mabserr_6,maxdiffrms,meandiffrms,meandiffrmsabs
     # outs: ndown,rmserr_1,rmserr_2,rmserr_3,rmserr_4
     # outs: rmserr_5,rmserr_6,stddiffrms
-    # tags: model,prediction,statespace,systemidentificationtoolbox
-    MF_steps_ahead_ss_best_6 = HCTSAOperation(
-        'MF_steps_ahead_ss_best_6',
-        "MF_steps_ahead(y,'ss','best',6)",
-        MF_steps_ahead(model='ss', order='best', maxSteps=6))
+    # tags: arma,model,prediction,systemidentificationtoolbox
+    MF_steps_ahead_arma_3_1_6 = HCTSAOperation(
+        'MF_steps_ahead_arma_3_1_6',
+        "MF_steps_ahead(y,'arma',[3,1],6)",
+        MF_steps_ahead(model='arma', order=(3.0, 1.0), maxSteps=6))
 
     # outs: ac1_1,ac1_2,ac1_3,ac1_4,ac1_5
     # outs: ac1_6,mabserr_1,mabserr_2,mabserr_3,mabserr_4
@@ -13256,11 +12978,11 @@ class HCTSAOperations(object):
     # outs: mabserr_5,mabserr_6,maxdiffrms,meandiffrms,meandiffrmsabs
     # outs: ndown,rmserr_1,rmserr_2,rmserr_3,rmserr_4
     # outs: rmserr_5,rmserr_6,stddiffrms
-    # tags: arma,model,prediction,systemidentificationtoolbox
-    MF_steps_ahead_arma_3_1_6 = HCTSAOperation(
-        'MF_steps_ahead_arma_3_1_6',
-        "MF_steps_ahead(y,'arma',[3,1],6)",
-        MF_steps_ahead(model='arma', order=(3.0, 1.0), maxSteps=6))
+    # tags: ar,arfit,model,prediction,systemidentificationtoolbox
+    MF_steps_ahead_ar_best_6 = HCTSAOperation(
+        'MF_steps_ahead_ar_best_6',
+        "MF_steps_ahead(y,'ar','best',6)",
+        MF_steps_ahead(model='ar', order='best', maxSteps=6))
 
     # outs: iqrstretch,meanchr10,meanchr11,meanchr12,meanchr13
     # outs: meanchr14,meanchr15,meanchr16,meanchr17,meanchr18
@@ -13293,13 +13015,6 @@ class HCTSAOperations(object):
         'NL_DVV_3_100_2_50_10_default',
         "NL_DVV(y,3,100,2,50,10,'default')",
         NL_DVV(m=3, numDVs=100, nd=2, Ntv=50, numSurr=10, randomSeed='default'))
-
-    # outs: None
-    # tags: LempelZiv,MichaelSmall,complexity,mex
-    NL_MS_LZcomplexity_7_diff = HCTSAOperation(
-        'NL_MS_LZcomplexity_7_diff',
-        "NL_MS_LZcomplexity(y,7,'diff')",
-        NL_MS_LZcomplexity(n=7, preProc='diff'))
 
     # outs: None
     # tags: LempelZiv,MichaelSmall,complexity,mex
@@ -13419,6 +13134,13 @@ class HCTSAOperations(object):
         'NL_MS_LZcomplexity_5_diff',
         "NL_MS_LZcomplexity(y,5,'diff')",
         NL_MS_LZcomplexity(n=5, preProc='diff'))
+
+    # outs: None
+    # tags: LempelZiv,MichaelSmall,complexity,mex
+    NL_MS_LZcomplexity_7_diff = HCTSAOperation(
+        'NL_MS_LZcomplexity_7_diff',
+        "NL_MS_LZcomplexity(y,7,'diff')",
+        NL_MS_LZcomplexity(n=7, preProc='diff'))
 
     # outs: firstunder001,firstunder002,firstunder005,firstunder01,firstunder02
     # outs: max1stepchange,meanpfnn,pfnn_1,pfnn_10,pfnn_2
@@ -13620,7 +13342,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum_n1_01_40_40_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum_n1_01_40_40_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.1,40,40,{'ac','fnnmar'})",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedparams=('ac', 'fnnmar')))
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedParams=('ac', 'fnnmar')))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
@@ -13629,7 +13351,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum2_n1_05_40_20_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum2_n1_05_40_20_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.5,40,20,{'ac','fnnmar'},2)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedparams=('ac', 'fnnmar'), doTwo=2))
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedParams=('ac', 'fnnmar'), doTwo=2))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
@@ -13638,7 +13360,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum_n1_05_40_20_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum_n1_05_40_20_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.5,40,20,{'ac','fnnmar'})",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedparams=('ac', 'fnnmar')))
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=40, nbins=20, embedParams=('ac', 'fnnmar')))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
@@ -13647,7 +13369,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum_n1_05_100_20_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum_n1_05_100_20_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.5,100,20,{'ac','fnnmar'})",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedparams=('ac', 'fnnmar')))
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedParams=('ac', 'fnnmar')))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
@@ -13656,7 +13378,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum2_n1_05_100_20_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum2_n1_05_100_20_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.5,100,20,{'ac','fnnmar'},2)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedparams=('ac', 'fnnmar'), doTwo=2))
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.5, thwin=100, nbins=20, embedParams=('ac', 'fnnmar'), doTwo=2))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
@@ -13665,7 +13387,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum2_n1_01_40_40_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum2_n1_01_40_40_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.1,40,40,{'ac','fnnmar'},2)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedparams=('ac', 'fnnmar'), doTwo=2))
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=40, embedParams=('ac', 'fnnmar'), doTwo=2))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
@@ -13674,7 +13396,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum_n1_01_40_20_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum_n1_01_40_20_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.1,40,20,{'ac','fnnmar'})",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedparams=('ac', 'fnnmar')))
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedParams=('ac', 'fnnmar')))
 
     # outs: maxlnCr,maxlnr,meanlnCr,minlnCr,minlnr
     # outs: rangelnCr,robfit_a1,robfit_a2,robfit_s,robfit_sea1
@@ -13683,7 +13405,7 @@ class HCTSAOperations(object):
     NL_TSTL_GPCorrSum2_n1_01_40_20_ac_fnnmar = HCTSAOperation(
         'NL_TSTL_GPCorrSum2_n1_01_40_20_ac_fnnmar',
         "NL_TSTL_GPCorrSum(y,-1,0.1,40,20,{'ac','fnnmar'},2)",
-        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedparams=('ac', 'fnnmar'), doTwo=2))
+        NL_TSTL_GPCorrSum(Nref=-1, r=0.1, thwin=40, nbins=20, embedParams=('ac', 'fnnmar'), doTwo=2))
 
     # outs: expfit_a,expfit_adjr2,expfit_b,expfit_r2,expfit_rmse
     # outs: maxp,ncross08max,ncross09max,p2,p3
@@ -13723,7 +13445,7 @@ class HCTSAOperations(object):
     NL_TSTL_PoincareSection_max_1 = HCTSAOperation(
         'NL_TSTL_PoincareSection_max_1',
         "NL_TSTL_PoincareSection(y,'max',{1,3})",
-        NL_TSTL_PoincareSection(ref='max', embedparams=(1, 3, '_celltrick_')))
+        NL_TSTL_PoincareSection(ref='max', embedParams=(1, 3, '_celltrick_')))
 
     # outs: ac1D,ac1x,ac1y,ac2D,ac2x
     # outs: ac2y,boxarea,hboxcounts10,hboxcounts5,iqrD
@@ -13739,7 +13461,7 @@ class HCTSAOperations(object):
     NL_TSTL_PoincareSection_max_mi = HCTSAOperation(
         'NL_TSTL_PoincareSection_max_mi',
         "NL_TSTL_PoincareSection(y,'max',{'mi',3})",
-        NL_TSTL_PoincareSection(ref='max', embedparams=('mi', 3)))
+        NL_TSTL_PoincareSection(ref='max', embedParams=('mi', 3)))
 
     # outs: ac1D,ac1x,ac1y,ac2D,ac2x
     # outs: ac2y,boxarea,hboxcounts10,hboxcounts5,iqrD
@@ -13755,7 +13477,7 @@ class HCTSAOperations(object):
     NL_TSTL_PoincareSection_max_ac = HCTSAOperation(
         'NL_TSTL_PoincareSection_max_ac',
         "NL_TSTL_PoincareSection(y,'max',{'ac',3})",
-        NL_TSTL_PoincareSection(ref='max', embedparams=('ac', 3)))
+        NL_TSTL_PoincareSection(ref='max', embedParams=('ac', 3)))
 
     # outs: hcgdist,hhist,hhisthist,iqr,max
     # outs: maxhisthist,maxpeaksep,meanpeaksep,minpeaksep,pg05
@@ -13973,18 +13695,32 @@ class HCTSAOperations(object):
     # outs: dexpk_adjr2,dexpk_r2,dexpk_resAC1,dexpk_resAC2,dexpk_resruns
     # outs: dexpk_rmse,dgaussk_adjr2,dgaussk_r2,dgaussk_resAC1,dgaussk_resAC2
     # outs: dgaussk_resruns,dgaussk_rmse,dpowerk_adjr2,dpowerk_r2,dpowerk_resAC1
-    # outs: dpowerk_resAC2,dpowerk_resruns,dpowerk_rmse,evnlogL,evparm1
-    # outs: evparm2,explambda,expmu,expnlogL,gaussmu
-    # outs: gaussnlogL,gausssigma,iqrk,kac1,kac2
-    # outs: kac3,ktau,maxent,maxk,maxonmedian
-    # outs: meanchent,meanent,meank,mediank,mink
-    # outs: minnbinmaxent,modek,ol90,olu90,propmode
-    # outs: rangek,stdk
+    # outs: dpowerk_resAC2,dpowerk_resruns,dpowerk_rmse,entropy,evnlogL
+    # outs: evparm1,evparm2,explambda,expmu,expnlogL
+    # outs: gaussmu,gaussnlogL,gausssigma,iqrk,kac1
+    # outs: kac2,kac3,ktau,maxk,maxonmedian
+    # outs: meank,mediank,mink,modek,ol90
+    # outs: olu90,propmode,rangek,stdk
     # tags: lengthdep,network,visibilitygraph
     NW_VisibilityGraph_horiz = HCTSAOperation(
         'NW_VisibilityGraph_horiz',
         "NW_VisibilityGraph(y,'horiz')",
         NW_VisibilityGraph(meth='horiz'))
+
+    # outs: dexpk_adjr2,dexpk_r2,dexpk_resAC1,dexpk_resAC2,dexpk_resruns
+    # outs: dexpk_rmse,dgaussk_adjr2,dgaussk_r2,dgaussk_resAC1,dgaussk_resAC2
+    # outs: dgaussk_resruns,dgaussk_rmse,dpowerk_adjr2,dpowerk_r2,dpowerk_resAC1
+    # outs: dpowerk_resAC2,dpowerk_resruns,dpowerk_rmse,entropy,evnlogL
+    # outs: evparm1,evparm2,explambda,expmu,expnlogL
+    # outs: gaussmu,gaussnlogL,gausssigma,iqrk,kac1
+    # outs: kac2,kac3,ktau,maxk,maxonmedian
+    # outs: meank,mediank,mink,modek,ol90
+    # outs: olu90,propmode,rangek,stdk
+    # tags: lengthdep,network,visibilitygraph
+    NW_VisibilityGraph_norm = HCTSAOperation(
+        'NW_VisibilityGraph_norm',
+        "NW_VisibilityGraph(y,'norm')",
+        NW_VisibilityGraph(meth='norm'))
 
     # outs: th1,th2,th3,th4,th5
     # outs: th6,th7
@@ -14207,6 +13943,20 @@ class HCTSAOperations(object):
     # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
     # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
     # tags: locdep,preprocessing,raw
+    PP_Compare_resample_2_1 = HCTSAOperation(
+        'PP_Compare_resample_2_1',
+        "PP_Compare(x,'resample_2_1')",
+        PP_Compare(detrndmeth='resample_2_1'))
+
+    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
+    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
+    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
+    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
+    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
+    # outs: statav2,statav4,statav6,statav8,swms10_1
+    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
+    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
+    # tags: locdep,preprocessing,raw
     PP_Compare_rav4 = HCTSAOperation(
         'PP_Compare_rav4',
         "PP_Compare(x,'rav4')",
@@ -14263,38 +14013,10 @@ class HCTSAOperations(object):
     # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
     # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
     # tags: locdep,preprocessing,raw
-    PP_Compare_resample_2_1 = HCTSAOperation(
-        'PP_Compare_resample_2_1',
-        "PP_Compare(x,'resample_2_1')",
-        PP_Compare(detrndmeth='resample_2_1'))
-
-    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
-    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
-    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
-    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
-    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
-    # outs: statav2,statav4,statav6,statav8,swms10_1
-    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
-    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
-    # tags: locdep,preprocessing,raw
     PP_Compare_resample_1_2 = HCTSAOperation(
         'PP_Compare_resample_1_2',
         "PP_Compare(x,'resample_1_2')",
         PP_Compare(detrndmeth='resample_1_2'))
-
-    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
-    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
-    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
-    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
-    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
-    # outs: statav2,statav4,statav6,statav8,swms10_1
-    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
-    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
-    # tags: locdep,preprocessing,raw
-    PP_Compare_medianf10 = HCTSAOperation(
-        'PP_Compare_medianf10',
-        "PP_Compare(x,'medianf10')",
-        PP_Compare(detrndmeth='medianf10'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -14337,6 +14059,20 @@ class HCTSAOperations(object):
         'PP_Compare_sin1',
         "PP_Compare(x,'sin1')",
         PP_Compare(detrndmeth='sin1'))
+
+    # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
+    # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
+    # outs: gauss1_kd_resruns,gauss1_kd_rmse,htdt_chi2n,htdt_ksn,htdt_llfn
+    # outs: kscn_adiff,kscn_olapint,kscn_peaksepx,kscn_peaksepy,kscn_relent
+    # outs: olbt_m2,olbt_m5,olbt_s2,olbt_s5,statav10
+    # outs: statav2,statav4,statav6,statav8,swms10_1
+    # outs: swms2_1,swms2_2,swms5_1,swms5_2,swss10_1
+    # outs: swss10_2,swss2_1,swss2_2,swss5_1,swss5_2
+    # tags: locdep,preprocessing,raw
+    PP_Compare_medianf10 = HCTSAOperation(
+        'PP_Compare_medianf10',
+        "PP_Compare(x,'medianf10')",
+        PP_Compare(detrndmeth='medianf10'))
 
     # outs: gauss1_h10_adjr2,gauss1_h10_r2,gauss1_h10_resAC1,gauss1_h10_resAC2,gauss1_h10_resruns
     # outs: gauss1_h10_rmse,gauss1_kd_adjr2,gauss1_kd_r2,gauss1_kd_resAC1,gauss1_kd_resAC2
@@ -14558,7 +14294,7 @@ class HCTSAOperations(object):
     SB_MotifTwo_mean = HCTSAOperation(
         'SB_MotifTwo_mean',
         "SB_MotifTwo(y,'mean')",
-        SB_MotifTwo(bint='mean'))
+        SB_MotifTwo(binarizeHow='mean'))
 
     # outs: d,dd,ddd,dddd,dddu
     # outs: ddu,ddud,dduu,du,dud
@@ -14571,7 +14307,7 @@ class HCTSAOperations(object):
     SB_MotifTwo_median = HCTSAOperation(
         'SB_MotifTwo_median',
         "SB_MotifTwo(y,'median')",
-        SB_MotifTwo(bint='median'))
+        SB_MotifTwo(binarizeHow='median'))
 
     # outs: d,dd,ddd,dddd,dddu
     # outs: ddu,ddud,dduu,du,dud
@@ -14584,7 +14320,7 @@ class HCTSAOperations(object):
     SB_MotifTwo_diff = HCTSAOperation(
         'SB_MotifTwo_diff',
         "SB_MotifTwo(y,'diff')",
-        SB_MotifTwo(bint='diff'))
+        SB_MotifTwo(binarizeHow='diff'))
 
     # outs: TD1,TD2,TD3,TD4,maxeig
     # outs: maxeigcov,maximeig,meaneig,meaneigcov,mineig
@@ -14708,6 +14444,17 @@ class HCTSAOperations(object):
         'SC_FluctAnal_sign_2_dfa_2_2',
         "SC_FluctAnal(zscore(sign(y)),2,'dfa',2,2,[],0)",
         SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=2, lag=(), logInc=0))
+
+    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
+    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
+    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
+    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
+    # outs: se1,se2,ssr,stats_coeffcorr
+    # tags: dfa,lengthdep,lini,scaling
+    SC_FluctAnal_2_dfa_2_1 = HCTSAOperation(
+        'SC_FluctAnal_2_dfa_2_1',
+        "SC_FluctAnal(y,2,'dfa',2,1,[],0)",
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=1, lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14846,22 +14593,22 @@ class HCTSAOperations(object):
     # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
     # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
     # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: dfa,lengthdep,scaling
-    SC_FluctAnal_2_dfa_25_1_logi = HCTSAOperation(
-        'SC_FluctAnal_2_dfa_25_1_logi',
-        "SC_FluctAnal(y,2,'dfa',25,1,[],1)",
-        SC_FluctAnal(q=2, wtf='dfa', tauStep=25, k=1, lag=(), logInc=1))
+    # tags: fa,lengthdep,lini,scaling
+    SC_FluctAnal_2_iqr_1 = HCTSAOperation(
+        'SC_FluctAnal_2_iqr_1',
+        "SC_FluctAnal(y,2,'iqr',1,[],[],0)",
+        SC_FluctAnal(q=2, wtf='iqr', tauStep=1, k=(), lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
     # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
     # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
     # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: fa,lengthdep,lini,scaling
-    SC_FluctAnal_2_iqr_1 = HCTSAOperation(
-        'SC_FluctAnal_2_iqr_1',
-        "SC_FluctAnal(y,2,'iqr',1,[],[],0)",
-        SC_FluctAnal(q=2, wtf='iqr', tauStep=1, k=(), lag=(), logInc=0))
+    # tags: dfa,lengthdep,scaling
+    SC_FluctAnal_2_dfa_25_1_logi = HCTSAOperation(
+        'SC_FluctAnal_2_dfa_25_1_logi',
+        "SC_FluctAnal(y,2,'dfa',25,1,[],1)",
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=25, k=1, lag=(), logInc=1))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -14895,28 +14642,6 @@ class HCTSAOperations(object):
         'SC_FluctAnal_2_dfa_2_0',
         "SC_FluctAnal(y,2,'dfa',2,0,[],0)",
         SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=0, lag=(), logInc=0))
-
-    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
-    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
-    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
-    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
-    # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: dfa,lengthdep,lini,scaling
-    SC_FluctAnal_2_dfa_2_2 = HCTSAOperation(
-        'SC_FluctAnal_2_dfa_2_2',
-        "SC_FluctAnal(y,2,'dfa',2,2,[],0)",
-        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=2, lag=(), logInc=0))
-
-    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
-    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
-    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
-    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
-    # outs: se1,se2,ssr,stats_coeffcorr
-    # tags: dfa,lengthdep,lini,scaling
-    SC_FluctAnal_2_dfa_2_1 = HCTSAOperation(
-        'SC_FluctAnal_2_dfa_2_1',
-        "SC_FluctAnal(y,2,'dfa',2,1,[],0)",
-        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=1, lag=(), logInc=0))
 
     # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
     # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
@@ -15028,6 +14753,17 @@ class HCTSAOperations(object):
         "SC_FluctAnal(y,2,'range',1,[],[],0)",
         SC_FluctAnal(q=2, wtf='range', tauStep=1, k=(), lag=(), logInc=0))
 
+    # outs: alpha,alpharat,linfitint,logtausplit,r1_alpha
+    # outs: r1_linfitint,r1_resac1,r1_se1,r1_se2,r1_ssr
+    # outs: r1_stats_coeffcorr,r2_alpha,r2_linfitint,r2_resac1,r2_se1
+    # outs: r2_se2,r2_ssr,r2_stats_coeffcorr,ratsplitminerr,resac1
+    # outs: se1,se2,ssr,stats_coeffcorr
+    # tags: dfa,lengthdep,lini,scaling
+    SC_FluctAnal_2_dfa_2_2 = HCTSAOperation(
+        'SC_FluctAnal_2_dfa_2_2',
+        "SC_FluctAnal(y,2,'dfa',2,2,[],0)",
+        SC_FluctAnal(q=2, wtf='dfa', tauStep=2, k=2, lag=(), logInc=0))
+
     # outs: maxHurstExponent,maxHurstQ,maxHurstScale,meanHurstExponent,minHurstExponent
     # outs: minHurstQ,minHurstScale,qHurstStd,qHurstTrend,scaleHurstStd
     # outs: scaleHurstTrend,stdHurstExponent,stdStdHurstQ,stdStdHurstScale
@@ -15066,6 +14802,14 @@ class HCTSAOperations(object):
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
     # tags: correlation,nonlinear,surrogate,tstool
+    SD_TSTL_surrogates_mi_100_2_tc3 = HCTSAOperation(
+        'SD_TSTL_surrogates_mi_100_2_tc3',
+        "SD_TSTL_surrogates(y,'mi',100,2,'tc3','default')",
+        SD_TSTL_surrogates(tau='mi', nsurr=100, surrMethod=2, surrfn='tc3', randomSeed='default'))
+
+    # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
+    # outs: normpatponmax,stdfrommean,stdsurr,ztestp
+    # tags: correlation,nonlinear,surrogate,tstool
     SD_TSTL_surrogates_mi_100_1_tc3 = HCTSAOperation(
         'SD_TSTL_surrogates_mi_100_1_tc3',
         "SD_TSTL_surrogates(y,'mi',100,1,'tc3','default')",
@@ -15086,14 +14830,6 @@ class HCTSAOperations(object):
         'SD_TSTL_surrogates_1_100_1_trev',
         "SD_TSTL_surrogates(y,1,100,1,'trev','default')",
         SD_TSTL_surrogates(tau=1, nsurr=100, surrMethod=1, surrfn='trev', randomSeed='default'))
-
-    # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
-    # outs: normpatponmax,stdfrommean,stdsurr,ztestp
-    # tags: correlation,nonlinear,surrogate,tstool
-    SD_TSTL_surrogates_mi_100_2_tc3 = HCTSAOperation(
-        'SD_TSTL_surrogates_mi_100_2_tc3',
-        "SD_TSTL_surrogates(y,'mi',100,2,'tc3','default')",
-        SD_TSTL_surrogates(tau='mi', nsurr=100, surrMethod=2, surrfn='tc3', randomSeed='default'))
 
     # outs: iqrsfrommedian,ksiqrsfrommode,ksphereonmax,kspminfromext,meansurr
     # outs: normpatponmax,stdfrommean,stdsurr,ztestp
@@ -15218,10 +14954,10 @@ class HCTSAOperations(object):
     # outs: w1_99,w1_99mel,w25_75,w25_75mel,w5_95
     # outs: w5_95mel,ylogareatopeak
     # tags: powerspectrum
-    SP_basic_pgram_hamm_power = HCTSAOperation(
-        'SP_basic_pgram_hamm_power',
-        "SP_Summaries(y,'periodogram','hamming',[],0,1)",
-        SP_Summaries(psdmeth='periodogram', wmeth='hamming', nf=(), dologabs=0, doPower=1))
+    SP_basic_fft_power = HCTSAOperation(
+        'SP_basic_fft_power',
+        "SP_Summaries(y,'fft',[],[],0,1)",
+        SP_Summaries(psdmeth='fft', wmeth=(), nf=(), dologabs=0, doPower=1))
 
     # outs: ac1,ac2,ac3,ac4,area_2_1
     # outs: area_2_2,area_3_1,area_3_2,area_3_3,area_4_1
@@ -15254,10 +14990,10 @@ class HCTSAOperations(object):
     # outs: w1_99,w1_99mel,w25_75,w25_75mel,w5_95
     # outs: w5_95mel,ylogareatopeak
     # tags: powerspectrum
-    SP_basic_fft_power = HCTSAOperation(
-        'SP_basic_fft_power',
-        "SP_Summaries(y,'fft',[],[],0,1)",
-        SP_Summaries(psdmeth='fft', wmeth=(), nf=(), dologabs=0, doPower=1))
+    SP_basic_pgram_hamm_power = HCTSAOperation(
+        'SP_basic_pgram_hamm_power',
+        "SP_Summaries(y,'periodogram','hamming',[],0,1)",
+        SP_Summaries(psdmeth='periodogram', wmeth='hamming', nf=(), dologabs=0, doPower=1))
 
     # outs: None
     # tags: raw,spreaddep,trend
@@ -15265,13 +15001,6 @@ class HCTSAOperations(object):
         'ST_FitPolynomial_1',
         'ST_FitPolynomial(x,1)',
         ST_FitPolynomial(k=1))
-
-    # outs: None
-    # tags: raw,spreaddep,trend
-    ST_FitPolynomial_2 = HCTSAOperation(
-        'ST_FitPolynomial_2',
-        'ST_FitPolynomial(x,2)',
-        ST_FitPolynomial(k=2))
 
     # outs: None
     # tags: raw,spreaddep,trend
@@ -15286,6 +15015,13 @@ class HCTSAOperations(object):
         'ST_FitPolynomial_4',
         'ST_FitPolynomial(x,4)',
         ST_FitPolynomial(k=4))
+
+    # outs: None
+    # tags: raw,spreaddep,trend
+    ST_FitPolynomial_2 = HCTSAOperation(
+        'ST_FitPolynomial_2',
+        'ST_FitPolynomial(x,2)',
+        ST_FitPolynomial(k=2))
 
     # outs: None
     # tags: lengthdep,misc,raw
@@ -15396,28 +15132,28 @@ class HCTSAOperations(object):
     ST_SimpleStats_pmcross = HCTSAOperation(
         'ST_SimpleStats_pmcross',
         "ST_SimpleStats(y,'pmcross')",
-        ST_SimpleStats(whatstat='pmcross'))
+        ST_SimpleStats(whatStat='pmcross'))
 
     # outs: None
     # tags: noisiness
     ST_SimpleStats_zcross = HCTSAOperation(
         'ST_SimpleStats_zcross',
         "ST_SimpleStats(y,'zcross')",
-        ST_SimpleStats(whatstat='zcross'))
+        ST_SimpleStats(whatStat='zcross'))
 
     # outs: None
     # tags: noisiness
     ST_SimpleStats_min = HCTSAOperation(
         'ST_SimpleStats_min',
         "ST_SimpleStats(y,'minima')",
-        ST_SimpleStats(whatstat='minima'))
+        ST_SimpleStats(whatStat='minima'))
 
     # outs: None
     # tags: noisiness
     ST_SimpleStats_max = HCTSAOperation(
         'ST_SimpleStats_max',
         "ST_SimpleStats(y,'maxima')",
-        ST_SimpleStats(whatstat='maxima'))
+        ST_SimpleStats(whatStat='maxima'))
 
     # outs: max,mean,meanabsmaxmin,meanmaxmin,min
     # tags: stationarity
@@ -15497,56 +15233,56 @@ class HCTSAOperations(object):
     SY_LocalDistributions_4_each = HCTSAOperation(
         'SY_LocalDistributions_4_each',
         "SY_LocalDistributions(y,4,'each')",
-        SY_LocalDistributions(nseg=4, eachorpar='each'))
+        SY_LocalDistributions(nseg=4, eachOrPar='each'))
 
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_5_each = HCTSAOperation(
         'SY_LocalDistributions_5_each',
         "SY_LocalDistributions(y,5,'each')",
-        SY_LocalDistributions(nseg=5, eachorpar='each'))
+        SY_LocalDistributions(nseg=5, eachOrPar='each'))
 
     # outs: meandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_2_par = HCTSAOperation(
         'SY_LocalDistributions_2_par',
         "SY_LocalDistributions(y,2,'par')",
-        SY_LocalDistributions(nseg=2, eachorpar='par'))
+        SY_LocalDistributions(nseg=2, eachOrPar='par'))
 
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_3_each = HCTSAOperation(
         'SY_LocalDistributions_3_each',
         "SY_LocalDistributions(y,3,'each')",
-        SY_LocalDistributions(nseg=3, eachorpar='each'))
+        SY_LocalDistributions(nseg=3, eachOrPar='each'))
 
     # outs: None
     # tags: stationarity
     SY_LocalDistributions_2_each = HCTSAOperation(
         'SY_LocalDistributions_2_each',
         "SY_LocalDistributions(y,2,'each')",
-        SY_LocalDistributions(nseg=2, eachorpar='each'))
+        SY_LocalDistributions(nseg=2, eachOrPar='each'))
 
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_3_par = HCTSAOperation(
         'SY_LocalDistributions_3_par',
         "SY_LocalDistributions(y,3,'par')",
-        SY_LocalDistributions(nseg=3, eachorpar='par'))
+        SY_LocalDistributions(nseg=3, eachOrPar='par'))
 
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_5_par = HCTSAOperation(
         'SY_LocalDistributions_5_par',
         "SY_LocalDistributions(y,5,'par')",
-        SY_LocalDistributions(nseg=5, eachorpar='par'))
+        SY_LocalDistributions(nseg=5, eachOrPar='par'))
 
     # outs: meandiv,mediandiv,mindiv,stddiv
     # tags: stationarity
     SY_LocalDistributions_4_par = HCTSAOperation(
         'SY_LocalDistributions_4_par',
         "SY_LocalDistributions(y,4,'par')",
-        SY_LocalDistributions(nseg=4, eachorpar='par'))
+        SY_LocalDistributions(nseg=4, eachOrPar='par'))
 
     # outs: absmean,ac1,iqr,kurtosis,median
     # outs: skewness,std
@@ -15664,19 +15400,19 @@ class HCTSAOperations(object):
     # outs: meanloglikelihood,meanpValue,meanstat,minAIC,minBIC
     # outs: minHQC,minpValue,minrmse,minstat,stdpValue
     # tags: aic,bic,econometricstoolbox,hqc,pptest,pvalue,rmse,unitroot
-    SY_PPtest_0_5_ts_t1 = HCTSAOperation(
-        'SY_PPtest_0_5_ts_t1',
-        "SY_PPtest(y,0:5,'ts','t1')",
-        SY_PPtest(lags=MatlabSequence('0:5'), model='ts', testStatistic='t1'))
+    SY_PPtest_0_5_ard_t1 = HCTSAOperation(
+        'SY_PPtest_0_5_ard_t1',
+        "SY_PPtest(y,0:5,'ard','t1')",
+        SY_PPtest(lags=MatlabSequence('0:5'), model='ard', testStatistic='t1'))
 
     # outs: lagmaxp,lagminp,maxpValue,maxrmse,maxstat
     # outs: meanloglikelihood,meanpValue,meanstat,minAIC,minBIC
     # outs: minHQC,minpValue,minrmse,minstat,stdpValue
     # tags: aic,bic,econometricstoolbox,hqc,pptest,pvalue,rmse,unitroot
-    SY_PPtest_0_5_ard_t1 = HCTSAOperation(
-        'SY_PPtest_0_5_ard_t1',
-        "SY_PPtest(y,0:5,'ard','t1')",
-        SY_PPtest(lags=MatlabSequence('0:5'), model='ard', testStatistic='t1'))
+    SY_PPtest_0_5_ts_t1 = HCTSAOperation(
+        'SY_PPtest_0_5_ts_t1',
+        "SY_PPtest(y,0:5,'ts','t1')",
+        SY_PPtest(lags=MatlabSequence('0:5'), model='ts', testStatistic='t1'))
 
     # outs: lagmaxp,lagminp,maxpValue,maxrmse,maxstat
     # outs: meanloglikelihood,meanpValue,meanstat,minAIC,minBIC
