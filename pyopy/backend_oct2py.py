@@ -1,5 +1,7 @@
 # coding=utf-8
 """Octave Oct2Py adaptor and hacks"""
+from __future__ import print_function
+
 import atexit
 import shutil
 import tempfile
@@ -76,7 +78,7 @@ class Oct2PyTransplanter(PyopyTransplanter):
 
     # --- Context manager
 
-    def __exit__(self, etype, value, traceback):
+    def __exit__(self, *_):
         map(self._delete_tempdir, self._tempdirs)
 
 

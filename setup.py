@@ -47,7 +47,8 @@ setup(
               'joblib',
               'argh',
               'whatami',
-              'lockfile'],
+              'lockfile',
+              'future'],
 
     extras_require={
         'oct2py': ['oct2py>=3.1.0'],

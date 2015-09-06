@@ -1,5 +1,7 @@
 # coding=utf-8
 """Using matlab_wrapper as backend."""
+from __future__ import print_function
+
 from pyopy.base import PyopyTransplanter, PyopyEngine, EngineResponse
 
 
@@ -41,7 +43,7 @@ class MatlabWrapperEngine(PyopyEngine):
         try:
             self.session().eval(command)
             return EngineResponse(success=True, code=command), command
-        except RuntimeError, e:
+        except RuntimeError as e:
             return EngineResponse(success=False, code=command, stdout=str(e)), command
 
     def _session_hook(self):
@@ -61,17 +63,17 @@ if __name__ == '__main__':
     with MatlabWrapperEngine(engine_location='/opt/matlab',
                              transplanter=Oct2PyTransplanter()) as eng:
         x = eng.run_function(1, 'ones', 10000, 10000)
-        print x.shape
+        print(x.shape)
         x = eng.put('x', 2, int2float=False)
-        print x.engine_class()
+        print(x.engine_class())
         x = eng.put('x', 2, int2float=True)
-        print x.engine_class()
+        print(x.engine_class())
 
     with MatlabWrapperEngine(engine_location='/opt/matlab',
                              transplanter=MatlabWrapperTransplanter()) as eng:
         x = eng.run_function(1, 'ones', 10000, 10000)
-        print x.shape
+        print(x.shape)
         x = eng.put('x', 2, int2float=False)
-        print x.engine_class()
+        print(x.engine_class())
         x = eng.put('x', 2, int2float=True)
-        print x.engine_class()
+        print(x.engine_class())

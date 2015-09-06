@@ -2,8 +2,12 @@
 """Using the matlab engine for python as a backend for pyopy.
 See: http://www.mathworks.com/help/matlab/matlab-engine-for-python.html
 """
+from __future__ import absolute_import, print_function
 import sys
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 from pyopy.base import PyopyTransplanter, PyopyEngine, EngineResponse
 
@@ -131,19 +135,19 @@ if __name__ == '__main__':
 
     with MathworksEngine(transplanter=Oct2PyTransplanter()) as eng:
         x = eng.run_function(1, 'ones', 10000, 10000)
-        print x.shape
+        print(x.shape)
         x = eng.put('x', 2, int2float=False)
-        print x.engine_class()
+        print(x.engine_class())
         x = eng.put('x', 2, int2float=True)
-        print x.engine_class()
+        print(x.engine_class())
 
     with MathworksEngine(transplanter=MathworksTransplanter()) as eng:
         # do not even dare to go 10000 x 10000, it won't finish (as per Matlab 2014b)
         #   http://www.mathworks.com/help/matlab/matlab_external/matlab-arrays-as-python-variables.html
         # hopefully one day...
         x = eng.run_function(1, 'ones', 1000, 10)
-        print x
+        print(x)
         x = eng.put('x', 2, int2float=False)
-        print x.engine_class()
+        print(x.engine_class())
         x = eng.put('x', 2, int2float=True)
-        print x.engine_class()
+        print(x.engine_class())

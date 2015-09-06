@@ -1,10 +1,13 @@
 # coding=utf-8
 """Common API for matlab/octave as computational engines."""
+from __future__ import print_function, unicode_literals, absolute_import
+from future.builtins import str
+from future.utils import raise_from
+
 import atexit
 import copy
 from itertools import izip
 import os.path as op
-import sys
 
 import numpy as np
 
@@ -87,7 +90,7 @@ class MatlabSequence(object):
     Exception: you fool is not a proper matlab slice
     """
 
-    __slots__ = ['msequence', 'lower', 'upper', 'step']
+    # __slots__ = ['msequence', 'lower', 'upper', 'step']
 
     # Cope with the duality matlab/python efficiently (see py2matstr)
     USE_MATLAB_REPR = False
@@ -254,7 +257,7 @@ class EngineResponse(object):
                  **kwargs):
         super(EngineResponse, self).__init__()
         self.code = code
-        self.success = success.lower() != u'false' if isinstance(success, (unicode, basestring)) else success
+        self.success = success.lower() != u'false' if isinstance(success, str) else success
         self.stdout = stdout
         self.stderr = stderr
         self.exception = exception
@@ -471,7 +474,6 @@ class PyopyEngine(object):
         """
         response = None
         try:
-            command = unicode(command)
             response, actual_command = self._run_command_hook(
                 command + (';' if supress_text_output and not command.endswith(';') else ''))
             if response.success is False:
@@ -481,11 +483,10 @@ class PyopyEngine(object):
                 outputs = self.get(outputs_from_command(actual_command))
                 return response, outputs if isinstance(outputs, (list, tuple)) else (outputs,)
             return response, None
-        except Exception, e:
+        except Exception as e:
             if response is None:
                 raise
-            _, _, traceback = sys.exc_info()  # Missing py3 exception chaining
-            raise EngineException, (response, e), traceback
+            raise_from(EngineException(response, str(e)), e)
 
     def _run_command_hook(self, command):
         """Hook method that is called by run_command, returns a tuple (MatlabResponse, run_command_string)."""
@@ -498,7 +499,7 @@ class PyopyEngine(object):
           - do not move parameter values but instead encode them in function call (should be default when working)
           - do not release result_vars / allow keeping them and specifying their names
         """
-        result_vars = ['pyopy_result_%d' % i for i in xrange(self._num_results, self._num_results + nout)]
+        result_vars = ['pyopy_result_%d' % i for i in range(self._num_results, self._num_results + nout)]
         try:
             if not is_iterable(args):  # split apart numpy arrays, move these using a put context
                 args = [args]
@@ -530,7 +531,7 @@ class PyopyEngine(object):
         ------
         Same as run_command.
         """
-        result_vars = ['pyopy_result_%d' % i for i in xrange(self._num_results, self._num_results + nout)]
+        result_vars = ['pyopy_result_%d' % i for i in range(self._num_results, self._num_results + nout)]
         try:
             with self.context(args) as args:
                 # N.B. we can make this more efficient easily by encoding parameters as literals in the call
@@ -571,7 +572,7 @@ class PyopyEngine(object):
 
     def clear(self, varnames):
         """Cleans variables (string or EngineVariable instances) from the matlab/octave workspace."""
-        if isinstance(varnames, (unicode, basestring, EngineVar)):
+        if isinstance(varnames, (str, EngineVar)):
             varnames = [varnames]
         varnames = [var.name if isinstance(var, EngineVar) else var for var in varnames]
         if len(varnames) > 0:
@@ -637,7 +638,7 @@ class PyopyEngine(object):
         self.session()
         return self
 
-    def __exit__(self, etype, value, traceback):
+    def __exit__(self, *_):
         try:
             self.close_session()
         except:
@@ -682,7 +683,7 @@ class PyopyEngine(object):
                     return [sort_dict[varname] for varname in order]
                 return self.engine.put(self.names, self.values)
 
-            def __exit__(self, etype, value, traceback):
+            def __exit__(self, *_):
                 self.engine.clear(self.names)
 
         self._num_variable_contexts += 1  # useless at the moment
@@ -757,7 +758,7 @@ class PyopyEngines(object):
             engine = 'octave'
         if isinstance(engine, PyopyEngine):  # should just quack like...
             return engine
-        if isinstance(engine, basestring):
+        if isinstance(engine, str):
             if engine not in ('octave', 'matlab'):
                 raise ValueError('engine string "%s" not allowed, only ("matlab" or "octave")' % engine)
             engine = engine == 'octave'
@@ -786,7 +787,7 @@ class PyopyEngines(object):
     @staticmethod
     @atexit.register
     def close_all():
-        for _, v in PyopyEngines._engines.iteritems():
+        for _, v in PyopyEngines._engines.items():
             try:
                 v.close_session()
             except:

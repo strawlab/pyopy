@@ -2,6 +2,7 @@
 """Matlab source code parsing and manipulation.
 These functions are very ad-hoc, but work for all our cases.
 """
+from __future__ import print_function, unicode_literals, absolute_import
 from functools import partial
 import re
 import os.path as op
@@ -19,7 +20,8 @@ def matlab_funcname_from_filename(mfile):
 
 
 def parse_matlab_funcdef(mfile,
-                         funcdef_pattern=re.compile(r'^function\s*(\S.+)\s*=\s*(\S+)\s*\((.*)\)[\r\n|\n]', flags=re.MULTILINE)):
+                         funcdef_pattern=re.compile(r'^function\s*(\S.+)\s*=\s*(\S+)\s*\((.*)\)[\r\n]',
+                                                    flags=re.MULTILINE)):
     """Splits a matlab function file into components.
 
     Parameters
@@ -351,4 +353,3 @@ def parse_matlab_params(matlab_params_string, int2float=True):
 # - Mat2py
 #
 #####################################################################
-

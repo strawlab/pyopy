@@ -12,7 +12,7 @@ def ensure_python_package(path):
         open(op.join(path, '__init__.py'), 'w').close()
 
 
-class cd:
+class cd(object):
     """Context manager for changing the current working directory"""
     def __init__(self, newPath):
         self.newPath = newPath
@@ -22,7 +22,7 @@ class cd:
         self.savedPath = os.getcwd()
         os.chdir(self.newPath)
 
-    def __exit__(self, etype, value, traceback):
+    def __exit__(self, *_):
         os.chdir(self.savedPath)
 
 
@@ -91,7 +91,7 @@ def strings_generator(prefix='', suffix=''):
 
     chars = digits + ascii_uppercase + ascii_lowercase
 
-    for n in xrange(1, 1000):
+    for n in range(1, 1000):
         for comb in product(chars, repeat=n):
             yield prefix + ''.join(comb) + suffix
 
@@ -106,4 +106,3 @@ def some_strings(n, as_list=False, prefix='', suffix=''):
 # --- Find type of file-system (for linux only, might work in MAC)
 #    http://stackoverflow.com/questions/908188/is-there-any-way-of-detecting-if-a-drive-is-a-ssd
 #    for ramdisk and network file systems, parse maybe filesystem outputed by mount
-
