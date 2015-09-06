@@ -262,7 +262,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
                     ', '.join('%s=%r' % (name, value) for name, value in zip(params, values))
 
                 def chunks(l, n):
-                    for i in xrange(0, len(l), n):
+                    for i in range(0, len(l), n):
                         yield l[i:i+n]
                 for outs in chunks(operation.known_outputs(), 5):
                     lines.append('# outs: %s' %

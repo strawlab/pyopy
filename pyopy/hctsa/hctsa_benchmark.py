@@ -1,5 +1,6 @@
 # coding=utf-8
 """Benchmarks and checks the HCTSA python bindings."""
+from __future__ import print_function, unicode_literals, absolute_import
 from itertools import product, izip
 import os.path as op
 import random
@@ -104,7 +105,7 @@ def check_benchmark_bindings(x,
         random.Random().shuffle(operations)
 
     for opname, operation in operations:
-        print opname
+        print(opname)
         start = time.time()
         try:
             if opname in forbidden:
@@ -197,21 +198,21 @@ def analyse():
         except:
             return False
     float_values = df['value'].apply(is_float)
-    print '%d values were non-floats' % (~float_values).sum()
-    print df[~float_values]['operation']
+    print('%d values were non-floats' % (~float_values).sum())
+    print(df[~float_values]['operation'])
     df = df[float_values]
     df = df.convert_objects(convert_numeric=True)  # After removing these, value can be again converted to float
 
     nodup = df.dropna(subset=['error'], axis=0).drop_duplicates(['operator', 'error']).sort('operation')
     nodup.to_html(op.expanduser('~/dupes.html'))
 
-    print '\n'.join(nodup['operator'].unique())
+    print('\n'.join(nodup['operator'].unique()))
     operations_failing = map(lambda o: 'HCTSAOperations.%s[2],' % o, sorted(nodup['operation'].unique()))
-    print '\n'.join(operations_failing)
+    print('\n'.join(operations_failing))
     for opname, error in izip(nodup['operation'], nodup['error']):
-        print '-' * 80
-        print opname
-        print error
+        print('-' * 80)
+        print(opname)
+        print(error)
 
     # Round to the 6th decimal
     df['value'] = np.around(df['value'], decimals=6)
@@ -234,15 +235,16 @@ def analyse():
             tagged_as_stochastic = catalog.operation(operation).has_tag('stochastic')
             failing = 'OK' if (~np.isfinite(oodf['value'])).sum() == 0 else 'FAILING'
             if oodf['value'].nunique() == 0:
-                print xname, operator, operation, output, failing, failing, failing, tagged_as_stochastic
+                print(xname, operator, operation, output, failing, failing, failing, tagged_as_stochastic)
             elif oodf['value'].nunique() == 1:
                 if failing != 'OK' or verbose:
-                    print xname, operator, operation, output, 'DETERMINISTIC', failing, tagged_as_stochastic
+                    print(xname, operator, operation, output, 'DETERMINISTIC', failing, tagged_as_stochastic)
             else:
-                print xname, operator, operation, output, 'RANDOMISED', failing, tagged_as_stochastic
+                print(xname, operator, operation, output, 'RANDOMISED', failing, tagged_as_stochastic)
                 if tooverbose:
                     for value, voodf in oodf.groupby('value'):
-                        print '\t', value, map(str, voodf['host'].unique())
+                        print('\t', value, map(str, voodf['host'].unique()))
+
     stochastic_failing(df)
 
 
@@ -258,18 +260,18 @@ FAILING_AFTER_CELL_NASTINESS = {
 def test_one(operation, engine='matlab'):
     engine = PyopyEngines.engine_or_matlab_or_octave(engine)
     hctsa_prepare_engine(engine)
-    print operation.what().id()
+    print(operation.what().id())
     for name, x in (('noise', hctsa_noise()),
                     ('sine', hctsa_sine()),
                     ('noisysinusoid', hctsa_noisysinusoid()),
                     ('randn10000', np.random.RandomState(0).randn(10000))):
-        print '-' * 80
-        print name
+        print('-' * 80)
+        print(name)
         x = engine.put('x', hctsa_prepare_input(x, z_scored=True))
         try:
             operation.transform(x, eng=engine)
         except Exception as ex:
-            print ex
+            print(ex)
 
 
 if __name__ == '__main__':

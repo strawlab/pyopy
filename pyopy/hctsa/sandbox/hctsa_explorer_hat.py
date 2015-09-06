@@ -1,4 +1,7 @@
 # coding=utf-8
+from __future__ import print_function
+from __future__ import print_function
+from __future__ import print_function
 from operator import itemgetter
 import time
 
@@ -43,7 +46,7 @@ def arrays2cells_and_partial(eng='octave'):
     hctsa_prepare_engine(eng)
 
     # Generate data
-    arrays = [np.random.randn(size) for size in (100, 500, 100, 35, 200, 130, 230)]
+    arrays = [np.random.randn(size, 1) for size in (100, 500, 100, 35, 200, 130, 230)]
     # To octave land
     _ = eng.put('x', [arrays])  # N.B. needs to be list to make a cell
 
@@ -51,9 +54,9 @@ def arrays2cells_and_partial(eng='octave'):
     start = time.time()
     eng.eval('f1=@(x) SY_SpreadRandomLocal(x, \'ac5\')')
     response, result = eng.eval('ans=cellfun(f1, x, \'UniformOutput\', 0)', outs2py=True)
-    print response.success, response.stdout
-    print result
-    print 'cellfun with partial took %.2f seconds' % (time.time() - start)
+    print(response.success, response.stdout)
+    print(result)
+    print('cellfun with partial took %.2f seconds' % (time.time() - start))
     # cellfun with partial took 5.42 seconds (octave)
     # cellfun with partial took 1.12 seconds (matlab) - bye oct2py call overhead + octave slower (use faster builds)
 
@@ -65,8 +68,8 @@ def arrays2cells_and_partial(eng='octave'):
         start = time.time()
         result.append(SY_SpreadRandomLocal(l='ac5').eval(eng, array))
         taken += time.time() - start
-    print result
-    print 'python-land loop took %.2f seconds' % taken
+    print(result)
+    print('python-land loop took %.2f seconds' % taken)
     # python-land loop took 6.18 seconds (octave)
     # python-land loop took 1.27 seconds (matlab) - bye oct2py call overhead + octave slower (use faster builds)
 
@@ -86,7 +89,7 @@ def guess_hctsa_outputs(hctsaer, eng, data=hctsa_sine()):
             return None, out
         if keep_nans:
             return sorted(out.items())
-        return sorted((k, v) for k, v in out.iteritems() if not np.isnan(v))
+        return sorted((k, v) for k, v in out.items() if not np.isnan(v))
     out = process_hctsa_output(hctsaer.eval(eng, data))
     if isinstance(out, list):
         return hctsaer.what().id(), map(itemgetter(0), out)

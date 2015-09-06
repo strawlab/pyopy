@@ -1,4 +1,6 @@
 # coding=utf-8
+from __future__ import print_function
+
 """Tools to extracts features using the HCTSA python bindings.
 Assumes the bindings have already been generated.
 """
@@ -56,10 +58,10 @@ def hctsa_partials_poc(eng_thunk=PyopyEngines.matlab,
                        data=None,
                        # A few hctsa features chosen for no reason
                        features=(CO_AddNoise(),
-                                 DN_Cumulants(whatcum='skew1'),
-                                 DN_Cumulants(whatcum='skew2'),
-                                 DN_Cumulants(whatcum='kurt1'),
-                                 DN_Cumulants(whatcum='kurt2'),
+                                 DN_Cumulants(cumWhatMay='skew1'),
+                                 DN_Cumulants(cumWhatMay='skew2'),
+                                 DN_Cumulants(cumWhatMay='kurt1'),
+                                 DN_Cumulants(cumWhatMay='kurt2'),
                                  WL_fBM(),
                                  WL_scal2frq(wname='db3'),
                                  WL_scal2frq(wname='sym2', amax='max', delta=10))):
@@ -73,8 +75,8 @@ def hctsa_partials_poc(eng_thunk=PyopyEngines.matlab,
         if data is None:
             ne = 100
             rng = np.random.RandomState(2147483647)
-            data = [rng.randn(rng.randint(100, 10000)) for _ in xrange(10)]
-            print ','.join(map(str, map(len, data)))
+            data = [rng.randn(rng.randint(100, 10000), 1) for _ in range(10)]
+            print(','.join(map(str, map(len, data))))
         else:
             ne = len(data)
 
@@ -83,7 +85,7 @@ def hctsa_partials_poc(eng_thunk=PyopyEngines.matlab,
 
         # To matlab-land
         eng.put(u'data', [data])
-        print 'type of data in matlab-land:', eng.engine_class(u'data')
+        print('type of data in matlab-land:', eng.engine_class(u'data'))
 
         # Compute features
         start = time.time()
@@ -91,19 +93,19 @@ def hctsa_partials_poc(eng_thunk=PyopyEngines.matlab,
         for feature in features:
             partial = as_partial_call(feature)
             response, result = eng.eval(u'cellfun(%s, data, \'UniformOutput\', 0)' % partial,
-                                               outs2py=True)
+                                        outs2py=True)
             if not response.success:
                 raise Exception(response.stdout)
             results[feature.who().id()] = result
-        print 'Taken %.2f seconds' % (time.time() - start)
+        print('Taken %.2f seconds' % (time.time() - start))
         # results to matrix
         matrix = []
         fnames = []
-        for fname, fvals in results.iteritems():
-            print fname
+        for fname, fvals in results.items():
+            print(fname)
             # extract from list returned by run_command
             fvals = fvals[0]
-            print type(fvals), len(fvals)
+            print(type(fvals), len(fvals))
             if isinstance(fvals, np.ndarray):
                 fnames.append(fname)
                 fvals = fvals[0]
@@ -111,7 +113,7 @@ def hctsa_partials_poc(eng_thunk=PyopyEngines.matlab,
                 matrix.append(fvals)
             else:
                 out_names = fvals[0].dtype.names
-                print 'num-outputs = %d' % len(out_names)
+                print('num-outputs = %d' % len(out_names))
                 for out_name in out_names:
                     fnames.append('%s#out=%s' % (fname, out_name))
                     v = np.array([fval[out_name][0][0][0] for fval in fvals])  # LAME

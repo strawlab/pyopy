@@ -1,7 +1,7 @@
 # coding=utf-8
 import pytest
 from pyopy.base import PyopyEngines
-from pyopy.hctsa.hctsa_setup import hctsa_prepare_engine
+from pyopy.hctsa.hctsa_install import hctsa_prepare_engine
 
 
 @pytest.yield_fixture(scope='module', params=['matlab', 'octave'])

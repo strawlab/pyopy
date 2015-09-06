@@ -1,5 +1,6 @@
 # coding=utf-8
 """Fix, install, mex HCTSA in octave/matlab land."""
+from __future__ import print_function
 import os
 import os.path as op
 import shutil
@@ -19,19 +20,19 @@ def _download_hctsa(force=False, release_or_branch='v0.9', use_git=False):
     if op.isdir(HCTSA_DIR) and not force:
         return
     if op.isdir(HCTSA_DIR):
-        print 'Removing current installation...'
+        print('Removing current installation...')
         shutil.rmtree(HCTSA_DIR, ignore_errors=False)
     if not use_git:
         url = 'https://github.com/benfulcher/hctsa/archive/%s.tar.gz' % release_or_branch
         tar = op.join(op.dirname(HCTSA_DIR), 'hctsa-%s.tar.gz' % release_or_branch)
-        print 'Downloading %s...' % url
+        print('Downloading %s...' % url)
         urllib.urlretrieve(url, tar)
-        print 'Decompressing %s...' % tar
+        print('Decompressing %s...' % tar)
         with tarfile.open(tar, 'r:gz') as tfile:
             tfile.extractall(op.dirname(tar))
-        print 'Deleting %s...' % tar
+        print('Deleting %s...' % tar)
         os.remove(tar)
-        print 'Renaming directories'
+        print('Renaming directories')
         try:
             os.rename(op.join(op.dirname(HCTSA_DIR), 'hctsa-%s' % release_or_branch),
                       op.join(op.dirname(HCTSA_DIR), 'hctsa'))
@@ -39,7 +40,7 @@ def _download_hctsa(force=False, release_or_branch='v0.9', use_git=False):
             # github renames v0.9 to 0.9, try to see if this is the case
             os.rename(op.join(op.dirname(HCTSA_DIR), 'hctsa-%s' % release_or_branch[1:]),
                       op.join(op.dirname(HCTSA_DIR), 'hctsa'))
-        print 'Done'
+        print('Done')
     else:
         url = 'https://github.com/benfulcher/hctsa.git'
         check_call(['git clone %s %s' % (url, HCTSA_DIR)], shell=True)
@@ -49,7 +50,7 @@ def _download_hctsa(force=False, release_or_branch='v0.9', use_git=False):
 
 def _fix_fnames():
     """Fixes functions that do not correspond to their file name."""
-    for mfile, wrong_funcname in {'SB_MotifThree.m': 'ST_MotifThree'}.iteritems():
+    for mfile, wrong_funcname in {'SB_MotifThree.m': 'ST_MotifThree'}.items():
         rename_matlab_func(op.join(HCTSA_DIR, 'Operations', mfile), wrong_funcname)
 
 
@@ -165,7 +166,7 @@ def mex(engine=None):
     # mex all
     response, _ = engine.eval('compile_mex')
     # feedback if available...
-    print 'Compilation feedback:\n\t', response.stdout
+    print('Compilation feedback:\n\t', response.stdout)
     #
     # We also need to compile TISEAN and put it in the PATH
     # See my PKGBUILD for arch:
@@ -202,7 +203,7 @@ def hctsa_prepare_engine(engine):
             try:
                 engine.eval('pkg load %s' % pkg)
             except:  # FIXME: broad
-                print 'Warning: cannot load octave package "%s", maybe install it?' % pkg
+                print('Warning: cannot load octave package "%s", maybe install it?' % pkg)
         maybe_load('parallel')
         maybe_load('optim')
         maybe_load('signal')
@@ -212,8 +213,8 @@ def hctsa_prepare_engine(engine):
     try:
         engine.eval('javaaddpath(\'%s\');' % op.join(HCTSA_TOOLBOXES_DIR, 'infodynamics-dist', 'infodynamics.jar'))
     except:
-        print 'Warning, could not add infodynamics to the %s path, is there java support in the engine?' % \
-              ('octave' if engine.is_octave() else 'matlab')
+        print('Warning, could not add infodynamics to the %s path, is there java support in the engine?' %
+              ('octave' if engine.is_octave() else 'matlab'))
 
 
 def install(engine='matlab',
@@ -260,10 +261,10 @@ def install(engine='matlab',
     mex(engine)
     # Generate the bindings
     if generate_bindings:
-        print 'Generating python bindings...'
+        print('Generating python bindings...')
         gen_bindings()
 
 
 if __name__ == '__main__':
     argh.dispatch_command(install)
-    print 'Done'
+    print('Done')

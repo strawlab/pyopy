@@ -5,6 +5,8 @@ HCTSA is a big library of "Operations" together with some extra code to create a
 Each "Operation" maps a time-series to some outputs, and each output ("Feature") is a scalar.
 An "Operation" represents a call to an "Operator" with certain parameters, producing one or more "Features".
 """
+from __future__ import print_function
+from future.builtins import str
 from glob import glob
 from itertools import chain
 import os.path as op
@@ -326,7 +328,7 @@ class HCTSACatalog(object):
                 feature = HCTSAFeature(featname, operation, outname, tags)
                 if featname in self.features_dict:
                     msg = 'Warning: the feature %s is defined more than once, ignoring...' % featname
-                    print msg
+                    print(msg)
                     continue  # But actually keep these that are not commented
                     # raise Exception(msg)
                 self.features_dict[featname] = feature
@@ -414,7 +416,7 @@ class HCTSACatalog(object):
           - [] means the operation is not used at all in HCTSA
         """
         outnames = set()
-        for operation in self.operations_dict.itervalues():
+        for operation in self.operations_dict.values():
             if operation.funcname == funcname:
                 for feature in operation.features:
                     outnames.add(feature.outname)
@@ -438,7 +440,7 @@ class HCTSACatalog(object):
     def allops():
         if HCTSACatalog._allops is None:
             from hctsa_bindings import HCTSAOperations
-            HCTSACatalog._allops = sorted((name, comp[2]) for name, comp in HCTSAOperations.__dict__.iteritems()
+            HCTSACatalog._allops = sorted((name, comp[2]) for name, comp in HCTSAOperations.__dict__.items()
                                           if not name.startswith('_'))
         return HCTSACatalog._allops
 
@@ -456,7 +458,7 @@ class HCTSACatalog(object):
     @staticmethod
     def must_standardize(operation):
         # Copes with Ben's (x -> normal | y -> standardised) convention
-        if isinstance(operation, basestring):
+        if isinstance(operation, str):
             operation = HCTSACatalog.catalog().operations_dict.get(operation, None)
         return operation is not None and operation.standardize
 
@@ -465,4 +467,4 @@ def summary():
     return HCTSACatalog().summary()
 
 if __name__ == '__main__':
-    print summary()
+    print(summary())
