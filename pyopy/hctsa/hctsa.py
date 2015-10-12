@@ -1,5 +1,6 @@
 # coding=utf-8
-"""High lever API for the library."""
+"""High level API for the library."""
+from __future__ import print_function
 import copy
 
 
@@ -14,18 +15,18 @@ def prepare(engine='matlab',
     if eng[0] is None:
         from pyopy.base import PyopyEngines
         from hctsa_install import hctsa_prepare_engine
-        print 'Starting engine'
+        print('Starting engine')
         eng[0] = PyopyEngines.engine_or_matlab_or_octave(engine)
         if warmup:
-            print 'Warming up'
+            print('Warming up')
             eng[0].warmup()
         if prepare_engine:
-            print 'Configuring HCTSA'
+            print('Configuring HCTSA')
             hctsa_prepare_engine(eng[0])
         if prepare_operators:
-            print 'Setting up HCTSA operators'
+            print('Setting up HCTSA operators')
             operations_with_eng[0] = hctsa_operations_use_eng(eng=eng[0])
-        print 'Hooray, we can use HCTSA now...'
+        print('Hooray, we can use HCTSA now...')
     return eng[0], operations_with_eng[0]
 
 
