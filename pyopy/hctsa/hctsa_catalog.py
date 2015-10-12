@@ -6,7 +6,7 @@ Each "Operation" maps a time-series to some outputs, and each output ("Feature")
 An "Operation" represents a call to an "Operator" with certain parameters, producing one or more "Features".
 """
 from __future__ import print_function
-from future.builtins import str
+from future.utils import string_types
 from glob import glob
 from itertools import chain
 import os.path as op
@@ -458,7 +458,7 @@ class HCTSACatalog(object):
     @staticmethod
     def must_standardize(operation):
         # Copes with Ben's (x -> normal | y -> standardised) convention
-        if isinstance(operation, str):
+        if isinstance(operation, string_types):
             operation = HCTSACatalog.catalog().operations_dict.get(operation, None)
         return operation is not None and operation.standardize
 
