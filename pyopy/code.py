@@ -3,6 +3,7 @@
 These functions are very ad-hoc, but work for all our cases.
 """
 from __future__ import print_function, unicode_literals, absolute_import
+import codecs
 from functools import partial
 import re
 import os.path as op
@@ -37,14 +38,14 @@ def parse_matlab_funcdef(mfile,
     a tuple prefunc (string), out (string), funcname (string), parameters (string list), postfunc (string)
     """
     expected_func_name = op.splitext(op.basename(mfile))[0]
-    with open(mfile) as reader:
+    with codecs.open(mfile, encoding='utf-8') as reader:
         text = reader.read()  # .replace('\r\n', '\n')
         prefunc, out, funcname, parameters, postfunc = funcdef_pattern.split(text, maxsplit=1)
         if not funcname == expected_func_name:
             raise Exception('Problem parsing %s.\n'
                             'The function name does not correspond to the file name' %
                             mfile)
-        parameters = map(str.strip, parameters.split(','))
+        parameters = [p.strip() for p in parameters.split(',')]
         return prefunc, out, funcname, parameters, postfunc
 
 
@@ -210,7 +211,7 @@ def parse_matlab_params(matlab_params_string, int2float=True):
             # It will work as long as the code reading this cell does not query its size
             # but just access a set of concrete values.
             # This is the case in HCTSA parameter specification
-            values = map(str.strip, cell[1:-1].split(','))
+            values = [v.strip() for v in cell[1:-1].split(',')]
             if all(is_number(value) for value in values):
                 return "{%s,'_celltrick_'}" % ','.join(map(str, values))
             return cell

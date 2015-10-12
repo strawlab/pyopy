@@ -1,5 +1,6 @@
 # coding=utf-8
 """Python bindings generation for HCTSA."""
+import codecs
 from itertools import chain
 
 from whatami import whatable
@@ -290,7 +291,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         hctsa_catalog = HCTSACatalog()
     # Ensure that the destination python package exists
     ensure_python_package(HCTSA_BINDINGS_DIR)
-    with open(HCTSA_BINDINGS_FILE, 'w') as writer:
+    with codecs.open(HCTSA_BINDINGS_FILE, mode='w', encoding='utf-8') as writer:
         # Bindings imports
         binding_imports = (
             'from pyopy.base import MatlabSequence',
