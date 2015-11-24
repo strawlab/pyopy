@@ -46,11 +46,10 @@ setup(
               'pandas',
               'joblib',
               'argh',
+              'lockfile',
               'whatami>=5.1.0',
               'arpeggio>=1.0',
-              'future>=0.15.2',
-              'lockfile',
-              'future'],
+              'future>=0.15.2'],
 
     extras_require={
         'oct2py': ['oct2py>=3.1.0'],
