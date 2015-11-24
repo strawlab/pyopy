@@ -46,7 +46,9 @@ setup(
               'pandas',
               'joblib',
               'argh',
-              'whatami',
+              'whatami>=5.1.0',
+              'arpeggio>=1.0',
+              'future>=0.15.2',
               'lockfile',
               'future'],
 
