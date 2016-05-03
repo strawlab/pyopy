@@ -3,7 +3,7 @@ import numpy as np
 from numpy.testing.utils import assert_array_equal
 
 from pyopy.base import MatlabSequence
-from pyopysan.parsing import parse_matlab_function, MatlabId
+from pyopy.sandbox.parsing import parse_matlab_function, MatlabId
 
 
 def test_basic_parsing():
@@ -76,6 +76,10 @@ def test_matrix_parsing():
     name, params = parse_matlab_function("A([[[[1]]] 2; 3 4])")
     assert name == MatlabId('A')
     assert_array_equal(params[0], np.array([[1, 2], [3, 4]]))
+
+    # also: [[2 3] 4] -> [2 3 4]
+    # see octave isscalar, and how octave interprets [[[0]]]...
+
 
 
 def __test_matrix_parsing():

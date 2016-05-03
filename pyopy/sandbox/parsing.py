@@ -25,7 +25,9 @@ def build_matlabcall_parser(reduce_tree=False, debug=False):
     def a_number():
         return [RegExMatch('-?\d+((\.\d*)?((e|E)(\+|-)?\d+)?)?'),
                 StrMatch('-inf'), StrMatch('-Inf'), StrMatch('inf'), StrMatch('Inf'),
-                StrMatch('nan'), StrMatch('NaN')]
+                StrMatch('nan'), StrMatch('NaN'),
+                (StrMatch('['), a_number, StrMatch(']')),
+                (StrMatch('{'), a_number, StrMatch('}'))]
 
     def a_string():
         return StrMatch("'"), RegExMatch("(''|[^'])*"), StrMatch("'")
@@ -133,21 +135,13 @@ class MatlabcallTreeVisitor(PTNodeVisitor):
 
     @staticmethod
     def visit_a_matrix_row(_, children):
-        def singleton2scalar(array):
-            if array.size == 1:
-                return array.ravel()[0]
-            return array
-
         def e2array(e):
             try:
-                return singleton2scalar(e.as_array())
+                return e.as_array()
             except AttributeError:
                 return e
-        # [::2] to ignore commas / spaces
-        values = children[::2]
-        # see octave isscalar, and how octave interprets [[[0]]]...
-        array = np.hstack(map(e2array, values))
-        return singleton2scalar(array)
+        values = children[::2]  # [::2] to ignore commas / spaces
+        return np.hstack(map(e2array, values))
 
     @staticmethod
     def visit_a_matrix_row_list(_, children):
