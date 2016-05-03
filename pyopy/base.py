@@ -179,7 +179,10 @@ class MatlabSequence(object):
         return self.python_sequence_string()
 
     def __eq__(self, other):
-        return self.msequence == other.msequence
+        try:
+            return self.msequence == other.msequence
+        except AttributeError:
+            return False
 
 
 #
