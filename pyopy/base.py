@@ -2,8 +2,7 @@
 """Common API for matlab/octave as computational engines."""
 from __future__ import print_function, unicode_literals, absolute_import
 from future.builtins import str
-from past.builtins import basestring
-from future.utils import raise_from
+from future.utils import raise_from, string_types
 
 import atexit
 import copy
@@ -261,7 +260,7 @@ class EngineResponse(object):
                  **kwargs):
         super(EngineResponse, self).__init__()
         self.code = code
-        self.success = success.lower() != u'false' if isinstance(success, str) else success
+        self.success = success.lower() != u'false' if isinstance(success, string_types) else success
         self.stdout = stdout
         self.stderr = stderr
         self.exception = exception
@@ -762,7 +761,7 @@ class PyopyEngines(object):
             engine = 'octave'
         if isinstance(engine, PyopyEngine):  # should just quack like...
             return engine
-        if isinstance(engine, basestring):
+        if isinstance(engine, string_types):
             if engine not in ('octave', 'matlab'):
                 raise ValueError('engine string "%s" not allowed, only ("matlab" or "octave")')
         return PyopyEngines.octave() if engine.lower() == 'octave' else PyopyEngines.matlab()
