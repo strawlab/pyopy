@@ -2,8 +2,8 @@
 import numpy as np
 from numpy.testing.utils import assert_array_equal
 
-from pyopy.base import MatlabSequence
-from pyopy.sandbox.parsing import parse_matlab_function, MatlabId
+from pyopy.base import MatlabSequence, MatlabId
+from pyopy.sandbox.parsing import parse_matlab_function
 
 
 def test_basic_parsing():
@@ -35,8 +35,8 @@ def test_numbers_parsing():
     name, params = parse_matlab_function("A(nan, NaN)")
     assert name == MatlabId('A')
     assert len(params) == 2
-    assert np.isnan(params[0])
-    assert np.isnan(params[1])
+    assert params[0] != params[0]
+    assert params[1] != params[1]
 
 
 def test_sequence_parsing():
@@ -51,71 +51,67 @@ def test_sequence_parsing():
     assert params == [MatlabSequence('0:0.05:0.95')]
 
 
-def _test_matrix_parsing():
-    # Empty matrix
-    name, params = parse_matlab_function("A([])")
-    assert name == MatlabId('A')
-    assert len(params) == 1
-    assert_array_equal(params[0], np.array([]))
-
-    # Singleton matrix
-    name, params = parse_matlab_function("A([1])")
-    assert name == MatlabId('A')
-    assert params == [1]
-
-    name, params = parse_matlab_function("A([[[1]]])")
-    assert name == MatlabId('A')
-    assert params == [1]
-
-    name, params = parse_matlab_function("A([[[1]]; 2])")
-    assert name == MatlabId('A')
-    assert_array_equal(params[0], np.array([[1], [2]]))
-
-
 def test_matrix_parsing():
-    name, params = parse_matlab_function("A([[[[1]]] 2; 3 4])")
+    # Empty matrix -> empty array
+    name, (matrix,) = parse_matlab_function("A([])")
     assert name == MatlabId('A')
-    assert_array_equal(params[0], np.array([[1, 2], [3, 4]]))
+    assert_array_equal(matrix, np.array([]))
 
-    # also: [[2 3] 4] -> [2 3 4]
-    # see octave isscalar, and how octave interprets [[[0]]]...
-
-
-
-def __test_matrix_parsing():
-    # Mixed slice, constant row matrix
-    name, params = parse_matlab_function("A([1, 2:8])")
+    # Single element matrix -> python scalar
+    name, (matrix,) = parse_matlab_function("A([1])")
     assert name == MatlabId('A')
-    assert len(params) == 1
-    assert_array_equal(params[0], np.arange(1, 9).reshape(1, -1))
+    assert matrix == 1
 
-    # Column matrix
-    name, params = parse_matlab_function("A([1; 2; 3])")
+    name, (matrix,) = parse_matlab_function("A([[[1]]])")
     assert name == MatlabId('A')
-    assert len(params) == 1
-    assert_array_equal(params[0], np.array([[1], [2], [3]]))
+    assert matrix == 1
 
-    # Mixed slice, constant 2D matrix
-    name, params = parse_matlab_function("A([1, 2:3; 3:5])")
+    # Single row matrix -> 1D array
+    name, (matrix,) = parse_matlab_function("A([[[1 2]]])")
     assert name == MatlabId('A')
-    assert len(params) == 1
-    assert_array_equal(params[0], np.array([[1, 2, 3], [3, 4, 5]]))
+    assert_array_equal(matrix, np.array([1, 2]))
+
+    name, (matrix,) = parse_matlab_function("A([[[1 2]], 3 4 5:6, 7:8])")
+    assert name == MatlabId('A')
+    assert_array_equal(matrix, np.array([1, 2, 3, 4, 5, 6, 7, 8]))
+
+    # Many rows matrices -> 2D array
+    name, (matrix,) = parse_matlab_function("A([1; 2])")
+    assert name == MatlabId('A')
+    assert_array_equal(matrix, np.array([[1],
+                                         [2]]))
+
+    name, (matrix,) = parse_matlab_function("A([[[1]] 2:4; 1, 2, [3 4]])")
+    assert name == MatlabId('A')
+    assert_array_equal(matrix, np.array([[1, 2, 3, 4],
+                                         [1, 2, 3, 4]]))
+
+    # More freeform matrix construction: 2D matrices concatenation
+    name, (matrix,) = parse_matlab_function("A([[1;2] [3;4]])")
+    assert name == MatlabId('A')
+    assert_array_equal(matrix, np.array([[1, 3],
+                                         [2, 4]]))
 
 
 def test_cell_parsing():
 
-    # Only numeric cells
-    name, (cell,) = parse_matlab_function('A({1, 2, 3})')
+    # An empty cell
+    name, (cell,) = parse_matlab_function('A({})')
     assert name == MatlabId('A')
-    assert_array_equal(cell, np.array([1, 2, 3], dtype=object))
+    assert_array_equal(cell, np.array([], dtype=object))
+
+    # Only numeric cell arrays
+    # name, (cell,) = parse_matlab_function('A({1, 2, 3})')
+    # assert name == MatlabId('A')
+    # assert_array_equal(cell, np.array([1, 2, 3], dtype=object))
 
     # Nested cells
-    name, (cell,) = parse_matlab_function("A({'covSum',{'covSEiso','covNoise'}})")
-    assert name == MatlabId('A')
-    assert cell.ndim == 1
-    assert len(cell) == 2
-    assert cell[0] == 'covSum'
-    assert_array_equal(cell[1], np.array(['covSEiso', 'covNoise'], dtype=object))
+    # name, (cell,) = parse_matlab_function("A({'covSum',{'covSEiso','covNoise'}})")
+    # assert name == MatlabId('A')
+    # assert cell.ndim == 1
+    # assert len(cell) == 2
+    # assert cell[0] == 'covSum'
+    # assert_array_equal(cell[1], np.array(['covSEiso', 'covNoise'], dtype=object))
 
     # 2D cells
     # name, (cell,) = parse_matlab_function("A({1 2; {'covSEiso'}, 'a'})")

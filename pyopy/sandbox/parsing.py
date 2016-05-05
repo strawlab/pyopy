@@ -1,7 +1,8 @@
 from __future__ import print_function
 import numpy as np
-from pyopy.base import MatlabSequence
-from arpeggio import StrMatch, RegExMatch, ZeroOrMore, Optional, ParserPython, EOF, PTNodeVisitor, visit_parse_tree
+from pyopy.base import MatlabSequence, MatlabId
+from arpeggio import StrMatch, RegExMatch, ZeroOrMore, Optional, ParserPython, EOF, PTNodeVisitor, visit_parse_tree, \
+    OneOrMore
 
 
 def build_matlabcall_parser(reduce_tree=False, debug=False):
@@ -25,44 +26,48 @@ def build_matlabcall_parser(reduce_tree=False, debug=False):
     def a_number():
         return [RegExMatch('-?\d+((\.\d*)?((e|E)(\+|-)?\d+)?)?'),
                 StrMatch('-inf'), StrMatch('-Inf'), StrMatch('inf'), StrMatch('Inf'),
-                StrMatch('nan'), StrMatch('NaN'),
-                (StrMatch('['), a_number, StrMatch(']')),
-                (StrMatch('{'), a_number, StrMatch('}'))]
+                StrMatch('nan'), StrMatch('NaN')]
 
     def a_string():
         return StrMatch("'"), RegExMatch("(''|[^'])*"), StrMatch("'")
 
     def a_sequence():
         return [
-            (a_number, StrMatch(':'), a_number, StrMatch(':'), a_number),  # 0:0.05:0.95
-            (a_number, StrMatch(':'), a_number)  # 1:3
+            (a_number, StrMatch(':'), a_number, StrMatch(':'), a_number),
+            (a_number, StrMatch(':'), a_number)
         ]
 
-    def a_matrix_row():
-        # a bit hacky regexp due to:
-        #   matlab allowing things like [1 2], so a blank is equivalent to a comma here
-        #   we are configuring arpeggio to ignore blanks
-        return [a_sequence, a_matrix, a_number], ZeroOrMore(RegExMatch(',|'), [a_sequence, a_matrix, a_number])
+    def a_comma_or_space():
+        return [StrMatch(','), StrMatch('')]
 
-    def a_matrix_row_list():
-        return a_matrix_row, ZeroOrMore(StrMatch(';'), a_matrix_row)
+    def an_empty_matrix():
+        return StrMatch('['), StrMatch(']')
+
+    def a_matrix_row():
+        parts = [a_sequence, a_number, (StrMatch("["), a_matrix_row, StrMatch("]"))]
+        return parts, ZeroOrMore(a_comma_or_space, parts)
+
+    def a_2d_matrix():
+        return StrMatch("["), a_matrix_row, OneOrMore(StrMatch(';'), a_matrix_row), StrMatch("]")
+
+    def a_2d_matrices_concat():
+        return StrMatch("["), a_2d_matrix, OneOrMore(a_comma_or_space, a_2d_matrix), StrMatch("]")
 
     def a_matrix():
-        return StrMatch("["), Optional(a_matrix_row_list), StrMatch("]")
+        return [an_empty_matrix, a_matrix_row, a_2d_matrix, a_2d_matrices_concat]
 
-    def a_cell_row():
-        # Same syntax as in a matrix row
-        # Can any value be a cell element?
-        return a_value, ZeroOrMore(RegExMatch(',|'), a_value)
-
-    def a_cell_row_list():
-        return a_cell_row, ZeroOrMore(StrMatch(';'), a_cell_row)
+    def an_empty_cell():
+        return StrMatch('{'), StrMatch('}')
 
     def a_cell():
-        return StrMatch('{'), Optional(a_cell_row_list), StrMatch('}')
+        return [an_empty_cell]
 
     def a_value():
-        return [a_signature_or_call, a_sequence, a_matrix, a_cell, a_number, a_string, an_id]
+        # N.B. do not change order
+        return [a_sequence, a_number,
+                a_string, an_id,
+                a_matrix, a_cell,
+                a_signature_or_call]
 
     def a_parameter_list():
         return a_value, ZeroOrMore(StrMatch(','), a_value)
@@ -117,6 +122,8 @@ class MatlabcallTreeVisitor(PTNodeVisitor):
 
     @staticmethod
     def visit_a_string(_, children):
+        if not children:
+            return ''
         return children[0].replace("''", "'")
 
     @staticmethod
@@ -128,34 +135,32 @@ class MatlabcallTreeVisitor(PTNodeVisitor):
 
     @staticmethod
     def visit_a_sequence(_, children):
-        if 2 <= len(children) <= 3:
-            return MatlabSequence(':'.join(map(str, children)))
-        else:
-            raise ValueError('A matlab sequence/slice must have two or three children')
+        return MatlabSequence(':'.join(map(str, children)))
+
+    @staticmethod
+    def visit_a_comma_or_space(*_):
+        # Ignore syntax noise, when syntax noise includes spaces (as in matrix strings)
+        return None
+
+    @staticmethod
+    def visit_an_empty_matrix(*_):
+        return np.array([])
 
     @staticmethod
     def visit_a_matrix_row(_, children):
-        def e2array(e):
-            try:
-                return e.as_array()
-            except AttributeError:
-                return e
-        values = children[::2]  # [::2] to ignore commas / spaces
-        return np.hstack(map(e2array, values))
+        return np.hstack(map(np.atleast_1d, children))
 
     @staticmethod
-    def visit_a_matrix_row_list(_, children):
+    def visit_a_2d_matrix(_, children):
         return np.vstack(children)
 
     @staticmethod
-    def visit_a_matrix(_, children):
-        if not children:
-            return np.array([])
-        return np.vstack(children)
+    def visit_a_2d_matrices_concat(_, children):
+        return np.hstack(children)
 
     @staticmethod
-    def visit_a_cell(_, children):
-        return np.array(list(children[0]), dtype=np.object)
+    def visit_an_empty_cell(*_):
+        return np.array([], dtype=np.object)
 
     @staticmethod
     def visit_a_value(_, children):
@@ -203,3 +208,5 @@ if __name__ == '__main__':
 # TODO: Are inner functions / closures slower when creating a parser?
 #       Most probably this is irrelevant, but a benchmark is required.
 # TODO: We probably miss some escaping rules for matlab strings
+
+# See also: np.mat('[1 2; 3, 4]')
