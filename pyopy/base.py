@@ -50,6 +50,25 @@ def _segregate_evs(varnames, values):
     return not_ev_names, not_ev_values, ev_names, ev_values
 
 
+# --- An id on matlab space
+
+class MatlabId(object):
+    __slots__ = 'name'
+
+    def __init__(self, name):
+        super(MatlabId, self).__init__()
+        self.name = name
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return '%s(%r)' % (self.__class__.__name__, self.name)
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.name == other.name
+
+
 # --- Adapt matlab sequences syntax
 
 class MatlabSequence(object):
