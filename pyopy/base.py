@@ -160,6 +160,12 @@ class MatlabSequence(object):
             return array[:-1]
         return array
 
+    def __array__(self, dtype=None):
+        """Numpy __array__ magic method, so np.array(slice) works as expected."""
+        if dtype is None:
+            return self.as_array()
+        return self.as_array().astype(dtype)
+
     def matlab_sequence_string(self):
         """Returns the original matlab sequence string.
 
