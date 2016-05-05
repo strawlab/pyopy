@@ -81,24 +81,6 @@ def build_matlabcall_parser(reduce_tree=False, debug=False):
     return ParserPython(function_signature_call, reduce_tree=reduce_tree, debug=debug)
 
 
-class MatlabId(object):
-
-    __slots__ = 'name'
-
-    def __init__(self, name):
-        super(MatlabId, self).__init__()
-        self.name = name
-
-    def __str__(self):
-        return self.name
-
-    def __repr__(self):
-        return '%s(%r)' % (self.__class__.__name__, self.name)
-
-    def __eq__(self, other):
-        return isinstance(other, MatlabId) and self.name == other.name
-
-
 class MatlabcallTreeVisitor(PTNodeVisitor):
     """
     A tree visitor for matlab calls that return a python representation of the call.
@@ -188,6 +170,7 @@ def parse_matlab_function(function_or_call,
 if __name__ == '__main__':
 
     from pyopy.hctsa.hctsa_catalog import HCTSACatalog
+
     hctsa = HCTSACatalog()
 
     for opname, _ in hctsa.allops():
