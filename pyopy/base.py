@@ -109,8 +109,6 @@ class MatlabSequence(object):
     Exception: you fool is not a proper matlab slice
     """
 
-    # __slots__ = ['msequence', 'lower', 'upper', 'step']
-
     # Cope with the duality matlab/python efficiently (see py2matstr)
     USE_MATLAB_REPR = False
 
@@ -202,23 +200,6 @@ class MatlabSequence(object):
         except AttributeError:
             return False
 
-
-#
-# in octave, all these get flattened:
-#   1:4         = [1, 2, 3, 4]
-#   [1:4]       = [1, 2, 3, 4]
-#   [1, 2:3, 4] = [1, 2, 3, 4]
-#   [1:2, 3:4]  = [1, 2, 3, 4]
-#
-# However, [1:3] could get translated to something like
-#    mcat([mslice[1:3]]) -> [MatlabSequence('1:3')]
-#
-# This is not so easy to deal with using our clumsy way of parsing
-# So we will do in python land now, in an over-conservative way
-#
-# TODO: deal with nested MatlabSequences, could be done in MatlabWrite too
-#       no use case at the moment, but it is not difficult to imagine...
-#
 
 def _flatten_matlab_sequences(pyval):
     if not isinstance(pyval, list) or not any(isinstance(x, MatlabSequence) for x in pyval):
