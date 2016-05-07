@@ -59,15 +59,20 @@ def build_matlabcall_parser(reduce_tree=False, debug=False):
     def an_empty_cell():
         return StrMatch('{'), StrMatch('}')
 
+    def a_cell_row():
+        return StrMatch("{"), a_value, ZeroOrMore(a_comma_or_space, a_value), StrMatch("}")
+
+    # def a_2d_cell():
+    #     return StrMatch("{"), a_cell_row, OneOrMore(StrMatch(';'), a_cell_row), StrMatch("}")
+
     def a_cell():
-        return [an_empty_cell]
+        return [an_empty_cell, a_cell_row]
 
     def a_value():
         # N.B. do not change order
         return [a_sequence, a_number,
-                a_string, an_id,
-                a_matrix, a_cell,
-                a_signature_or_call]
+                a_signature_or_call, a_string, an_id,
+                a_matrix, a_cell]
 
     def a_parameter_list():
         return a_value, ZeroOrMore(StrMatch(','), a_value)
@@ -145,6 +150,10 @@ class MatlabcallTreeVisitor(PTNodeVisitor):
         return np.array([], dtype=np.object)
 
     @staticmethod
+    def visit_a_cell_row(_, children):
+        return np.array(list(children), dtype=np.object)
+
+    @staticmethod
     def visit_a_value(_, children):
         return children[0]
 
@@ -160,8 +169,8 @@ class MatlabcallTreeVisitor(PTNodeVisitor):
 
 
 def parse_matlab_function(function_or_call,
-                          parser=build_matlabcall_parser(),
-                          visitor=MatlabcallTreeVisitor()):
+                          parser=build_matlabcall_parser(debug=False),
+                          visitor=MatlabcallTreeVisitor(debug=False)):
     # TODO: docstring this properly
     ast = parser.parse(function_or_call)
     return visit_parse_tree(ast, visitor)
@@ -178,8 +187,10 @@ if __name__ == '__main__':
 
         # Concrete call
         matlab_call = operation.opcall
-        print(matlab_call)
-        name, params = parse_matlab_function(matlab_call)
+        try:
+            name, params = parse_matlab_function(matlab_call)
+        except:
+            print(matlab_call)
 
         # This should work, but it does not...
         # matlab_function = matlab_function = operation.function.code

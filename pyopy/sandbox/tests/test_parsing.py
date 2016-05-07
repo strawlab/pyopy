@@ -101,17 +101,17 @@ def test_cell_parsing():
     assert_array_equal(cell, np.array([], dtype=object))
 
     # Only numeric cell arrays
-    # name, (cell,) = parse_matlab_function('A({1, 2, 3})')
-    # assert name == MatlabId('A')
-    # assert_array_equal(cell, np.array([1, 2, 3], dtype=object))
+    name, (cell,) = parse_matlab_function('A({1, 2, 3})')
+    assert name == MatlabId('A')
+    assert_array_equal(cell, np.array([1, 2, 3], dtype=object))
 
     # Nested cells
-    # name, (cell,) = parse_matlab_function("A({'covSum',{'covSEiso','covNoise'}})")
-    # assert name == MatlabId('A')
-    # assert cell.ndim == 1
-    # assert len(cell) == 2
-    # assert cell[0] == 'covSum'
-    # assert_array_equal(cell[1], np.array(['covSEiso', 'covNoise'], dtype=object))
+    name, (cell,) = parse_matlab_function("A({'covSum',{'covSEiso','covNoise'}})")
+    assert name == MatlabId('A')
+    assert cell.ndim == 1
+    assert len(cell) == 2
+    assert cell[0] == 'covSum'
+    assert_array_equal(cell[1], np.array(['covSEiso', 'covNoise'], dtype=object))
 
     # 2D cells
     # name, (cell,) = parse_matlab_function("A({1 2; {'covSEiso'}, 'a'})")
