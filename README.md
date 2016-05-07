@@ -152,7 +152,6 @@ Licenses
 
  - PYOPY itself: Modified BSD
  - OCT2PY: Modified BSD
- - OMPC: Modified BSD
  
 ### Optional matlab toolboxes
 
