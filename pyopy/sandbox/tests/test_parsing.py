@@ -114,10 +114,9 @@ def test_cell_parsing():
     assert_array_equal(cell[1], np.array(['covSEiso', 'covNoise'], dtype=object))
 
     # 2D cells
-    # name, (cell,) = parse_matlab_function("A({1 2; {'covSEiso'}, 'a'})")
-    # assert name == MatlabId('A')
-    #
-
-
-def test_hctsa_examples():
-    pass
+    name, (cell,) = parse_matlab_function("A({1 2; {'covSEiso'}, 'a'})")
+    assert name == MatlabId('A')
+    assert cell.ndim == 2
+    assert len(cell) == 2
+    assert_array_equal(cell[0], np.array([1, 2], dtype=object))
+    assert_array_equal(cell[1], np.array([np.array('covSEiso', dtype=object), 'a']))

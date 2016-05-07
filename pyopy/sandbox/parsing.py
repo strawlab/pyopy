@@ -44,29 +44,34 @@ def build_matlabcall_parser(reduce_tree=False, debug=False):
         return StrMatch('['), StrMatch(']')
 
     def a_matrix_row():
-        parts = [a_sequence, a_number, (StrMatch("["), a_matrix_row, StrMatch("]"))]
+        parts = [a_sequence, a_number, (StrMatch('['), a_matrix_row, StrMatch(']'))]
         return parts, ZeroOrMore(a_comma_or_space, parts)
 
     def a_2d_matrix():
-        return StrMatch("["), a_matrix_row, OneOrMore(StrMatch(';'), a_matrix_row), StrMatch("]")
+        return StrMatch('['), a_matrix_row, OneOrMore(StrMatch(';'), a_matrix_row), StrMatch(']')
 
     def a_2d_matrices_concat():
-        return StrMatch("["), a_2d_matrix, OneOrMore(a_comma_or_space, a_2d_matrix), StrMatch("]")
+        return StrMatch('['), a_2d_matrix, OneOrMore(a_comma_or_space, a_2d_matrix), StrMatch(']')
 
     def a_matrix():
-        return [an_empty_matrix, a_matrix_row, a_2d_matrix, a_2d_matrices_concat]
+        return [an_empty_matrix,
+                (StrMatch('['), a_matrix_row, StrMatch(']')),
+                a_2d_matrix,
+                a_2d_matrices_concat]
 
     def an_empty_cell():
         return StrMatch('{'), StrMatch('}')
 
     def a_cell_row():
-        return StrMatch("{"), a_value, ZeroOrMore(a_comma_or_space, a_value), StrMatch("}")
+        return a_value, ZeroOrMore(a_comma_or_space, a_value)
 
-    # def a_2d_cell():
-    #     return StrMatch("{"), a_cell_row, OneOrMore(StrMatch(';'), a_cell_row), StrMatch("}")
+    def a_2d_cell():
+        return StrMatch('{'), a_cell_row, OneOrMore(StrMatch(';'), a_cell_row), StrMatch('}')
 
     def a_cell():
-        return [an_empty_cell, a_cell_row]
+        return [an_empty_cell,
+                (StrMatch('{'), a_cell_row, StrMatch('}')),
+                a_2d_cell]
 
     def a_value():
         # N.B. do not change order
@@ -154,6 +159,10 @@ class MatlabcallTreeVisitor(PTNodeVisitor):
         return np.array(list(children), dtype=np.object)
 
     @staticmethod
+    def visit_a_2d_cell(_, children):
+        return np.vstack(children)
+
+    @staticmethod
     def visit_a_value(_, children):
         return children[0]
 
@@ -169,8 +178,8 @@ class MatlabcallTreeVisitor(PTNodeVisitor):
 
 
 def parse_matlab_function(function_or_call,
-                          parser=build_matlabcall_parser(debug=False),
-                          visitor=MatlabcallTreeVisitor(debug=False)):
+                          parser=build_matlabcall_parser(),
+                          visitor=MatlabcallTreeVisitor()):
     # TODO: docstring this properly
     ast = parser.parse(function_or_call)
     return visit_parse_tree(ast, visitor)
@@ -199,8 +208,4 @@ if __name__ == '__main__':
 
 
 # TODO: add @ matlab function handles
-# TODO: Are inner functions / closures slower when creating a parser?
-#       Most probably this is irrelevant, but a benchmark is required.
-# TODO: We probably miss some escaping rules for matlab strings
-
-# See also: np.mat('[1 2; 3, 4]')
+# TODO: we probably miss some escaping rules for matlab strings
