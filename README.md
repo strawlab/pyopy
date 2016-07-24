@@ -34,8 +34,8 @@ based on [pymatbridge](https://github.com/arokem/python-matlab-bridge) is also a
 
  - Install dependencies.
 ```sh
-conda install numpy scipy pandas
-pip install joblib argh whatami lockfile
+conda install numpy scipy pandas joblib
+pip install argh whatami lockfile
 ```
 
  - To use matlab, install the [python matlab engine](http://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html). 
@@ -51,11 +51,41 @@ python setup.py install  # unfortunately, pip would fail here
 pip install oct2py
 ```
 
- - Finally, clone pyopy and pip-install it in your environment (releases coming sometime soon).
+ - Clone pyopy and pip-install it in your environment (releases coming sometime soon).
 
 ```sh
-pip install https://github.com/strawlab/pyopy/tarball/master
+git clone https://github.com/strawlab/pyopy.git
+cd pyopy
+pip install -e .
 ```
+
+  - Optional: install and tweak pyopy's internal HCTSA copy.
+
+```sh
+# The following command needs git installed and matlab/octave mex working.
+# It will clone HCTSA from github into ~/.pyopy, patch it and mex extensions.
+# For HCTSA, using matlab is highly recommended
+python pyopy/hctsa/hctsa_install.py --engine matlab --force-download --generate-bindings
+```
+
+  - If all has gone well, this should work
+
+```python
+In [1]: import numpy as np
+
+In [2]: from pyopy.hctsa import hctsa
+
+In [3]: _ = hctsa.prepare(engine='matlab')
+Starting engine
+Warming up
+Configuring HCTSA
+Setting up HCTSA operators
+Hooray, we can use HCTSA now...
+
+In [4]: hctsa.operations.AC_1(np.arange(100))
+Out[4]: 0.96999999999999975
+```
+
 
 Licenses
 --------
