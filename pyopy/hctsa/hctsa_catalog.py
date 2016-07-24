@@ -266,17 +266,22 @@ class HCTSACatalog(object):
             return operation, callspec, funcname, params, is_commented, is_standardized
 
         self.operations_dict = {}
-        with open(self.mops_file) as reader:
-            for line in reader:
-                if not line.strip():
-                    continue
-                operationname, callspec, funcname, params, is_commented, is_standardized = parse_mops_line(line)
-                if operationname is None:
-                    continue  # Ignore commented lines
-                if operationname in self.operations_dict:
-                    raise Exception('Repeated operation: %s' % operationname)
-                self.operations_dict[operationname] = \
-                    HCTSAOperation(operationname, callspec, funcname, params, is_commented, standardize=is_standardized)
+        try:
+            with open(self.mops_file) as reader:
+                for line in reader:
+                    if not line.strip():
+                        continue
+                    operationname, callspec, funcname, params, is_commented, is_standardized = parse_mops_line(line)
+                    if operationname is None:
+                        continue  # Ignore commented lines
+                    if operationname in self.operations_dict:
+                        raise Exception('Repeated operation: %s' % operationname)
+                    self.operations_dict[operationname] = \
+                        HCTSAOperation(operationname, callspec, funcname, params, is_commented, standardize=is_standardized)
+        except IOError as ex:
+            ex.message = 'Cannot find the HCTSA mops file "%s". Maybe run pyopy/hctsa/hctsa_install.py?\n%s' % (
+                self.mops_file, ex.message)
+            raise
 
         #
         # 2) Get all the features defined in the OPS file
