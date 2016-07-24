@@ -7,14 +7,14 @@ from subprocess import check_call
 import urllib
 import tarfile
 import argh
-from pyopy.base import PyopyEngines, EngineException
+from pyopy.base import PyopyEngines
 from pyopy.hctsa.hctsa_bindings_gen import gen_bindings
 from pyopy.hctsa.hctsa_config import HCTSA_DIR, HCTSA_TOOLBOXES_DIR, HCTSA_MOPS_FILE, HCTSA_OPS_FILE
 from pyopy.code import rename_matlab_func
 from pyopy.misc import ensure_dir, cd
 
 
-def _download_hctsa(force=False, release_or_branch='v0.9', use_git=True):
+def _download_hctsa(force=False, release_or_branch='v0.9', use_git=False):
     """Downloads HCTSA from github."""
     if op.isdir(HCTSA_DIR) and not force:
         return
@@ -22,15 +22,23 @@ def _download_hctsa(force=False, release_or_branch='v0.9', use_git=True):
         print 'Removing current installation...'
         shutil.rmtree(HCTSA_DIR, ignore_errors=False)
     if not use_git:
-        url = 'https://github.com/benfulcher/hctsa.git/archive/%s.tar.gz' % release_or_branch
+        url = 'https://github.com/benfulcher/hctsa/archive/%s.tar.gz' % release_or_branch
         tar = op.join(op.dirname(HCTSA_DIR), 'hctsa-%s.tar.gz' % release_or_branch)
         print 'Downloading %s...' % url
-        urllib.urlretrieve(url, tar)  # Note: this can only work if the repo is public or if we bring auth into python
+        urllib.urlretrieve(url, tar)
         print 'Decompressing %s...' % tar
         with tarfile.open(tar, 'r:gz') as tfile:
             tfile.extractall(op.dirname(tar))
         print 'Deleting %s...' % tar
         os.remove(tar)
+        print 'Renaming directories'
+        try:
+            os.rename(op.join(op.dirname(HCTSA_DIR), 'hctsa-%s' % release_or_branch),
+                      op.join(op.dirname(HCTSA_DIR), 'hctsa'))
+        except OSError:
+            # github renames v0.9 to 0.9, try to see if this is the case
+            os.rename(op.join(op.dirname(HCTSA_DIR), 'hctsa-%s' % release_or_branch[1:]),
+                      op.join(op.dirname(HCTSA_DIR), 'hctsa'))
         print 'Done'
     else:
         url = 'https://github.com/benfulcher/hctsa.git'
@@ -208,7 +216,9 @@ def hctsa_prepare_engine(engine):
               ('octave' if engine.is_octave() else 'matlab')
 
 
-def install(engine='matlab', force_download=False, generate_bindings=False):
+def install(engine='matlab',
+            force_download=False, use_git=False, version='v0.9',
+            generate_bindings=False):
     """Fixes problems with the HCTSA codebase and mexes extensions.
 
     Parameters
@@ -222,6 +232,14 @@ def install(engine='matlab', force_download=False, generate_bindings=False):
     force_download : boolean, default False
       If True, HCTSA will be removed even if it already exists
 
+    version : string
+      The version to HCTSA to download.
+      It can be any commit ("master", "v0.9", "6684609e2d4670d84875f0e68d3197949d740fbd")
+
+    use_git : boolean, default False
+      If True, the HCTSA repository will be cloned.
+      If False, HCTSA will be downloaded without the git repo.
+
     generate_bindings : boolean, default False
       If True, python bindings will be regenerated.
       Not needed if you will use the same HCTSA version used to generate the current bindings.
@@ -231,7 +249,7 @@ def install(engine='matlab', force_download=False, generate_bindings=False):
         install(engine='octave', force_download=False, generate_bindings=False)
         return
     # Download
-    _download_hctsa(force=force_download)
+    _download_hctsa(force=force_download, release_or_branch=version, use_git=use_git)
     # Select the engine
     engine = PyopyEngines.engine_or_matlab_or_octave(engine)
     # Fix some problems with the codebase to allow compilation with octave and get rid of shadowing
