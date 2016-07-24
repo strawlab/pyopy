@@ -208,19 +208,28 @@ def hctsa_prepare_engine(engine):
               ('octave' if engine.is_octave() else 'matlab')
 
 
-def install(engine='octave', force_download=False, generate_bindings=True):
+def install(engine='matlab', force_download=False, generate_bindings=False):
     """Fixes problems with the HCTSA codebase and mexes extensions.
 
     Parameters
     ----------
-    engine: string or MatlabEngine, default 'octave'
+    engine : string or MatlabEngine, default 'octave'
       The engine to use to build the the mex files
       if 'octave' or 'matlab', the default engine will be used
+      if 'all', installation will proceed on both matlab and octave
       else it must quack like a MatlabEngine
 
-    force_download: boolean, default False
-      If true, HCTSA will be removed even if it already exists
+    force_download : boolean, default False
+      If True, HCTSA will be removed even if it already exists
+
+    generate_bindings : boolean, default False
+      If True, python bindings will be regenerated.
+      Not needed if you will use the same HCTSA version used to generate the current bindings.
     """
+    if engine == 'all':
+        install(engine='matlab', force_download=force_download, generate_bindings=generate_bindings)
+        install(engine='octave', force_download=False, generate_bindings=False)
+        return
     # Download
     _download_hctsa(force=force_download)
     # Select the engine
@@ -238,6 +247,5 @@ def install(engine='octave', force_download=False, generate_bindings=True):
 
 
 if __name__ == '__main__':
-    install(engine='matlab', force_download=True, generate_bindings=True)
-    # install(engine='octave', force_download=False, generate_bindings=False)
+    argh.dispatch_command(install)
     print 'Done'
