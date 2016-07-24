@@ -22,6 +22,7 @@ setup(
     author_email='sdvillal@gmail.com',
     packages=['pyopy',
               'pyopy.minioct2py',
+              'pyopy.externals',
               'pyopy.externals.ompc',
               'pyopy.tests',
               'pyopy.hctsa',

@@ -1,0 +1,2 @@
+include *.md *.txt
+recursive-include pyopy.externals.toolboxes *
