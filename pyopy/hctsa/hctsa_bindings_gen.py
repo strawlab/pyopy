@@ -206,7 +206,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
         tags_string = indent1 + 'TAGS = %r' % (tuple(catalog.functions_dict[name].tags()), )
         if len(tags_string) > 120:
             comma = tags_string.find(', ', 90)
-            tags_string = tags_string[:comma] + '\n' + ' ' * len(indent1 + 'TAGS = (') + tags_string[comma+2:]
+            tags_string = tags_string[:comma] + '\n' + ' ' * len(indent1 + 'TAGS = (') + tags_string[comma + 2:]
 
         # Constructor body
         if args_string:
@@ -231,7 +231,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
             if len(line) < 120:
                 return [line]
             comma = line.find(', ', 90)
-            return [line[:comma+1],
+            return [line[:comma + 1],
                     ' ' * len(line.partition('run_function(')[0] + 'run_function(') + line[comma + 2:]]
         eval_method = '\n'.join(chain.from_iterable(map(break_long, eval_method.splitlines())))
 
@@ -264,7 +264,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
 
                 def chunks(l, n):
                     for i in range(0, len(l), n):
-                        yield l[i:i+n]
+                        yield l[i:i + n]
                 for outs in chunks(operation.known_outputs(), 5):
                     lines.append('# outs: %s' %
                                  ','.join(map(str, outs) if operation.known_outputs() else ''))
@@ -279,7 +279,7 @@ def gen_bindings(hctsa_catalog=None, write_function_too=False):
                 else:
                     first_comma = instline.find(',', 90)
                     lines.append(instline[:first_comma + 1])
-                    lines.append(' ' * len('    %s(' % fname) + instline[first_comma+2:])
+                    lines.append(' ' * len('    %s(' % fname) + instline[first_comma + 2:])
 
         lines = ['    %s' % line for line in lines]
         return 'class HCTSAOperations(object):\n' \

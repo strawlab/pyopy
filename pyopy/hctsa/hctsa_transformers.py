@@ -13,6 +13,11 @@ def matlab_standardize(x):
     return (x - x.mean()) / (x.std(ddof=1))
 
 
+HCTSA_PREPROCESSORS = {
+    'standardize': matlab_standardize
+}
+
+
 def hctsa_prepare_input(x, z_scored=False):
     """
     Given a 1D array x, prepare it to be transferred to hctsa land.

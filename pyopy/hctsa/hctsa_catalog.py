@@ -12,7 +12,7 @@ from itertools import chain
 import os.path as op
 
 from pyopy.hctsa.hctsa_config import HCTSA_OPS_FILE, HCTSA_MOPS_FILE, HCTSA_OPERATIONS_DIR, HCTSA_OPS_REDUCED_FILE
-from pyopy.code import matlab_funcname_from_filename, parse_matlab_params, parse_matlab_funcdef
+from pyopy.translation import matlab_funcname_from_filename, parse_matlab_funcdef, parse_matlab_function
 
 
 class HCTSAFunction(object):
@@ -39,6 +39,7 @@ class HCTSAFunction(object):
     operations : list-like of HCTSAOperation objects
       The different fixed parameters used in the HCTSA code base to call this function.
     """
+
     def __init__(self,
                  mfile,
                  outstring,
@@ -89,6 +90,7 @@ class HCTSAFeature(object):
     tags: string list
       The tags given to the feature in HCTSA, useful for categorization
     """
+
     def __init__(self,
                  featname,
                  operation,
@@ -111,24 +113,25 @@ class HCTSAOperation(object):
     opname : string
       The operation name (e.g. "CO_CompareMinAMI_even_2_80")
 
-    opcall : string
+    opcall : string or None
       The operation call string in matlab land (e.g. "CO_CompareMinAMI(y,'even',[2:80])")
 
-    funcname : string
+    funcname : string or None
       The function name associated to this operation (e.g. "CO_CompareMinAMI")
 
-    param_values : list
+    param_values : list or None
       A list with the values for the function that define this operation (as objects in python land)
 
-    is_commented : bool
+    is_commented : bool or None
       Whether the operation is commented in the HCTSA code
 
-    function : HCTSAFunction
+    function : HCTSAFunction or None
       The function used by this operation
 
-    standardize : bool, default False
+    standardize : bool or None, default False
       Many operations require the input time series to be standardized (marked by "y" instead of "x" as input)
     """
+
     def __init__(self,
                  opname,
                  opcall,
@@ -175,17 +178,17 @@ class HCTSACatalog(object):
 
     Parameters
     ----------
-    mfiles_dir: path
+    mfiles_dir: string
       The directory where the matlab m files for the HCTSA operations reside.
 
-    mops_file: path
+    mops_file: string
       The path to the file where we find the map {operation -> (function, param_values)}
 
-    ops_file: path
+    ops_file: string
       The path to the file where we find the map {feature_name -> (operation, output_name)}
 
-    Useful Members
-    --------------
+    Attributes
+    ----------
     functions_dict : dictionary
       A map {function_name -> HCTSAFunction}
 
@@ -259,13 +262,19 @@ class HCTSACatalog(object):
             if line is None:  # Ignore commented lines
                 return (None,) * 6
             callspec, operation = line.split()
-            funcname, _, params = callspec.partition('(')
-            funcname = funcname.strip()
-            params = params.rpartition(')')[0].strip()
-            series, _, params = params.partition(',')  # The first parameter is always the time series
-            params = parse_matlab_params(params)
-            is_standardized = series == 'y'
-            return operation, callspec, funcname, params, is_commented, is_standardized
+            funcname, params = parse_matlab_function(callspec)
+            # The first parameter is always the time series
+            series, params = params[0], params[1:]
+            if isinstance(series, tuple):
+                print(callspec)
+                input_is_standardized = False
+                # IN_AutoMutualInfoStats(diff(y),20,'gaussian')
+                # IN_AutoMutualInfoStats(diff(y),20,'kraskov1','4')
+                # SC_FluctAnal(zscore(abs(y)),2,'dfa',50,2,[],1)
+                # SC_FluctAnal(zscore(sign(y)),2,'dfa',50,2,[],1)
+            else:
+                input_is_standardized = series.name == 'y'
+            return operation, callspec, funcname.name, params, is_commented, input_is_standardized
 
         self.operations_dict = {}
         try:
@@ -465,6 +474,7 @@ class HCTSACatalog(object):
 
 def summary():
     return HCTSACatalog().summary()
+
 
 if __name__ == '__main__':
     print(summary())
