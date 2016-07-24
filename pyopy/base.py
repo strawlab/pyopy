@@ -759,7 +759,7 @@ class PyopyEngines(object):
             return engine
         if isinstance(engine, basestring):
             if engine not in ('octave', 'matlab'):
-                raise ValueError('engine string "%s" not allowed, only ("matlab" or "octave")')
+                raise ValueError('engine string "%s" not allowed, only ("matlab" or "octave")' % engine)
             engine = engine == 'octave'
         return PyopyEngines.octave() if engine else PyopyEngines.matlab()
 
