@@ -190,11 +190,16 @@ def hctsa_prepare_engine(engine):
     # See also notes on optional package loading:
     # https://wiki.archlinux.org/index.php/Octave#Using_Octave.27s_installer
     if engine.is_octave():
-        engine.eval('pkg load parallel')
-        engine.eval('pkg load optim')
-        engine.eval('pkg load signal')
-        engine.eval('pkg load statistics')
-        engine.eval('pkg load econometrics')
+        def maybe_load(pkg):
+            try:
+                engine.eval('pkg load %s' % pkg)
+            except:  # FIXME: broad
+                print 'Warning: cannot load octave package "%s", maybe install it?' % pkg
+        maybe_load('parallel')
+        maybe_load('optim')
+        maybe_load('signal')
+        maybe_load('statistics')
+        maybe_load('econometrics')
     # Tweaks java classpaths
     try:
         engine.eval('javaaddpath(\'%s\');' % op.join(HCTSA_TOOLBOXES_DIR, 'infodynamics-dist', 'infodynamics.jar'))
