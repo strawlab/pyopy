@@ -384,9 +384,9 @@ class CO_FirstMin(HCTSASuper):
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (0, 1)
+    KNOWN_OUTPUTS_SIZES = (1,)
 
-    TAGS = ('autocorrelation', 'correlation', 'tau')
+    TAGS = ('AMI', 'autocorrelation', 'correlation', 'tau')
 
     def __init__(self, minWhat='mi-kraskov1', extraParam='4'):
         super(CO_FirstMin, self).__init__()
@@ -2289,9 +2289,9 @@ class EN_mse(HCTSASuper):
     ----------------------------------------
     """
 
-    KNOWN_OUTPUTS_SIZES = (0,)
+    KNOWN_OUTPUTS_SIZES = (18, 17)
 
-    TAGS = ()
+    TAGS = ('controlen', 'entropy', 'mse', 'sampen')
 
     def __init__(self, scaleRange=MatlabSequence('1:10'), m=2.0, r=0.15, preProcessHow='diff1'):
         super(EN_mse, self).__init__()
@@ -8188,19 +8188,22 @@ class HCTSAOperations(object):
         "CO_Embed2_Shapes(y,'tau','circle',0.1)",
         CO_Embed2_Shapes(tau='tau', shape='circle', r=0.1))
 
-    # tags: 
+    # outs: None
+    # tags: AMI,correlation
     CO_FirstMin_mi_kraskov1_4 = HCTSAOperation(
         'CO_FirstMin_mi_kraskov1_4',
         "CO_FirstMin(y,'mi-kraskov1','4')",
         CO_FirstMin(minWhat='mi-kraskov1', extraParam='4'))
 
-    # tags: 
+    # outs: None
+    # tags: AMI,correlation
     CO_FirstMin_mi_kraskov2_4 = HCTSAOperation(
         'CO_FirstMin_mi_kraskov2_4',
         "CO_FirstMin(y,'mi-kraskov2','4')",
         CO_FirstMin(minWhat='mi-kraskov2', extraParam='4'))
 
-    # tags: 
+    # outs: None
+    # tags: AMI,correlation
     CO_FirstMin_mi_hist_5 = HCTSAOperation(
         'CO_FirstMin_mi_hist_5',
         "CO_FirstMin(y,'mi-hist',5)",
@@ -8213,19 +8216,22 @@ class HCTSAOperations(object):
         "CO_FirstMin(y,'ac')",
         CO_FirstMin(minWhat='ac'))
 
-    # tags: 
+    # outs: None
+    # tags: AMI,correlation
     CO_FirstMin_mi_gaussian = HCTSAOperation(
         'CO_FirstMin_mi_gaussian',
         "CO_FirstMin(y,'mi-gaussian')",
         CO_FirstMin(minWhat='mi-gaussian'))
 
-    # tags: 
+    # outs: None
+    # tags: AMI,correlation
     CO_FirstMin_mi_hist_10 = HCTSAOperation(
         'CO_FirstMin_mi_hist_10',
         "CO_FirstMin(y,'mi-hist',10)",
         CO_FirstMin(minWhat='mi-hist', extraParam=10))
 
-    # tags: 
+    # outs: None
+    # tags: AMI,correlation
     CO_FirstMin_mi_kernel = HCTSAOperation(
         'CO_FirstMin_mi_kernel',
         "CO_FirstMin(y,'mi-kernel')",
@@ -10930,19 +10936,31 @@ class HCTSAOperations(object):
         'EN_SampEn(y,5,0.05)',
         EN_SampEn(M=5, r=0.05))
 
-    # tags: 
+    # outs: cvSampEn,maxSampEn,maxScale,meanSampEn,meanch
+    # outs: minSampEn,minScale,sampen_s1,sampen_s10,sampen_s2
+    # outs: sampen_s3,sampen_s4,sampen_s5,sampen_s6,sampen_s7
+    # outs: sampen_s8,sampen_s9,stdSampEn
+    # tags: controlen,entropy,mse,sampen
     EN_mse_1_10_2_015_diff1 = HCTSAOperation(
         'EN_mse_1_10_2_015_diff1',
         "EN_mse(y,1:10,2,0.15,'diff1')",
         EN_mse(scaleRange=MatlabSequence('1:10'), m=2, r=0.15, preProcessHow='diff1'))
 
-    # tags: 
+    # outs: cvSampEn,maxSampEn,maxScale,meanSampEn,meanch
+    # outs: minSampEn,minScale,sampen_s10,sampen_s2,sampen_s3
+    # outs: sampen_s4,sampen_s5,sampen_s6,sampen_s7,sampen_s8
+    # outs: sampen_s9,stdSampEn
+    # tags: entropy,mse,sampen
     EN_mse_1_10_2_015 = HCTSAOperation(
         'EN_mse_1_10_2_015',
         'EN_mse(y,1:10,2,0.15)',
         EN_mse(scaleRange=MatlabSequence('1:10'), m=2, r=0.15))
 
-    # tags: 
+    # outs: cvSampEn,maxSampEn,maxScale,meanSampEn,meanch
+    # outs: minSampEn,minScale,sampen_s1,sampen_s10,sampen_s2
+    # outs: sampen_s3,sampen_s4,sampen_s5,sampen_s6,sampen_s7
+    # outs: sampen_s8,sampen_s9,stdSampEn
+    # tags: controlen,entropy,mse,sampen
     EN_mse_1_10_2_015_rescale_tau = HCTSAOperation(
         'EN_mse_1_10_2_015_rescale_tau',
         "EN_mse(y,1:10,2,0.15,'rescale_tau')",
