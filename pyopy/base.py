@@ -698,7 +698,7 @@ class PyopyEngine(object):
         #
 
 
-def set_max_matlab_threads(eng, n_threads=1, fail=False):
+def set_max_matlab_threads(eng, n_threads=1, fail=False, verbose=False):
     """Sets the maximum number of computational threads to use by a matlab engine.
 
     Note that we use the long-time deprecated but never disaapearing maxNumCompThreads,
@@ -730,7 +730,8 @@ def set_max_matlab_threads(eng, n_threads=1, fail=False):
         if fail:
             raise
         # This happens on recent matlab versions...
-        print('Warning: setting single threading failed with \n%s\n%s\n%s' % (str(ex), '-' * 80, '-' * 80))
+        if verbose:
+            print('Warning: setting single threading failed with \n%s\n%s\n%s' % ('-' * 80, str(ex), '-' * 80))
 
 
 def get_max_matlab_threads(eng):
