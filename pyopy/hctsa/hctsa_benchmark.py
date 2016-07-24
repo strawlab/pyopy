@@ -203,7 +203,7 @@ def analyse():
     df = df.convert_objects(convert_numeric=True)  # After removing these, value can be again converted to float
 
     nodup = df.dropna(subset=['error'], axis=0).drop_duplicates(['operator', 'error']).sort('operation')
-    nodup.to_html('/home/santi/dupes.html')
+    nodup.to_html(op.expanduser('~/dupes.html'))
 
     print '\n'.join(nodup['operator'].unique())
     operations_failing = map(lambda o: 'HCTSAOperations.%s[2],' % o, sorted(nodup['operation'].unique()))
