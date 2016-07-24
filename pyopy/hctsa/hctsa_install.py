@@ -6,9 +6,9 @@ import shutil
 from subprocess import check_call
 import urllib
 import tarfile
-from pyopy.base import PyopyEngines
+import argh
+from pyopy.base import PyopyEngines, EngineException
 from pyopy.hctsa.hctsa_bindings_gen import gen_bindings
-
 from pyopy.hctsa.hctsa_config import HCTSA_DIR, HCTSA_TOOLBOXES_DIR, HCTSA_MOPS_FILE, HCTSA_OPS_FILE
 from pyopy.code import rename_matlab_func
 from pyopy.misc import ensure_dir, cd
@@ -159,7 +159,12 @@ def _mex_hctsa(engine=None):
     # feedback if available...
     print 'Compilation feedback:\n\t', response.stdout
     #
-    # We also need to compile TISEAN and put it in the PATH (see my PKGBUILD for arch)
+    # We also need to compile TISEAN and put it in the PATH
+    # See my PKGBUILD for arch:
+    #   https://gist.github.com/sdvillal/98e300a439dbe089340d
+    # Also note there is a "octave-tisean" toolbox.
+    #   http://octave.sourceforge.net/tisean/
+    #   https://aur.archlinux.org/packages/octave-tisean/
     # For ubuntu, not big deal either (just make sure gfortran is there):
     #   http://ubuntuforums.org/archive/index.php/t-2233905.html?s=f8da67a291ad38e4c2a533d35b9f8a80
     # What I do is not even to create a package (checkinstall would make it easy), but:
