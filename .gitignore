@@ -4,3 +4,4 @@
 parser.out
 parsetab.py
 *.egg-info
+octave-workspace
