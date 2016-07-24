@@ -1,2 +1,4 @@
 include *.md *.txt
-recursive-include pyopy.externals.toolboxes *
+include licenses/*
+recursive-include pyopy/externals/toolboxes *
+
