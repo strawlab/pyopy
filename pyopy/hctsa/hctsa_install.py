@@ -229,5 +229,5 @@ def install(engine='octave', force_download=False, generate_bindings=True):
 
 if __name__ == '__main__':
     install(engine='matlab', force_download=True, generate_bindings=True)
-    install(engine='octave', force_download=False, generate_bindings=False)
+    # install(engine='octave', force_download=False, generate_bindings=False)
     print 'Done'
