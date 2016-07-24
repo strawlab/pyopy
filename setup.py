@@ -33,7 +33,8 @@ setup(
         'Programming Language :: Python',
         'Topic :: Software Development',
         'Topic :: Scientific/Engineering',
-        'Operating System :: Unix',
+        'Operating System :: MacOS',
+        'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 2.7',
     ],
     requires=['numpy',
@@ -51,6 +52,4 @@ setup(
         'mathworks': [],  # matlab python engine (http://www.mathworks.com/help/matlab/matlab-engine-for-python.html)
     },
     tests_require=['pytest'],
-
-    platforms=['linux'],
 )

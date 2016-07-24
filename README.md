@@ -12,7 +12,7 @@ You can check-out this [quick demo](https://asciinema.org/a/18771).
 Installation
 ------------
 
-Pyopy is only tested on linux. It requires python 2.7, octave and/or matlab and the following python dependencies:
+Pyopy is tested on linux and mac. It requires python 2.7, octave and/or matlab and the following python dependencies:
  
  - numpy
  - scipy
