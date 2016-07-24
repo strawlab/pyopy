@@ -698,7 +698,7 @@ class PyopyEngine(object):
         #
 
 
-def set_max_matlab_threads(eng, n_threads=1):
+def set_max_matlab_threads(eng, n_threads=1, fail=False):
     """Sets the maximum number of computational threads to use by a matlab engine.
 
     Note that we use the long-time deprecated but never disaapearing maxNumCompThreads,
@@ -720,11 +720,17 @@ def set_max_matlab_threads(eng, n_threads=1):
     (strall, str22, noisy) and strz (with 12 cores). Probably this is because of different order of
     rounding errors...
     """
-    if eng.is_octave():
-        raise ValueError('Engine should be over Matlab, not Octave')
-    if n_threads is None or n_threads < 1:
-        eng.eval("maxNumCompThreads('auto')")
-    eng.eval("maxNumCompThreads(%d)" % n_threads)
+    try:
+        if eng.is_octave():
+            raise ValueError('Engine should be over Matlab, not Octave')
+        if n_threads is None or n_threads < 1:
+            eng.eval("maxNumCompThreads('auto')")
+        eng.eval("maxNumCompThreads(%d)" % n_threads)
+    except (ValueError, EngineException) as ex:
+        if fail:
+            raise
+        # This happens on recent matlab versions...
+        print('Warning: setting single threading failed with \n%s\n%s\n%s' % (str(ex), '-' * 80, '-' * 80))
 
 
 def get_max_matlab_threads(eng):
