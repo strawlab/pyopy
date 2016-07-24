@@ -59,13 +59,19 @@ cd pyopy
 pip install -e .
 ```
 
-  - Optional: install and tweak pyopy's internal HCTSA copy.
+  - If using HCTSA: install and tweak pyopy's internal HCTSA copy.
 
 ```sh
 # The following command needs git installed and matlab/octave mex working.
 # It will clone HCTSA from github into ~/.pyopy, patch it and mex extensions.
 # For HCTSA, using matlab is highly recommended
-python pyopy/hctsa/hctsa_install.py --engine matlab --force-download --generate-bindings
+
+ hctsa-cli install --engine matlab --force-download --generate-bindings
+
+# Note that for the bindings to be regenerated succesfully hctsa-cli needs
+# write permissions on the directory where pyopy has been installed
+# (this should not be a problem if you used "pip install -e" or if installed
+# to a conda/virtualenv on your user)
 ```
 
   - If all has gone well, this should work
