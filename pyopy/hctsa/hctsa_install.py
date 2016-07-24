@@ -140,7 +140,7 @@ def _fix_mops_ops():
         ops = ops.read()
         for bad, good in REPLACEMENTS:
             mops = mops.replace(bad, good)
-            ops = ops.replace(good, bad)
+            ops = ops.replace(bad, good)
         with open(HCTSA_MOPS_FILE, 'w') as mopsw, open(HCTSA_OPS_FILE, 'w') as opsw:
             mopsw.write(mops)
             opsw.write(ops)
