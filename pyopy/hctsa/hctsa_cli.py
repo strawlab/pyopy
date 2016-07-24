@@ -7,7 +7,7 @@ from pyopy.hctsa.hctsa_install import install
 from pyopy.hctsa.hctsa_catalog import summary
 
 
-if __name__ == '__main__':
+def main():
     parser = argh.ArghParser()
     parser.add_commands([
         # matlab world installation
@@ -18,3 +18,6 @@ if __name__ == '__main__':
         summary,
     ])
     parser.dispatch()
+
+if __name__ == '__main__':
+    main()

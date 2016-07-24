@@ -27,6 +27,11 @@ setup(
               'pyopy.tests',
               'pyopy.hctsa',
               'pyopy.hctsa.tests'],
+    entry_points={
+        'console_scripts': [
+            'hctsa-cli = pyopy.hctsa.hctsa_cli:main',
+        ]
+    },
     classifiers=[
         'Intended Audience :: Science/Research',
         'Intended Audience :: Developers',
