@@ -14,7 +14,7 @@ from pyopy.code import rename_matlab_func
 from pyopy.misc import ensure_dir, cd
 
 
-def _download_hctsa(force=False, release_or_branch='OperationChanges', use_git=True):
+def _download_hctsa(force=False, release_or_branch='v0.9', use_git=True):
     """Downloads HCTSA from github."""
     if op.isdir(HCTSA_DIR) and not force:
         return
@@ -22,7 +22,7 @@ def _download_hctsa(force=False, release_or_branch='OperationChanges', use_git=T
         print 'Removing current installation...'
         shutil.rmtree(HCTSA_DIR, ignore_errors=False)
     if not use_git:
-        url = 'https://github.com/SystemsAndSignalsGroup/hctsa/archive/%s.tar.gz' % release_or_branch
+        url = 'https://github.com/benfulcher/hctsa.git/archive/%s.tar.gz' % release_or_branch
         tar = op.join(op.dirname(HCTSA_DIR), 'hctsa-%s.tar.gz' % release_or_branch)
         print 'Downloading %s...' % url
         urllib.urlretrieve(url, tar)  # Note: this can only work if the repo is public or if we bring auth into python
@@ -33,10 +33,10 @@ def _download_hctsa(force=False, release_or_branch='OperationChanges', use_git=T
         os.remove(tar)
         print 'Done'
     else:
-        url = 'git@github.com:SystemsAndSignalsGroup/hctsa.git'
+        url = 'https://github.com/benfulcher/hctsa.git'
         check_call(['git clone %s %s' % (url, HCTSA_DIR)], shell=True)
         with cd(HCTSA_DIR):
-            check_call(['git checkout %s' % release_or_branch], shell=True)
+            check_call(['git checkout "%s"' % release_or_branch], shell=True)
 
 
 def _fix_fnames():
