@@ -123,6 +123,9 @@ def _fix_mops_ops():
     REPLACEMENTS = (
         ("CO_FirstMin(y,'mi-kraskov2',3)", "CO_FirstMin(y,'mi-kraskov2','3')"),
         ('CO_FirstMin_mi-', 'CO_FirstMin_mi_'),
+        ('EN_mse_1-10_2_015_diff1', 'EN_mse_1_10_2_015_diff1'),
+        ('EN_mse_1-10_2_015_rescale_tau', 'EN_mse_1_10_2_015_rescale_tau'),
+        ('EN_mse_1-10_2_015', 'EN_mse_1_10_2_015')
     )
     with open(HCTSA_MOPS_FILE) as mops, open(HCTSA_OPS_FILE) as ops:
         mops = mops.read()
