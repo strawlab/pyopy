@@ -51,7 +51,7 @@ python setup.py install  # unfortunately, pip would fail here
 pip install oct2py
 ```
 
- - pip-install pyopy in your environment (releases coming sometime soon).
+ - *pip install* pyopy in your environment.
 
 ```sh
 # You can install the last release from pypi

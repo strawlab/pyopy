@@ -14,7 +14,7 @@ setup(
     name='pyopy',
     license='BSD 3 clause',
     description='PYthon->Octave->PYthon: Tools to pythonize matlab/octave libraries',
-    version='0.1.0',
+    version='0.1.1-dev',
     url='https://github.com/strawlab/pyopy',
     author='Santi Villalba',
     author_email='sdvillal@gmail.com',
