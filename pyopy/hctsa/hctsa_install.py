@@ -155,7 +155,7 @@ def _fix_hctsa():
     _fix_mops_ops()
 
 
-def _mex_hctsa(engine=None):
+def mex(engine=None):
     """Compiles the mex extensions using the specified engine."""
     # At the moment only OpenTSTool fails to compile for Octave under Linux64 (as said in their docs)
     engine.eval('cd %s' % HCTSA_TOOLBOXES_DIR)
@@ -257,7 +257,7 @@ def install(engine='matlab',
     # Add HCTSA to the engine path
     hctsa_prepare_engine(engine)
     # Build the mex files
-    _mex_hctsa(engine)
+    mex(engine)
     # Generate the bindings
     if generate_bindings:
         print 'Generating python bindings...'

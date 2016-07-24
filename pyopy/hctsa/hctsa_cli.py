@@ -3,7 +3,7 @@
 import argh
 
 from pyopy.hctsa.hctsa_bindings_gen import gen_bindings
-from pyopy.hctsa.hctsa_install import install
+from pyopy.hctsa.hctsa_install import install, mex
 from pyopy.hctsa.hctsa_catalog import summary
 
 
@@ -12,6 +12,8 @@ def main():
     parser.add_commands([
         # matlab world installation
         install,
+        # mexing
+        mex,
         # python-land binding generation
         gen_bindings,
         # catalog summary
